@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `Match` (
 CREATE TABLE IF NOT EXISTS `Player` (
     PlayerID bigint UNSIGNED,
     Username varchar(32),
-    ELO int,
+    ELO int DEFAULT 1000,
     PRIMARY KEY (PlayerID)
 );
 
@@ -59,7 +59,6 @@ CREATE TABLE IF NOT EXISTS `Player_PlayerStat` (
     FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID),
     FOREIGN KEY (PlayerStatID) REFERENCES `PlayerStat`(PlayerStatID)
 );
-
 
 CREATE TABLE IF NOT EXISTS `Match_PlayerStat` (
     MatchID int,
