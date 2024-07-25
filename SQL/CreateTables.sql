@@ -1,30 +1,26 @@
+CREATE TABLE IF NOT EXISTS `Team` (
+    TeamID int AUTO_INCREMENT,
+    PRIMARY KEY (TeamID)
+);
+
 CREATE TABLE IF NOT EXISTS `Player` (
-    PlayerID bigint unsigned,
+    PlayerID bigint UNSIGNED,
     Username varchar(32),
     ELO int,
     PRIMARY KEY (PlayerID)
 );
 
-CREATE TABLE IF NOT EXISTS `Team` (
+CREATE TABLE IF NOT EXISTS `TeamPlayer` (
     TeamID int,
-    PlayerID bigint unsigned,
+    PlayerID bigint UNSIGNED,
     PRIMARY KEY (TeamID, PlayerID),
-    FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID)
-);
-
-CREATE TABLE IF NOT EXISTS `Match` (
-    MatchID int AUTO_INCREMENT,
-    TeamTID int,
-    TeamCTID int,
-    MatchDate datetime,
-    PRIMARY KEY (MatchID),
-    FOREIGN KEY (TeamTID) REFERENCES `Team`(TeamID),
-    FOREIGN KEY (TeamCTID) REFERENCES `Team`(TeamID)
+    FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID),
+    FOREIGN KEY (TeamID) REFERENCES `Team`(TeamID)
 );
 
 CREATE TABLE IF NOT EXISTS `PlayerStat` (
     PlayerStatID int AUTO_INCREMENT,
-    PlayerID bigint unsigned,
+    PlayerID bigint UNSIGNED,
     Kills int,
     Headshots int,
     Assists int,
@@ -36,6 +32,18 @@ CREATE TABLE IF NOT EXISTS `PlayerStat` (
     FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID)
 );
 
+CREATE TABLE IF NOT EXISTS `Match` (
+    MatchID int AUTO_INCREMENT,
+    TeamTID int,
+    TeamCTID int,
+    TeamTScore int,
+    TeamCTScore int,
+    MatchDate datetime DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (MatchID),
+    FOREIGN KEY (TeamTID) REFERENCES `Team`(TeamID),
+    FOREIGN KEY (TeamCTID) REFERENCES `Team`(TeamID)
+);
+
 CREATE TABLE IF NOT EXISTS `Match_PlayerStat` (
     MatchID int,
     PlayerStatID int,
@@ -45,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `Match_PlayerStat` (
 );
 
 CREATE TABLE IF NOT EXISTS `Player_PlayerStat` (
-    PlayerID bigint unsigned,
+    PlayerID bigint UNSIGNED,
     PlayerStatID int,
     PRIMARY KEY (PlayerID, PlayerStatID),
     FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID),
@@ -53,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `Player_PlayerStat` (
 );
 
 CREATE TABLE IF NOT EXISTS `Player_Match` (
-    PlayerID bigint unsigned,
+    PlayerID bigint UNSIGNED,
     MatchID int,
     PRIMARY KEY (PlayerID, MatchID),
     FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID),
