@@ -45,13 +45,12 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `Player` (PlayerID, Username, ELO) VALUES (@PlayerID, @Username, @ELO) " +
+                    string query = "INSERT INTO `Player` (PlayerID, Username) VALUES (@PlayerID, @Username) " +
                                     "ON DUPLICATE KEY UPDATE Username = @Username";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@PlayerID", playerID);
                         cmd.Parameters.AddWithValue("@Username", username);
-                        cmd.Parameters.AddWithValue("@ELO", 25);
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
@@ -198,6 +197,81 @@ namespace CS2Stats {
                 Logger.LogError(ex, "Error inserting Player_PlayerStat into the database.");
             }
         }
+
+        public async Task<int?> GetPlayerELOFromTeamIDAsync(int? teamID, ILogger Logger) {
+            int count = 0, averageELO = 0;
+
+            try {
+                await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
+                    await conn.OpenAsync();
+                    string query = @"
+                        SELECT p.PlayerID, p.ELO
+                        FROM TeamPlayer tp
+                        JOIN Player p ON tp.PlayerID = p.PlayerID
+                        WHERE tp.TeamID = @TeamID";
+
+                    await using (var cmd = new MySqlCommand(query, conn)) {
+                        cmd.Parameters.AddWithValue("@TeamID", teamID);
+                        await using (var reader = await cmd.ExecuteReaderAsync()) {
+                            while (await reader.ReadAsync()) {
+                                ulong playerID = await reader.GetFieldValueAsync<ulong>(0);
+                                int elo = await reader.GetFieldValueAsync<int>(1);
+                                averageELO += elo;
+                                count += 1;
+
+                                Logger.LogInformation($"Player ID: {playerID} ELO: {elo}");
+                            }
+                        }
+                    }
+                }
+                Logger.LogInformation("Successfully retrieved ELOs for players in the team.");
+
+                if (count == 0) {
+                    Logger.LogError("No players found in the team.");
+                    return null;
+                }
+
+                return averageELO / count;
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error retrieving ELOs for players in the team.");
+                return null;
+            }
+        }
+
+        public async Task UpdatePlayerELOFromTeamIDAsync(int? teamID, int deltaELO, bool winner, ILogger Logger) {
+            try {
+                await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
+                    await conn.OpenAsync();
+
+                    string query;
+                    if (winner == true) {
+                        query = "UPDATE Player p " +
+                                "JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID " +
+                                "SET p.ELO = p.ELO + @DeltaELO " +
+                                "WHERE tp.TeamID = @TeamID";
+                    } else {
+                        query = "UPDATE Player p " +
+                                "JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID " +
+                                "SET p.ELO = p.ELO - @DeltaELO " +
+                                "WHERE tp.TeamID = @TeamID";
+
+                    }
+
+                    await using (var cmd = new MySqlCommand(query, conn)) {
+                        cmd.Parameters.AddWithValue("@DeltaELO", deltaELO);
+                        cmd.Parameters.AddWithValue("@TeamID", teamID);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                Logger.LogInformation("Successfully updated ELOs for players in the team.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error updating ELOs for players in the team.");
+            }
+        }
+
+
 
     }
 

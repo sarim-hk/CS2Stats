@@ -28,7 +28,6 @@ namespace CS2Stats {
             int? teamCTScore = GetCSTeamScore(CsTeam.CounterTerrorist);
 
             var insertMatchTask = database.InsertMatchAsync(teamTID, teamCTID, teamTScore, teamCTScore, Logger);
-            insertMatchTask.GetAwaiter().GetResult();
             int? matchID = insertMatchTask.GetAwaiter().GetResult();
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
@@ -95,6 +94,39 @@ namespace CS2Stats {
                         catch (Exception ex) {
                             Logger.LogError(ex, "Error handling player data.");
                         }
+                    }
+                }
+            }
+
+            if (teamTScore != teamCTScore) {
+                // Get average ELO for each team
+                var getAverageTELOTask = database.GetPlayerELOFromTeamIDAsync(teamTID, Logger);
+                int? averageTELO = getAverageTELOTask.GetAwaiter().GetResult();
+
+                var getAverageCTELOTask = database.GetPlayerELOFromTeamIDAsync(teamCTID, Logger);
+                int? averageCTELO = getAverageCTELOTask.GetAwaiter().GetResult();
+
+                if (averageTELO != null && averageCTELO != null) {
+
+                    // Calculate the probability of the winner winning
+                    // Math.Abs will calculate difference between two numbers, regardless if in the wrong order. Maths.Abs(5-15) would be 10, for example.
+                    double winProbability = 1 / (1.0 + Math.Pow(10, Math.Abs((double)averageTELO - (double)averageCTELO) / 400.0));
+                    int deltaELO = (int)(50 * (1 - winProbability));
+
+                    if (teamTScore > teamCTScore) {
+                        var updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamTID, deltaELO, true, Logger);
+                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
+
+                        updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamCTID, deltaELO, false, Logger);
+                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
+                    }
+
+                    else {
+                        var updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamTID, deltaELO, false, Logger);
+                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
+
+                        updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamCTID, deltaELO, true, Logger);
+                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
                     }
                 }
             }
