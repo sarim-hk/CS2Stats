@@ -1,5 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Logging;
+using CounterStrikeSharp.API.Modules.Entities;
 
 namespace CS2Stats {
     public class Database {
@@ -54,7 +55,7 @@ namespace CS2Stats {
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
-                Logger.LogInformation("Successfully inserted Player into database.");
+                Logger.LogInformation($"Successfully inserted Player {playerID} {username} into database.");
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "Error inserting Player into database.");
@@ -72,14 +73,16 @@ namespace CS2Stats {
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
-                Logger.LogInformation("Successfully inserted TeamPlayer into database.");
+                Logger.LogInformation($"Successfully inserted TeamPlayer {teamID} {playerID} into database.");
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "Error inserting TeamPlayer into database.");
             }
         }
 
-        public async Task InsertPlayerStatAsync(ulong? playerID, int kills, int headshots, int assists, int deaths, int damage, int utilityDamage, int roundsPlayed, ILogger Logger) {
+        public async Task<int?> InsertPlayerStatAsync(ulong? playerID, int kills, int headshots, int assists, int deaths, int damage, int utilityDamage, int roundsPlayed, ILogger Logger) {
+            int playerStatID;
+
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
@@ -96,16 +99,21 @@ namespace CS2Stats {
                         cmd.Parameters.AddWithValue("@UtilityDamage", utilityDamage);
                         cmd.Parameters.AddWithValue("@RoundsPlayed", roundsPlayed);
                         await cmd.ExecuteNonQueryAsync();
+                        playerStatID = (int)cmd.LastInsertedId;
                     }
                 }
-                Logger.LogInformation("Successfully inserted PlayerStat into database.");
+                Logger.LogInformation($"Successfully inserted PlayerStat {playerID} into database.");
+                return playerStatID;
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "Error inserting PlayerStat into the database.");
+                return null;
             }
         }
 
-        public async Task InsertMatchAsync(int? teamTID, int? teamCTID, int? teamTScore, int? teamCTScore, ILogger Logger) {
+        public async Task<int?> InsertMatchAsync(int? teamTID, int? teamCTID, int? teamTScore, int? teamCTScore, ILogger Logger) {
+            int matchID;
+
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
@@ -118,12 +126,76 @@ namespace CS2Stats {
                         cmd.Parameters.AddWithValue("@TeamTScore", teamTScore);
                         cmd.Parameters.AddWithValue("@TeamCTScore", teamCTScore);
                         await cmd.ExecuteNonQueryAsync();
+                        matchID = (int)cmd.LastInsertedId;
+
                     }
                 }
                 Logger.LogInformation("Successfully inserted Match into database.");
+                return matchID;
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "Error inserting Match into the database.");
+                return null;
+            }
+        }
+
+        public async Task InsertMatch_PlayerStatAsync(int? matchID, int? playerStatID, ILogger Logger) {
+            try {
+                await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
+                    await conn.OpenAsync();
+                    string query = "INSERT INTO `Match_PlayerStat` (MatchID, PlayerStatID)" +
+                                   "VALUES (@MatchID, @PlayerStatID)";
+
+                    await using (var cmd = new MySqlCommand(query, conn)) {
+                        cmd.Parameters.AddWithValue("@MatchID", matchID);
+                        cmd.Parameters.AddWithValue("@PlayerStatID", playerStatID);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                Logger.LogInformation($"Successfully inserted Match_PlayerStat {matchID} {playerStatID} into database.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error inserting Match_PlayerStat into the database.");
+            }
+        }
+
+        public async Task InsertPlayer_MatchAsync(ulong playerID, int? matchID, ILogger Logger) {
+            try {
+                await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
+                    await conn.OpenAsync();
+                    string query = "INSERT INTO `Player_Match` (PlayerID, MatchID)" +
+                                   "VALUES (@PlayerID, @MatchID)";
+
+                    await using (var cmd = new MySqlCommand(query, conn)) {
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                        cmd.Parameters.AddWithValue("@MatchID", matchID);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                Logger.LogInformation($"Successfully inserted Player_Match {playerID} {matchID} into database.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error inserting Player_Match into the database.");
+            }
+        }
+
+        public async Task InsertPlayer_PlayerStatTaskAsync(ulong playerID, int? playerStatID, ILogger Logger) {
+            try {
+                await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
+                    await conn.OpenAsync();
+                    string query = "INSERT INTO `Player_PlayerStat` (PlayerID, PlayerStatID)" +
+                                   "VALUES (@PlayerID, @PlayerStatID)";
+
+                    await using (var cmd = new MySqlCommand(query, conn)) {
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                        cmd.Parameters.AddWithValue("@PlayerStatID", playerStatID);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                Logger.LogInformation($"Successfully inserted Player_PlayerStat {playerID} {playerStatID} into database.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error inserting Player_PlayerStat into the database.");
             }
         }
 
