@@ -1,6 +1,7 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
+using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 using Serilog.Core;
 
@@ -9,14 +10,21 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
-            // https://docs.cssharp.dev/examples/WithDatabase.html
-            // this is cracked as fuck
-
             if (!matchInProgress) {
                 Logger.LogInformation($"EventCsWinPanelMatch but matchInProgress = {matchInProgress}. Ignoring...");
                 return HookResult.Continue;
             }
 
+            // Ignore null reference warning here... Plugin would be unloaded if database is null so you can ignore :)
+            // Insert T & CT Team
+            int? teamTID, teamCTID;
+            var insertTTeamTask = database.InsertTeamAsync(Logger);
+            teamTID = insertTTeamTask.GetAwaiter().GetResult();
+
+            var insertCTTeamTask = database.InsertTeamAsync(Logger);
+            teamCTID = insertCTTeamTask.GetAwaiter().GetResult();
+
+            // Insert Player, then PlayerStat
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
             foreach (var playerController in playerControllers) {
                 if (playerRounds != null) {
@@ -44,13 +52,24 @@ namespace CS2Stats {
                         Logger.LogInformation("--------------------------------");
 
                         try {
-                            if (database != null) {
-                                var insertPlayerTask = database.InsertPlayerAsync(playerID, username, Logger);
-                                insertPlayerTask.GetAwaiter().GetResult();
+                            // Insert Player
+                            var insertPlayerTask = database.InsertPlayerAsync(playerID, username, Logger);
+                            insertPlayerTask.GetAwaiter().GetResult();
 
-                                var insertPlayerStatTask = database.InsertPlayerStatAsync(playerID, kills, headshots, assists, deaths, damage, utilityDamage, roundsPlayed, Logger);
-                                insertPlayerStatTask.GetAwaiter().GetResult();
+                            // Insert T TeamPlayer
+                            if (playerController.Team.Equals(CsTeam.Terrorist)) {
+                                var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamTID, playerID, Logger);
+                                insertTeamPlayerTask.GetAwaiter().GetResult();
+
+                            // Insert CT TeamPlayer
+                            } else if (playerController.Team.Equals(CsTeam.CounterTerrorist)) {
+                                var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamCTID, playerID, Logger);
+                                insertTeamPlayerTask.GetAwaiter().GetResult();
                             }
+
+                            // Insert PlayerStat
+                            var insertPlayerStatTask = database.InsertPlayerStatAsync(playerID, kills, headshots, assists, deaths, damage, utilityDamage, roundsPlayed, Logger);
+                            insertPlayerStatTask.GetAwaiter().GetResult();
                         }
                         catch (Exception ex) {
                             Logger.LogError(ex, "Error handling player data.");
@@ -58,6 +77,12 @@ namespace CS2Stats {
                     }
                 }
             }
+
+            // Insert Match
+            int? teamTScore = GetCSTeamScore(CsTeam.Terrorist);
+            int? teamCTScore = GetCSTeamScore(CsTeam.CounterTerrorist);
+            var insertMatchTask = database.InsertMatchAsync(teamTID, teamCTID, teamTScore, teamCTScore, Logger);
+            insertMatchTask.GetAwaiter().GetResult();
 
             matchInProgress = false;
             Logger.LogInformation("Match ended.");
