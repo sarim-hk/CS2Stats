@@ -21,6 +21,11 @@ namespace CS2Stats {
         }
 
         public override void Load(bool hotReload) {
+            if (database == null) {
+                Logger.LogError("Database is null. Unloading...");
+                base.Unload(false);
+            }
+
             RegisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
             RegisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
             Logger.LogInformation("Plugin loaded.");    
