@@ -1,8 +1,4 @@
-﻿using CounterStrikeSharp.API.Core.Attributes.Registration;
-using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Commands;
-using Microsoft.Extensions.Logging;
-using System.Security.Cryptography.X509Certificates;
+﻿using CounterStrikeSharp.API.Core;
 using System.Text.Json.Serialization;
 
 namespace CS2Stats {
