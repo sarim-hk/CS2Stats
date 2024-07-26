@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `Team` (
 
 CREATE TABLE IF NOT EXISTS `Match` (
     MatchID int AUTO_INCREMENT,
+    Map varchar(128),
     TeamTID int,
     TeamCTID int,
     TeamTScore int,
@@ -67,5 +68,3 @@ CREATE TABLE IF NOT EXISTS `Match_PlayerStat` (
     FOREIGN KEY (MatchID) REFERENCES `Match`(MatchID),
     FOREIGN KEY (PlayerStatID) REFERENCES `PlayerStat`(PlayerStatID)
 );
-
-

@@ -116,17 +116,18 @@ namespace CS2Stats {
             }
         }
 
-        public async Task<int?> InsertMatchAsync(int? teamTID, int? teamCTID, int? teamTScore, int? teamCTScore, ILogger Logger) {
+        public async Task<int?> InsertMatchAsync(string map, int? teamTID, int? teamCTID, int? teamTScore, int? teamCTScore, ILogger Logger) {
             int matchID;
 
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
                     string query = @"
-                                   INSERT INTO `Match` (TeamTID, TeamCTID, TeamTScore, TeamCTScore)
-                                   VALUES (@TeamTID, @TeamCTID, @TeamTScore, @TeamCTScore)";
+                                   INSERT INTO `Match` (Map, TeamTID, TeamCTID, TeamTScore, TeamCTScore)
+                                   VALUES (@Map, @TeamTID, @TeamCTID, @TeamTScore, @TeamCTScore)";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
+                        cmd.Parameters.AddWithValue("@Map", map);
                         cmd.Parameters.AddWithValue("@TeamTID", teamTID);
                         cmd.Parameters.AddWithValue("@TeamCTID", teamCTID);
                         cmd.Parameters.AddWithValue("@TeamTScore", teamTScore);
@@ -240,8 +241,10 @@ namespace CS2Stats {
                     Logger.LogError("No players found in the team.");
                     return null;
                 }
+                else {
+                    return averageELO / count;
+                }
 
-                return averageELO / count;
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "Error retrieving ELOs for players in the team.");

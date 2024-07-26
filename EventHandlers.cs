@@ -25,7 +25,7 @@ namespace CS2Stats {
             int? teamTScore = GetCSTeamScore(CsTeam.Terrorist);
             int? teamCTScore = GetCSTeamScore(CsTeam.CounterTerrorist);
 
-            var insertMatchTask = database.InsertMatchAsync(teamTID, teamCTID, teamTScore, teamCTScore, Logger);
+            var insertMatchTask = database.InsertMatchAsync(Server.MapName, teamTID, teamCTID, teamTScore, teamCTScore, Logger);
             int? matchID = insertMatchTask.GetAwaiter().GetResult();
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
@@ -105,7 +105,6 @@ namespace CS2Stats {
                 int? averageCTELO = getAverageCTELOTask.GetAwaiter().GetResult();
 
                 if (averageTELO != null && averageCTELO != null) {
-
                     // Calculate the probability of the winner winning
                     // Math.Abs will calculate difference between two numbers, regardless if in the wrong order. Maths.Abs(5-15) would be 10, for example.
                     double winProbability = 1 / (1.0 + Math.Pow(10, Math.Abs((double)averageTELO - (double)averageCTELO) / 400.0));
