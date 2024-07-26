@@ -1,6 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Logging;
-using CounterStrikeSharp.API.Modules.Entities;
 
 namespace CS2Stats {
     public class Database {
@@ -24,8 +23,10 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
+                    string query = @"
+                                   INSERT INTO `Team` ()
+                                   VALUES ()";
 
-                    string query = "INSERT INTO `Team` () VALUES ()";
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         await cmd.ExecuteNonQueryAsync();
                         teamID = (int)cmd.LastInsertedId;
@@ -45,8 +46,9 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `Player` (PlayerID, Username) VALUES (@PlayerID, @Username) " +
-                                    "ON DUPLICATE KEY UPDATE Username = @Username";
+                    string query = @"
+                                   INSERT INTO `Player` (PlayerID, Username) VALUES (@PlayerID, @Username)
+                                   ON DUPLICATE KEY UPDATE Username = @Username";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@PlayerID", playerID);
@@ -65,7 +67,10 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `TeamPlayer` (TeamID, PlayerID) VALUES (@TeamID, @PlayerID)";
+                    string query = @"
+                                   INSERT INTO `TeamPlayer` (TeamID, PlayerID)
+                                   VALUES (@TeamID, @PlayerID)";
+
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@TeamID", teamID);
                         cmd.Parameters.AddWithValue("@PlayerID", playerID);
@@ -85,8 +90,9 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `PlayerStat` (PlayerID, Kills, Headshots, Assists, Deaths, TotalDamage, UtilityDamage, RoundsPlayed)" +
-                                   "VALUES (@PlayerID, @Kills, @Headshots, @Assists, @Deaths, @TotalDamage, @UtilityDamage, @RoundsPlayed)";
+                    string query = @"
+                                   INSERT INTO `PlayerStat` (PlayerID, Kills, Headshots, Assists, Deaths, TotalDamage, UtilityDamage, RoundsPlayed)
+                                   VALUES (@PlayerID, @Kills, @Headshots, @Assists, @Deaths, @TotalDamage, @UtilityDamage, @RoundsPlayed)";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@PlayerID", playerID);
@@ -116,8 +122,9 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `Match` (TeamTID, TeamCTID, TeamTScore, TeamCTScore)" +
-                                   "VALUES (@TeamTID, @TeamCTID, @TeamTScore, @TeamCTScore)";
+                    string query = @"
+                                   INSERT INTO `Match` (TeamTID, TeamCTID, TeamTScore, TeamCTScore)
+                                   VALUES (@TeamTID, @TeamCTID, @TeamTScore, @TeamCTScore)";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@TeamTID", teamTID);
@@ -142,8 +149,9 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `Match_PlayerStat` (MatchID, PlayerStatID)" +
-                                   "VALUES (@MatchID, @PlayerStatID)";
+                    string query = @"
+                                   INSERT INTO `Match_PlayerStat` (MatchID, PlayerStatID)
+                                   VALUES (@MatchID, @PlayerStatID)";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@MatchID", matchID);
@@ -162,8 +170,9 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `Player_Match` (PlayerID, MatchID)" +
-                                   "VALUES (@PlayerID, @MatchID)";
+                    string query = @"
+                                   INSERT INTO `Player_Match` (PlayerID, MatchID)
+                                   VALUES (@PlayerID, @MatchID)";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@PlayerID", playerID);
@@ -182,8 +191,9 @@ namespace CS2Stats {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = "INSERT INTO `Player_PlayerStat` (PlayerID, PlayerStatID)" +
-                                   "VALUES (@PlayerID, @PlayerStatID)";
+                    string query = @"
+                                   INSERT INTO `Player_PlayerStat` (PlayerID, PlayerStatID)
+                                   VALUES (@PlayerID, @PlayerStatID)";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@PlayerID", playerID);
@@ -205,10 +215,10 @@ namespace CS2Stats {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
                     string query = @"
-                        SELECT p.PlayerID, p.ELO
-                        FROM TeamPlayer tp
-                        JOIN Player p ON tp.PlayerID = p.PlayerID
-                        WHERE tp.TeamID = @TeamID";
+                                   SELECT p.PlayerID, p.ELO
+                                   FROM TeamPlayer tp
+                                   JOIN Player p ON tp.PlayerID = p.PlayerID
+                                   WHERE tp.TeamID = @TeamID";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@TeamID", teamID);
@@ -246,15 +256,15 @@ namespace CS2Stats {
 
                     string query;
                     if (winner == true) {
-                        query = "UPDATE Player p " +
-                                "JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID " +
-                                "SET p.ELO = p.ELO + @DeltaELO " +
-                                "WHERE tp.TeamID = @TeamID";
+                        query = @"UPDATE Player p
+                                JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID
+                                SET p.ELO = p.ELO + @DeltaELO
+                                WHERE tp.TeamID = @TeamID";
                     } else {
-                        query = "UPDATE Player p " +
-                                "JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID " +
-                                "SET p.ELO = p.ELO - @DeltaELO " +
-                                "WHERE tp.TeamID = @TeamID";
+                        query = @"UPDATE Player p
+                                JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID
+                                SET p.ELO = p.ELO - @DeltaELO
+                                WHERE tp.TeamID = @TeamID";
 
                     }
 
