@@ -56,9 +56,9 @@ namespace CS2Stats {
                         if (player.Team == CsTeam.Terrorist) {
                             var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamTID, playerKey, Logger);
                             insertTeamPlayerTask.GetAwaiter().GetResult();
-
-                            // Insert CT TeamPlayer
                         }
+
+                        // Insert CT TeamPlayer
                         else if (player.Team == CsTeam.CounterTerrorist) {
                             var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamCTID, playerKey, Logger);
                             insertTeamPlayerTask.GetAwaiter().GetResult();
@@ -85,7 +85,6 @@ namespace CS2Stats {
             }
 
             if (teamTScore != teamCTScore) {
-                // Get average ELO for each team
                 var getAverageTELOTask = database.GetPlayerELOFromTeamIDAsync(teamTID, Logger);
                 int? averageTELO = getAverageTELOTask.GetAwaiter().GetResult();
 
@@ -94,22 +93,22 @@ namespace CS2Stats {
 
                 if (averageTELO != null && averageCTELO != null) {
                     // Calculate the probability of team T winning
-                    double winProbability = 1 / (1.0 + Math.Pow(10, ((double)averageCTELO - (double)averageTELO) / 400.0));
+                    double winProbabilityT = 1 / (1.0 + Math.Pow(10, ((double)averageCTELO - (double)averageTELO) / 400.0));
+                    double winProbabilityCT = 1 - winProbabilityT; // Probability of team CT winning
 
                     // Actual outcome: 1 if team T won, 0 if team CT won
-                    int actualOutcome = teamTScore > teamCTScore ? 1 : 0;
+                    int actualOutcomeT = teamTScore > teamCTScore ? 1 : 0;
+                    int actualOutcomeCT = 1 - actualOutcomeT; // Actual outcome for team CT
 
-                    // K-factor, a constant that determines the maximum possible adjustment per game
-                    int K = 50;
-
-                    // Calculate ELO change for team T
-                    int deltaELO = (int)(K * (actualOutcome - winProbability));
+                    // Calculate ELO change for each team
+                    int deltaTELO = (int)(50 * (actualOutcomeT - winProbabilityT));
+                    int deltaCTELO = (int)(50 * (actualOutcomeCT - winProbabilityCT));
 
                     // Update ELO for team T and team CT
-                    var updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamTID, deltaELO, Logger);
+                    var updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamTID, deltaTELO, Logger);
                     updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
 
-                    updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamCTID, -deltaELO, Logger);
+                    updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamCTID, deltaCTELO, Logger);
                     updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
                 }
             }
