@@ -42,21 +42,18 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertPlayerAsync(ulong? playerID, string username, ILogger Logger) {
+        public async Task InsertPlayerAsync(ulong? playerID, ILogger Logger) {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
-                    string query = @"
-                                   INSERT INTO `Player` (PlayerID, Username) VALUES (@PlayerID, @Username)
-                                   ON DUPLICATE KEY UPDATE Username = @Username";
+                    string query = @"INSERT IGNORE INTO `Player` (PlayerID) VALUES (@PlayerID)";
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                        cmd.Parameters.AddWithValue("@Username", username);
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
-                Logger.LogInformation($"Successfully inserted Player {playerID} {username} into database.");
+                Logger.LogInformation($"Successfully inserted Player {playerID} into database.");
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "Error inserting Player into database.");

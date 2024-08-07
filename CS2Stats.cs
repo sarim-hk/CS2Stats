@@ -1,4 +1,6 @@
-﻿using CounterStrikeSharp.API.Core;
+﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using CS2Stats.Structs;
 using Microsoft.Extensions.Logging;
 
 namespace CS2Stats {
@@ -9,8 +11,10 @@ namespace CS2Stats {
         public override string ModuleVersion => "0.0.1";
 
         public Database? database;
-        public Dictionary<ulong, int>? playerRounds;
         public MySQLConfig Config { get; set; }
+
+        public Dictionary<ulong, Player>? startingPlayers;
+        public bool teamsNeedSwapping = false;
         public bool matchInProgress = false;
 
         public void OnConfigParsed(MySQLConfig config) {
@@ -26,6 +30,8 @@ namespace CS2Stats {
 
             RegisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
             RegisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
+            RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
+            RegisterEventHandler<EventRoundStart>(EventRoundStartHandler);
             Logger.LogInformation("Plugin loaded.");    
         }
 

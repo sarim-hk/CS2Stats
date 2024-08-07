@@ -2,6 +2,9 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
+using CounterStrikeSharp.API.Modules.Utils;
+using CounterStrikeSharp.API;
+using CS2Stats.Structs;
 
 namespace CS2Stats {
 
@@ -13,9 +16,18 @@ namespace CS2Stats {
                 return;
             }
 
-            playerRounds = new Dictionary<ulong, int>();
+            startingPlayers = new Dictionary<ulong, Player>();
+
+            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
+            foreach (var playerController in playerControllers) {
+                if (playerController.IsValid && playerController.ActionTrackingServices != null && !playerController.IsBot) {
+                    startingPlayers[playerController.SteamID] = new Player(playerController.Team);
+                }
+            }
+
             matchInProgress = true;
             Logger.LogInformation("Match started.");
         }
     }
 }
+

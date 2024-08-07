@@ -1,6 +1,7 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
+using CS2Stats.Structs;
 using Microsoft.Extensions.Logging;
 
 namespace CS2Stats {
@@ -28,70 +29,57 @@ namespace CS2Stats {
             var insertMatchTask = database.InsertMatchAsync(Server.MapName, teamTID, teamCTID, teamTScore, teamCTScore, Logger);
             int? matchID = insertMatchTask.GetAwaiter().GetResult();
 
-            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-            foreach (var playerController in playerControllers) {
-                if (playerRounds != null) {
-                    if (playerController.IsValid && playerController.ActionTrackingServices != null && !playerController.IsBot && playerRounds.ContainsKey(playerController.SteamID)) {
+            if (startingPlayers != null) {
+                foreach (var playerKey in startingPlayers.Keys) {
+                    Player player = startingPlayers[playerKey];
 
-                        ulong playerID = playerController.SteamID;
-                        string username = playerController.PlayerName;
-                        int kills = playerController.ActionTrackingServices.MatchStats.Kills;
-                        int headshots = playerController.ActionTrackingServices.MatchStats.HeadShotKills;
-                        int assists = playerController.ActionTrackingServices.MatchStats.Assists;
-                        int deaths = playerController.ActionTrackingServices.MatchStats.Deaths;
-                        int damage = playerController.ActionTrackingServices.MatchStats.Damage;
-                        int utilityDamage = playerController.ActionTrackingServices.MatchStats.UtilityDamage;
-                        int roundsPlayed = playerRounds[playerController.SteamID];
+                    Logger.LogInformation($"PlayerID: {playerKey}");
+                    Logger.LogInformation($"Kills: {player.Kills}");
+                    Logger.LogInformation($"Headshots: {player.Headshots}");
+                    Logger.LogInformation($"Assists: {player.Assists}");
+                    Logger.LogInformation($"Deaths: {player.Deaths}");
+                    Logger.LogInformation($"Total Damage: {player.TotalDamage}");
+                    Logger.LogInformation($"Utility Damage: {player.UtilityDamage}");
+                    Logger.LogInformation($"Rounds Played: {player.RoundsPlayed}");
+                    Logger.LogInformation("--------------------------------");
 
-                        Logger.LogInformation($"PlayerID: {playerID}");
-                        Logger.LogInformation($"Username: {username}");
-                        Logger.LogInformation($"Kills: {kills}");
-                        Logger.LogInformation($"Headshots: {headshots}");
-                        Logger.LogInformation($"Assists: {assists}");
-                        Logger.LogInformation($"Deaths: {deaths}");
-                        Logger.LogInformation($"Damage: {damage}");
-                        Logger.LogInformation($"Utility Damage: {utilityDamage}");
-                        Logger.LogInformation($"Rounds Played: {roundsPlayed}");
-                        Logger.LogInformation("--------------------------------");
+                    try {
+                        // Insert Player
+                        var insertPlayerTask = database.InsertPlayerAsync(playerKey, Logger);
+                        insertPlayerTask.GetAwaiter().GetResult();
 
-                        try {
-                            // Insert Player
-                            var insertPlayerTask = database.InsertPlayerAsync(playerID, username, Logger);
-                            insertPlayerTask.GetAwaiter().GetResult();
+                        // Insert Player_Match
+                        var insertPlayer_MatchTask = database.InsertPlayer_MatchAsync(playerKey, matchID, Logger);
+                        insertPlayer_MatchTask.GetAwaiter().GetResult();
 
-                            // Insert Player_Match
-                            var insertPlayer_MatchTask = database.InsertPlayer_MatchAsync(playerID, matchID, Logger);
-                            insertPlayer_MatchTask.GetAwaiter().GetResult();
-
-                            // Insert T TeamPlayer
-                            if (playerController.Team.Equals(CsTeam.Terrorist)) {
-                                var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamTID, playerID, Logger);
-                                insertTeamPlayerTask.GetAwaiter().GetResult();
+                        // Insert T TeamPlayer
+                        if (player.Team == CsTeam.Terrorist) {
+                            var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamTID, playerKey, Logger);
+                            insertTeamPlayerTask.GetAwaiter().GetResult();
 
                             // Insert CT TeamPlayer
-                            } else if (playerController.Team.Equals(CsTeam.CounterTerrorist)) {
-                                var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamCTID, playerID, Logger);
-                                insertTeamPlayerTask.GetAwaiter().GetResult();
-                            }
-
-                            // Insert PlayerStat
-                            var insertPlayerStatTask = database.InsertPlayerStatAsync(playerID, kills, headshots, assists, deaths, damage, utilityDamage, roundsPlayed, Logger);
-                            insertPlayerStatTask.GetAwaiter().GetResult();
-                            int? playerStatID = insertPlayerStatTask.GetAwaiter().GetResult();
-
-                            // Insert Player_PlayerStat
-                            var insertPlayer_PlayerStatTask = database.InsertPlayer_PlayerStatTaskAsync(playerID, playerStatID, Logger);
-                            insertPlayer_PlayerStatTask.GetAwaiter().GetResult();
-
-                            // Insert Match_PlayerStat
-                            var insertMatch_PlayerStatTask = database.InsertMatch_PlayerStatAsync(matchID, playerStatID, Logger);
-                            insertPlayerStatTask.GetAwaiter().GetResult();
-
-
                         }
-                        catch (Exception ex) {
-                            Logger.LogError(ex, "Error handling player data.");
+                        else if (player.Team == CsTeam.CounterTerrorist) {
+                            var insertTeamPlayerTask = database.InsertTeamPlayerAsync(teamCTID, playerKey, Logger);
+                            insertTeamPlayerTask.GetAwaiter().GetResult();
                         }
+
+                        // Insert PlayerStat
+                        var insertPlayerStatTask = database.InsertPlayerStatAsync(playerKey, player.Kills, player.Headshots, player.Assists, player.Deaths, player.TotalDamage, player.UtilityDamage, player.RoundsPlayed, Logger);
+                        insertPlayerStatTask.GetAwaiter().GetResult();
+                        int? playerStatID = insertPlayerStatTask.GetAwaiter().GetResult();
+
+                        // Insert Player_PlayerStat
+                        var insertPlayer_PlayerStatTask = database.InsertPlayer_PlayerStatTaskAsync(playerKey, playerStatID, Logger);
+                        insertPlayer_PlayerStatTask.GetAwaiter().GetResult();
+
+                        // Insert Match_PlayerStat
+                        var insertMatch_PlayerStatTask = database.InsertMatch_PlayerStatAsync(matchID, playerStatID, Logger);
+                        insertPlayerStatTask.GetAwaiter().GetResult();
+                    }
+
+                    catch (Exception ex) {
+                        Logger.LogError(ex, "Error handling player data.");
                     }
                 }
             }
@@ -141,18 +129,71 @@ namespace CS2Stats {
             }
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-
             foreach (var playerController in playerControllers) {
-                if (playerController.IsValid && !playerController.IsBot && playerRounds != null) {
-                    if (playerRounds.ContainsKey(playerController.SteamID)) {
-                        playerRounds[playerController.SteamID] += 1;
+                if (playerController.IsValid && playerController.ActionTrackingServices != null && startingPlayers != null && startingPlayers.ContainsKey(playerController.SteamID) && !playerController.IsBot) {
+
+                    var player = startingPlayers[playerController.SteamID];
+                    player.Kills = playerController.ActionTrackingServices.MatchStats.Kills;
+                    player.Headshots = playerController.ActionTrackingServices.MatchStats.HeadShotKills;
+                    player.Assists = playerController.ActionTrackingServices.MatchStats.Assists;
+                    player.Deaths = playerController.ActionTrackingServices.MatchStats.Deaths;
+                    player.TotalDamage = playerController.ActionTrackingServices.MatchStats.Damage;
+                    player.UtilityDamage = playerController.ActionTrackingServices.MatchStats.UtilityDamage;
+                    startingPlayers[playerController.SteamID] = player;
+
+                    Logger.LogInformation($"Player: {playerController.SteamID}");
+                    Logger.LogInformation($"Kills: {player.Kills}");
+                    Logger.LogInformation($"Headshots: {player.Headshots}");
+                    Logger.LogInformation($"Assists: {player.Assists}");
+                    Logger.LogInformation($"Deaths: {player.Deaths}");
+                    Logger.LogInformation($"TotalDamage: {player.TotalDamage}");
+                    Logger.LogInformation($"UtilityDamage: {player.UtilityDamage}");
+                    Logger.LogInformation("--------------------------------");
+
+                }
+
+            }
+            return HookResult.Continue;
+        }
+
+        public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
+
+            if (!matchInProgress) {
+                Logger.LogInformation($"EventRoundAnnounceLastRoundHalf but matchInProgress = {matchInProgress}. Ignoring...");
+                return HookResult.Continue;
+            }
+
+            teamsNeedSwapping = true;
+            Logger.LogInformation("Setting teamsNeedSwapping to true.");
+
+            return HookResult.Continue;
+        }
+
+        public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
+
+            if (!matchInProgress) {
+                Logger.LogInformation($"EventRoundStart but matchInProgress = {matchInProgress}. Ignoring...");
+                return HookResult.Continue;
+            }
+
+            if (teamsNeedSwapping) {
+                if (startingPlayers != null) {
+                    foreach (var playerKey in startingPlayers.Keys) {
+                        Logger.LogInformation($"Swapping team for player {playerKey}.");
+                        startingPlayers[playerKey].SwapTeam();
                     }
-                    else {
-                        playerRounds[playerController.SteamID] = 1;
-                    }
-                    Logger.LogInformation($"Added round to Player {playerController.SteamID} {playerController.PlayerName}. Count: {playerRounds[playerController.SteamID]}");
+                }
+                teamsNeedSwapping = false;
+                Logger.LogInformation("Setting teamsNeedSwapping to false.");
+            }
+
+            if (startingPlayers != null) {
+                foreach (var playerKey in startingPlayers.Keys) {
+                    Logger.LogInformation($"Adding round for {playerKey}. From {startingPlayers[playerKey].RoundsPlayed} to {startingPlayers[playerKey].RoundsPlayed + 1}");
+                    startingPlayers[playerKey].RoundsPlayed += 1;
                 }
             }
+
             return HookResult.Continue;
         }
 
