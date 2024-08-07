@@ -249,24 +249,15 @@ namespace CS2Stats {
             }
         }
 
-        public async Task UpdatePlayerELOFromTeamIDAsync(int? teamID, int deltaELO, bool winner, ILogger Logger) {
+        public async Task UpdatePlayerELOFromTeamIDAsync(int? teamID, int deltaELO, ILogger Logger) {
             try {
                 await using (var conn = new MySqlConnection(this.conn.ConnectionString)) {
                     await conn.OpenAsync();
 
-                    string query;
-                    if (winner == true) {
-                        query = @"UPDATE Player p
+                    string query = @"UPDATE Player p
                                 JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID
                                 SET p.ELO = p.ELO + @DeltaELO
                                 WHERE tp.TeamID = @TeamID";
-                    } else {
-                        query = @"UPDATE Player p
-                                JOIN TeamPlayer tp ON p.PlayerID = tp.PlayerID
-                                SET p.ELO = p.ELO - @DeltaELO
-                                WHERE tp.TeamID = @TeamID";
-
-                    }
 
                     await using (var cmd = new MySqlCommand(query, conn)) {
                         cmd.Parameters.AddWithValue("@DeltaELO", deltaELO);

@@ -93,26 +93,24 @@ namespace CS2Stats {
                 int? averageCTELO = getAverageCTELOTask.GetAwaiter().GetResult();
 
                 if (averageTELO != null && averageCTELO != null) {
-                    // Calculate the probability of the winner winning
-                    // Math.Abs will calculate difference between two numbers, regardless if in the wrong order. Maths.Abs(5-15) would be 10, for example.
-                    double winProbability = 1 / (1.0 + Math.Pow(10, Math.Abs((double)averageTELO - (double)averageCTELO) / 400.0));
-                    int deltaELO = (int)(50 * (1 - winProbability));
+                    // Calculate the probability of team T winning
+                    double winProbability = 1 / (1.0 + Math.Pow(10, ((double)averageCTELO - (double)averageTELO) / 400.0));
 
-                    if (teamTScore > teamCTScore) {
-                        var updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamTID, deltaELO, true, Logger);
-                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
+                    // Actual outcome: 1 if team T won, 0 if team CT won
+                    int actualOutcome = teamTScore > teamCTScore ? 1 : 0;
 
-                        updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamCTID, deltaELO, false, Logger);
-                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
-                    }
+                    // K-factor, a constant that determines the maximum possible adjustment per game
+                    int K = 50;
 
-                    else {
-                        var updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamTID, deltaELO, false, Logger);
-                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
+                    // Calculate ELO change for team T
+                    int deltaELO = (int)(K * (actualOutcome - winProbability));
 
-                        updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamCTID, deltaELO, true, Logger);
-                        updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
-                    }
+                    // Update ELO for team T and team CT
+                    var updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamTID, deltaELO, Logger);
+                    updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
+
+                    updatePlayerELOFromTeamIDAsyncTask = database.UpdatePlayerELOFromTeamIDAsync(teamCTID, -deltaELO, Logger);
+                    updatePlayerELOFromTeamIDAsyncTask.GetAwaiter().GetResult();
                 }
             }
 
