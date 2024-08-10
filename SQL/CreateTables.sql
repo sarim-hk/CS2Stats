@@ -17,11 +17,11 @@ CREATE TABLE IF NOT EXISTS `Match` (
 );
 
 CREATE TABLE IF NOT EXISTS `Player` (
-    PlayerID varchar(17),
-    Username varchar(32),
-    AvatarS varchar(256),
-    AvatarM varchar(256),
-    AvatarL varchar(256),
+    PlayerID varchar(17) NOT NULL,
+    Username varchar(32) DEFAULT 'Anonymous',
+    AvatarS varchar(256) DEFAULT 'https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg',
+    AvatarM varchar(256) DEFAULT 'https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg',
+    AvatarL varchar(256) DEFAULT 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/b5/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg',
     ELO int DEFAULT 1000,
     PRIMARY KEY (PlayerID)
 );

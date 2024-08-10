@@ -31,10 +31,10 @@ namespace CS2Stats
             RoundsPlayed = 0;
             Team = team;
 
-            Username = "Anonymous";
-            AvatarS = "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg";
-            AvatarM = "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg";
-            AvatarL = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/b5/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg";
+            Username = "";
+            AvatarS = "";
+            AvatarM = "";
+            AvatarL = "";
 
         }
 
