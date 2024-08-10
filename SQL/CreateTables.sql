@@ -17,13 +17,17 @@ CREATE TABLE IF NOT EXISTS `Match` (
 );
 
 CREATE TABLE IF NOT EXISTS `Player` (
-    PlayerID bigint UNSIGNED,
+    PlayerID varchar(17),
+    Username varchar(32),
+    AvatarS varchar(256),
+    AvatarM varchar(256),
+    AvatarL varchar(256),
     ELO int DEFAULT 1000,
     PRIMARY KEY (PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS `Player_Match` (
-    PlayerID bigint UNSIGNED,
+    PlayerID varchar(17),
     MatchID int,
     PRIMARY KEY (PlayerID, MatchID),
     FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID),
@@ -32,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `Player_Match` (
 
 CREATE TABLE IF NOT EXISTS `TeamPlayer` (
     TeamID int,
-    PlayerID bigint UNSIGNED,
+    PlayerID varchar(17),
     PRIMARY KEY (TeamID, PlayerID),
     FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID),
     FOREIGN KEY (TeamID) REFERENCES `Team`(TeamID)
@@ -40,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `TeamPlayer` (
 
 CREATE TABLE IF NOT EXISTS `PlayerStat` (
     PlayerStatID int AUTO_INCREMENT,
-    PlayerID bigint UNSIGNED,
+    PlayerID varchar(17),
     Kills int,
     Headshots int,
     Assists int,
@@ -53,7 +57,7 @@ CREATE TABLE IF NOT EXISTS `PlayerStat` (
 );
 
 CREATE TABLE IF NOT EXISTS `Player_PlayerStat` (
-    PlayerID bigint UNSIGNED,
+    PlayerID varchar(17),
     PlayerStatID int,
     PRIMARY KEY (PlayerID, PlayerStatID),
     FOREIGN KEY (PlayerID) REFERENCES `Player`(PlayerID),
