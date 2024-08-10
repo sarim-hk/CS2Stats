@@ -1,10 +1,10 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
-using CS2Stats.Structs;
 using Microsoft.Extensions.Logging;
 
-namespace CS2Stats {
+namespace CS2Stats
+{
 
     public partial class CS2Stats {
 
@@ -41,11 +41,18 @@ namespace CS2Stats {
                     Logger.LogInformation($"Total Damage: {player.TotalDamage}");
                     Logger.LogInformation($"Utility Damage: {player.UtilityDamage}");
                     Logger.LogInformation($"Rounds Played: {player.RoundsPlayed}");
+
+                    Logger.LogInformation(player.Username);
+                    Logger.LogInformation(player.AvatarS);
+                    Logger.LogInformation(player.AvatarM);
+                    Logger.LogInformation(player.AvatarL);
+
+
                     Logger.LogInformation("--------------------------------");
 
                     try {
                         // Insert Player
-                        var insertPlayerTask = database.InsertPlayerAsync(playerKey, Logger);
+                        var insertPlayerTask = database.InsertPlayerAsync(playerKey, player, Logger);
                         insertPlayerTask.GetAwaiter().GetResult();
 
                         // Insert Player_Match
