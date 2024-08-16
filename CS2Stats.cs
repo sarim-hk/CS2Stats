@@ -20,7 +20,7 @@ namespace CS2Stats
         public void OnConfigParsed(Config config) {
             Config = config;
             database = new Database(Config.MySQLServer, Config.MySQLDatabase, Config.MySQLUsername, Config.MySQLPassword);
-            steamAPIClient = new SteamAPIClient(Config.steamAPIKey);
+            steamAPIClient = new SteamAPIClient(Config.SteamAPIKey);
 
         }
 
