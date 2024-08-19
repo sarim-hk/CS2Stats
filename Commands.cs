@@ -20,7 +20,7 @@ namespace CS2Stats {
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
             foreach (var playerController in playerControllers) {
-                if (playerController.IsValid && playerController.ActionTrackingServices != null && !playerController.IsBot) {
+                if (playerController.IsValid && playerController.ActionTrackingServices != null && !playerController.IsBot && (playerController.Team == CsTeam.CounterTerrorist || playerController.Team == CsTeam.Terrorist)) {
                     startingPlayers[playerController.SteamID] = new Player(playerController.Team);
                 }
             }
