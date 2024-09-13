@@ -8,6 +8,7 @@ namespace CS2Stats
 
     public partial class CS2Stats {
 
+        /*
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
             if (!matchInProgress) {
                 Logger.LogInformation($"EventCsWinPanelMatch but matchInProgress = {matchInProgress}. Ignoring...");
@@ -172,32 +173,31 @@ namespace CS2Stats
 
             return HookResult.Continue;
         }
+        */
 
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
-
-            if (!matchInProgress) {
-                Logger.LogInformation($"EventRoundStart but matchInProgress = {matchInProgress}. Ignoring...");
+            if (this.database == null || this.database.conn == null || this.database.transaction == null) {
+                Logger.LogInformation($"EventRoundStart but database conn/transaction is null. Ignoring...");
                 return HookResult.Continue;
-            }
-
-            if (teamsNeedSwapping) {
-                if (startingPlayers != null) {
-                    foreach (var playerKey in startingPlayers.Keys) {
-                        Logger.LogInformation($"Swapping team for player {playerKey}.");
-                        startingPlayers[playerKey].SwapTeam();
-                    }
-                }
-                teamsNeedSwapping = false;
-                Logger.LogInformation("Setting teamsNeedSwapping to false.");
             }
 
             if (startingPlayers != null) {
                 foreach (var playerKey in startingPlayers.Keys) {
-                    Logger.LogInformation($"Adding round for {playerKey}. From {startingPlayers[playerKey].RoundsPlayed} to {startingPlayers[playerKey].RoundsPlayed + 1}");
-                    startingPlayers[playerKey].RoundsPlayed += 1;
+                    Logger.LogInformation($"Adding round for {playerKey}");
                 }
             }
 
+            return HookResult.Continue;
+        }
+
+        public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
+            if (this.database == null || this.database.conn == null || this.database.transaction == null) {
+                Logger.LogInformation($"EventCsWinPanelMatch but database conn/transaction is null. Ignoring...");
+                return HookResult.Continue;
+            }
+
+            this.database.CommitTransaction();
+            Logger.LogInformation("Match ended.");
             return HookResult.Continue;
         }
 
