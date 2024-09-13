@@ -16,19 +16,30 @@ namespace CS2Stats {
                 return;
             }
 
+            if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
+                Logger.LogInformation("Database or connection or SteamAPIClient is null. Returning.");
+                return;
+            }
+
+            var mapName = Server.MapName;
             startingPlayers = new Dictionary<ulong, Player>();
+            this.database.StartTransaction();
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
             foreach (var playerController in playerControllers) {
-                if (playerController.IsValid && playerController.ActionTrackingServices != null && !playerController.IsBot && (playerController.Team == CsTeam.CounterTerrorist || playerController.Team == CsTeam.Terrorist)) {
-                    startingPlayers[playerController.SteamID] = new Player(playerController.Team);
+                if (playerController.IsValid && playerController.ActionTrackingServices != null && !playerController.IsBot && (playerController.TeamNum == 3 || playerController.TeamNum == 2)) {
+                    startingPlayers[playerController.SteamID] = new Player(playerController.TeamNum);
                 }
             }
 
             startingPlayers = await steamAPIClient.GetSteamSummariesAsync(startingPlayers);
+            await this.database.InsertStartingPlayers(startingPlayers, Logger);
+            await this.database.InsertMap(mapName, Logger);
+            var (teamNum2ID, teamNum3ID) = await this.database.InsertTeamsAndTeamPlayers(startingPlayers, Logger);
+            var matchID = await this.database.InsertMatch(mapName, Logger);
 
-            matchInProgress = true;
             Logger.LogInformation("Match started.");
+
         }
     }
 }
