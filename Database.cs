@@ -45,36 +45,32 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertStartingPlayers(Dictionary<ulong, Player> startingPlayers, ILogger Logger) {
+        public async Task InsertPlayer(Player player, ulong playerID, ILogger Logger) {
             if (this.conn == null || this.transaction == null) {
                 Logger.LogInformation("Database connection or transaction is not initialised.");
                 return;
             }
 
             try {
-                foreach (var playerKey in startingPlayers.Keys) {
-                    var player = startingPlayers[playerKey];
+                string query = @"
+                INSERT INTO CS2S_Player (PlayerID, Username, AvatarS, AvatarM, AvatarL)
+                VALUES (@PlayerID, @Username, @AvatarS, @AvatarM, @AvatarL)
+                ON DUPLICATE KEY UPDATE 
+                Username = VALUES(Username),
+                AvatarS = VALUES(AvatarS),
+                AvatarM = VALUES(AvatarM),
+                AvatarL = VALUES(AvatarL);
+                ";
 
-                    string query = @"
-                    INSERT INTO CS2S_Player (PlayerID, Username, AvatarS, AvatarM, AvatarL)
-                    VALUES (@PlayerID, @Username, @AvatarS, @AvatarM, @AvatarL)
-                    ON DUPLICATE KEY UPDATE 
-                    Username = VALUES(Username),
-                    AvatarS = VALUES(AvatarS),
-                    AvatarM = VALUES(AvatarM),
-                    AvatarL = VALUES(AvatarL);
-                    ";
+                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                    cmd.Parameters.AddWithValue("@Username", player.Username);
+                    cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
+                    cmd.Parameters.AddWithValue("@AvatarM", player.AvatarM);
+                    cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
 
-                    using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                        cmd.Parameters.AddWithValue("@PlayerID", playerKey);
-                        cmd.Parameters.AddWithValue("@Username", player.Username);
-                        cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
-                        cmd.Parameters.AddWithValue("@AvatarM", player.AvatarM);
-                        cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
-
-                        await cmd.ExecuteNonQueryAsync();
-                        Logger.LogInformation($"Player {player.Username} inserted/updated successfully.");
-                    }
+                    await cmd.ExecuteNonQueryAsync();
+                    Logger.LogInformation($"Player {player.Username} inserted/updated successfully.");
                 }
             }
 
@@ -83,31 +79,22 @@ namespace CS2Stats {
             }
         }
 
-        public async Task<(string?, string?)> InsertTeamsAndTeamPlayers(Dictionary<ulong, Player> startingPlayers, ILogger Logger) {
+        public async Task InsertTeamsAndTeamPlayers(Dictionary<string, List<ulong>> startingPlayers, ILogger Logger) {
             if (this.conn == null || this.transaction == null) {
                 Logger.LogInformation("Database connection or transaction is not initialized.");
-                return (null, null);
+                return;
             }
 
             try {
-                var teamNum2Players = startingPlayers.Where(p => p.Value.TeamNum == 2).ToDictionary(p => p.Key, p => p.Value);
-                var teamNum3Players = startingPlayers.Where(p => p.Value.TeamNum == 3).ToDictionary(p => p.Key, p => p.Value);
-
-                string teamNum2ID = GenerateTeamID(teamNum2Players, Logger);
-                string teamNum3ID = GenerateTeamID(teamNum3Players, Logger);
-
-                await InsertOrUpdateTeamAsync(teamNum2ID, Logger);
-                await InsertOrUpdateTeamAsync(teamNum3ID, Logger);
-
-                await InsertTeamPlayersAsync(teamNum2ID, teamNum2Players.Keys, Logger);
-                await InsertTeamPlayersAsync(teamNum3ID, teamNum3Players.Keys, Logger);
-
-                return (teamNum2ID, teamNum3ID);
+                foreach (var teamID in startingPlayers.Keys) {
+                    await InsertOrUpdateTeamAsync(teamID, Logger);
+                    await InsertTeamPlayersAsync(teamID, startingPlayers[teamID], Logger);
+                } 
 
             }
             catch (Exception ex) {
                 Logger.LogInformation(ex, "Error occurred while inserting teams and team players.");
-                return (null, null);
+                return;
             }
         }
 
@@ -168,7 +155,118 @@ namespace CS2Stats {
             }
         }
 
+        public async Task<int?> InsertRound(int? matchID, ILogger Logger) {
+            if (this.conn == null || this.transaction == null) {
+                Logger.LogInformation("Database connection or transaction is not initialized.");
+                return null;
+            }
+
+            else if (matchID == null) {
+                Logger.LogInformation("Match ID is null.");
+                return null;
+            }
+
+                try {
+                string query = @"
+                INSERT INTO CS2S_Round (MatchID, WinningTeamID, LosingTeamID, WinningSide, RoundEndReason)
+                VALUES (@MatchID, NULL, NULL, NULL, NULL);
+                SELECT LAST_INSERT_ID();
+                ";
+
+                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@MatchID", matchID);
+                    object? result = await cmd.ExecuteScalarAsync();
+
+                    if (result != null && int.TryParse(result.ToString(), out int roundID)) {
+                        Logger.LogInformation($"New round inserted successfully with RoundID {roundID}.");
+                        return matchID;
+                    }
+                    else {
+                        Logger.LogInformation("Failed to retrieve the RoundID.");
+                        return null;
+                    }
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error occurred while inserting the round.");
+                return null;
+            }
+        }
+
+        public async Task InsertHurt(ulong attackerID, ulong victimID, int attackerSide, int victimSide, int damageAmount, string weapon, int hitgroup, ILogger Logger) {
+            if (this.conn == null || this.transaction == null) {
+                Logger.LogInformation("Database connection or transaction is not initialized.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Hurt (AttackerID, VictimID, AttackerSide, VictimSide, DamageAmount, Weapon, Hitgroup)
+                VALUES (@AttackerID, @VictimID, @AttackerSide, @VictimSide, @DamageAmount, @Weapon, @Hitgroup);
+                ";
+
+                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@AttackerID", attackerID);
+                    cmd.Parameters.AddWithValue("@VictimID", victimID);
+                    cmd.Parameters.AddWithValue("@AttackerSide", attackerSide);
+                    cmd.Parameters.AddWithValue("@VictimSide", victimSide);
+                    cmd.Parameters.AddWithValue("@DamageAmount", damageAmount);
+                    cmd.Parameters.AddWithValue("@Weapon", weapon);
+                    cmd.Parameters.AddWithValue("@Hitgroup", hitgroup);
+                    await cmd.ExecuteNonQueryAsync();
+
+                    Logger.LogInformation($"Hurt event inserted/updated successfully.");
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error occurred while inserting hurt event.");
+            }
+        }
+
+        public async Task InsertDeath(int? roundID, ulong? attackerID, ulong? assisterID, ulong victimID, int attackerSide, int victimSide, string weapon, int hitgroup, ILogger Logger) {
+            if (this.conn == null || this.transaction == null) {
+                Logger.LogInformation("Database connection or transaction is not initialized.");
+                return;
+            }
+
+            else if (roundID == null) {
+                Logger.LogInformation("Round ID is null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, AttackerSide, VictimSide, Weapon, Hitgroup)
+                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @AttackerSide, @VictimSide, @Weapon, @Hitgroup);
+                ";
+
+                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@RoundID", roundID);
+                    cmd.Parameters.AddWithValue("@AttackerID", attackerID);
+                    cmd.Parameters.AddWithValue("@AssisterID", assisterID);
+                    cmd.Parameters.AddWithValue("@VictimID", victimID);
+                    cmd.Parameters.AddWithValue("@AttackerSide", attackerSide);
+                    cmd.Parameters.AddWithValue("@VictimSide", victimSide);
+                    cmd.Parameters.AddWithValue("@Weapon", weapon);
+                    cmd.Parameters.AddWithValue("@Hitgroup", hitgroup);
+                    await cmd.ExecuteNonQueryAsync();
+
+                    Logger.LogInformation($"Death event inserted/updated successfully.");
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "Error occurred while inserting Death event.");
+            }
+        }
+
+        /*
+        public async Task UpdateRound(int? roundID, string winningTeamID, string losingTeamID, int winningSide, int roundEndReason) {
+
+        }
+        */
+
     }
+
 }
 
 /*

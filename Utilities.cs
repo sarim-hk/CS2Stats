@@ -21,29 +21,26 @@ namespace CS2Stats {
 
             return null;
         }
-
-    }
-
-    public partial class Database {
-
-        private string GenerateTeamID(Dictionary<ulong, Player> teamPlayers, ILogger Logger) {
+        
+        private string GenerateTeamID(List<ulong> teamPlayers, ILogger Logger) {
             string teamID = BitConverter.ToString(
                 MD5.Create().ComputeHash(
                     Encoding.UTF8.GetBytes(
-                        string.Join("", teamPlayers.Keys.OrderBy(id => id))
+                        string.Join("", teamPlayers.OrderBy(id => id))
                     )
                 )
             ).Replace("-", "");
-            Logger.LogInformation($"Team: {string.Join(", ", teamPlayers.Keys)} are {teamID}");
+            Logger.LogInformation($"Team: {string.Join(", ", teamPlayers)} are {teamID}");
             return teamID;
         }
+    }
+
+    public partial class Database {
 
         private async Task InsertOrUpdateTeamAsync(string teamId, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team (TeamID)
             VALUES (@TeamID)
-            ON DUPLICATE KEY UPDATE 
-            TeamID = VALUES(TeamID);
             ";
 
             using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
@@ -57,8 +54,6 @@ namespace CS2Stats {
             string query = @"
             INSERT INTO CS2S_Team_Players (TeamID, PlayerID)
             VALUES (@TeamID, @PlayerID)
-            ON DUPLICATE KEY UPDATE 
-            PlayerID = VALUES(PlayerID);
             ";
 
             using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {

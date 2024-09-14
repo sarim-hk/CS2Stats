@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 
@@ -175,17 +176,68 @@ namespace CS2Stats
         }
         */
 
+        private void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
+            if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
+                Logger.LogInformation("One or more required components are null. Ignoring...");
+            }
+
+            else {
+                Player? player = this.steamAPIClient.GetSteamSummaryAsync(playerID.SteamId64).GetAwaiter().GetResult();
+                if (player == null) {
+                    Logger.LogInformation("Steam API Player is null.");
+                }
+
+                else {
+                    this.database.StartTransaction();
+                    this.database.InsertPlayer(player, playerID.SteamId64, Logger).GetAwaiter().GetResult();
+                    this.database.CommitTransaction();
+                }
+            }
+        }
+
+        public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
+
+            if (this.database == null || this.database.conn == null || this.database.transaction == null) {
+                Logger.LogInformation($"EventRoundAnnounceLastRoundHalf but database conn/transaction is null. Ignoring...");
+                return HookResult.Continue;
+            }
+
+            /*
+            teamsNeedSwapping = true;
+            Logger.LogInformation("Setting teamsNeedSwapping to true.");
+            */
+
+            return HookResult.Continue;
+        }
+
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null) {
                 Logger.LogInformation($"EventRoundStart but database conn/transaction is null. Ignoring...");
                 return HookResult.Continue;
             }
 
+            /*
             if (startingPlayers != null) {
                 foreach (var playerKey in startingPlayers.Keys) {
                     Logger.LogInformation($"Adding round for {playerKey}");
+                    // check if theyre still connected
                 }
+            }*/
+
+            /*
+            if (teamsNeedSwapping) {
+                if (startingPlayers != null) {
+                    foreach (var playerKey in startingPlayers.Keys) {
+                        Logger.LogInformation($"Swapping team for player {playerKey}.");
+                        startingPlayers[playerKey].SwapTeam();
+                    }
+                }
+                teamsNeedSwapping = false;
+                Logger.LogInformation("Setting teamsNeedSwapping to false.");
             }
+            */
+
+            roundID = this.database.InsertRound(matchID, Logger).GetAwaiter().GetResult();
 
             return HookResult.Continue;
         }
@@ -196,10 +248,73 @@ namespace CS2Stats
                 return HookResult.Continue;
             }
 
+            roundID = null;
+            matchID = null;
+            teamNum2ID = null;
+            teamNum3ID = null;
+
             this.database.CommitTransaction();
             Logger.LogInformation("Match ended.");
             return HookResult.Continue;
         }
 
-    }
+        public HookResult EventPlayerHurtHandler(EventPlayerHurt @event, GameEventInfo info) {
+            if (this.database == null || this.database.conn == null || this.database.transaction == null) {
+                Logger.LogInformation($"EventPlayerHurt but database conn/transaction is null. Ignoring...");
+                return HookResult.Continue;
+            }
+
+            if (@event.Attacker != null && @event.Userid != null) {
+                this.database.InsertHurt(@event.Attacker.SteamID, @event.Userid.SteamID, @event.Attacker.TeamNum,
+                    @event.Userid.TeamNum, @event.DmgHealth, @event.Weapon, @event.Hitgroup, Logger)
+                    .GetAwaiter().GetResult();
+            }
+
+            return HookResult.Continue;
+        }
+
+        public HookResult EventPlayerDeathHandler(EventPlayerDeath @event, GameEventInfo info) {
+            if (this.database == null || this.database.conn == null || this.database.transaction == null) {
+                Logger.LogInformation($"EventPlayerDeath but database conn/transaction is null. Ignoring...");
+                return HookResult.Continue;
+            }
+
+            if (@event.Userid != null) {
+
+                ulong? assisterID;
+                if (@event.Assister != null) {
+                    assisterID = @event.Assister.SteamID;
+                }
+
+                else {
+                    assisterID = null;
+                }
+
+                ulong? attackerID;
+                if (@event.Attacker != null) {
+                    attackerID = @event.Attacker.SteamID;
+                }
+
+                else {
+                    attackerID = null;
+                }
+
+                this.database.InsertDeath(roundID, attackerID, assisterID, @event.Userid.SteamID, @event.Attacker.TeamNum,
+                    @event.Userid.TeamNum, @event.Weapon, @event.Hitgroup, Logger)
+                    .GetAwaiter().GetResult();
+            }
+
+            return HookResult.Continue;
+        }
+
+        public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
+            if (this.database == null || this.database.conn == null || this.database.transaction == null) {
+                Logger.LogInformation($"EventRoundAnnounceLastRoundHalf but database conn/transaction is null. Ignoring...");
+                return HookResult.Continue;
+            }
+
+            // this.database.UpdateRound(roundID, "", "", @event.Winner, @event.Reason).GetAwaiter().GetResult();
+            return HookResult.Continue;
+        }
+        }
 }
