@@ -56,8 +56,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
     AttackerID varchar(17),
     AssisterID varchar(17),
     VictimID varchar(17),
-    AttackerSide int,
-    VictimSide int,
     Weapon varchar(32),
     Hitgroup int,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
@@ -70,8 +68,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     HurtID int PRIMARY KEY AUTO_INCREMENT,
     AttackerID varchar(17),
     VictimID varchar(17),
-    AttackerSide int,
-    VictimSide int,
     DamageAmount int,
     Weapon varchar(32),
     Hitgroup int,
@@ -80,6 +76,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Live (
+	StaticID int PRIMARY KEY,
     TPlayers text, -- This can be a JSON object serialized as a string
     CTPlayers text, -- This can be a JSON object serialized as a string
     TScore int,

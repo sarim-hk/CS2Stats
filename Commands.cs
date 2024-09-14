@@ -6,6 +6,7 @@ using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Modules.Timers;
 
 namespace CS2Stats {
     public partial class CS2Stats {
@@ -22,7 +23,7 @@ namespace CS2Stats {
             }
 
             var mapName = Server.MapName;
-            startingPlayers = new Dictionary<string, List<ulong>>();
+            startingPlayers = new Dictionary<string, TeamInfo>();
 
             List<ulong> team2 = new List<ulong>();
             List<ulong> team3 = new List<ulong>();
@@ -33,22 +34,24 @@ namespace CS2Stats {
                     if (playerController.TeamNum == 2) {
                         team2.Add(playerController.SteamID);
                     }
-
                     else if (playerController.TeamNum == 3) {
                         team3.Add(playerController.SteamID);
                     }
                 }
             }
 
-            teamNum2ID = GenerateTeamID(team2, Logger);
-            teamNum3ID = GenerateTeamID(team3, Logger);
-            startingPlayers[teamNum2ID] = team2;
-            startingPlayers[teamNum3ID] = team3;
+            string teamNum2ID = GenerateTeamID(team2, Logger);
+            string teamNum3ID = GenerateTeamID(team3, Logger);
+
+            startingPlayers[teamNum2ID] = new TeamInfo(2, team2);
+            startingPlayers[teamNum3ID] = new TeamInfo(3, team3);
 
             this.database.StartTransaction();
             this.database.InsertMap(mapName, Logger).GetAwaiter().GetResult();
             this.database.InsertTeamsAndTeamPlayers(startingPlayers, Logger).GetAwaiter().GetResult();
             matchID = this.database.InsertMatch(mapName, Logger).GetAwaiter().GetResult();
+
+            this.liveTimer = new CounterStrikeSharp.API.Modules.Timers.Timer(5.0f, this.InsertLiveHandler, TimerFlags.REPEAT);
 
             Logger.LogInformation("Match started.");
 

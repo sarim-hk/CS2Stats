@@ -10,18 +10,23 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         // thanks to switz https://discord.com/channels/1160907911501991946/1160925208203493468/1170817201473855619
-        private int? GetCSTeamScore(CsTeam team) {
+        private int? GetCSTeamScore(int teamNum) {
             var teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
 
             foreach (var teamManager in teamManagers) {
-                if ((int)team == teamManager.TeamNum) {
+                if (teamNum == teamManager.TeamNum) {
                     return teamManager.Score;
                 }
             }
 
             return null;
         }
-        
+
+        // thanks to bober https://discord.com/channels/1160907911501991946/1160925208203493468/1173658546387292160
+        public static CCSGameRules GetGameRules() {
+            return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
+        }
+
         private string GenerateTeamID(List<ulong> teamPlayers, ILogger Logger) {
             string teamID = BitConverter.ToString(
                 MD5.Create().ComputeHash(
@@ -33,7 +38,24 @@ namespace CS2Stats {
             Logger.LogInformation($"Team: {string.Join(", ", teamPlayers)} are {teamID}");
             return teamID;
         }
+
+        private string? GetTeamIDByTeamNum(int teamNum) {
+            if (startingPlayers != null) {
+                foreach (var teamInfoKVP in startingPlayers) {
+                    string teamID = teamInfoKVP.Key;
+                    TeamInfo teamInfo = teamInfoKVP.Value;
+
+                    if (teamInfo.Side == teamNum) {
+                        return teamID;
+                    }
+                }
+            }
+
+            return null;
+        }
+
     }
+
 
     public partial class Database {
 
@@ -46,7 +68,7 @@ namespace CS2Stats {
             using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
                 cmd.Parameters.AddWithValue("@TeamID", teamId);
                 await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"Team with ID {teamId} inserted/updated successfully.");
+                Logger.LogInformation($"Team with ID {teamId} inserted successfully.");
             }
         }
 
