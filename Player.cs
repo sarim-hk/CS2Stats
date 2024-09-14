@@ -12,18 +12,5 @@ namespace CS2Stats
         public string? AvatarL;
         public int TeamNum;
 
-        public Player(int teamNum)
-        {
-            this.TeamNum = teamNum;
-        }
-
-        public void SwapTeam() {
-            if (this.TeamNum == 2) {
-                this.TeamNum = 3;
-            } else {
-                this.TeamNum = 2;
-            }
-        }
-
     }
 }

@@ -11,7 +11,7 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         [ConsoleCommand("cs2s_start_match", "Start a match.")]
-        public async void StartMatch(CCSPlayerController? player, CommandInfo command) {
+        public void StartMatch(CCSPlayerController? player, CommandInfo command) {
             if (player != null) {
                 return;
             }
@@ -22,24 +22,37 @@ namespace CS2Stats {
             }
 
             var mapName = Server.MapName;
-            startingPlayers = new Dictionary<ulong, Player>();
-            this.database.StartTransaction();
+            startingPlayers = new Dictionary<string, List<ulong>>();
 
+            List<ulong> team2 = new List<ulong>();
+            List<ulong> team3 = new List<ulong>();
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
+
             foreach (var playerController in playerControllers) {
-                if (playerController.IsValid && playerController.ActionTrackingServices != null && !playerController.IsBot && (playerController.TeamNum == 3 || playerController.TeamNum == 2)) {
-                    startingPlayers[playerController.SteamID] = new Player(playerController.TeamNum);
+                if (playerController.IsValid && !playerController.IsBot) {
+                    if (playerController.TeamNum == 2) {
+                        team2.Add(playerController.SteamID);
+                    }
+
+                    else if (playerController.TeamNum == 3) {
+                        team3.Add(playerController.SteamID);
+                    }
                 }
             }
 
-            startingPlayers = await steamAPIClient.GetSteamSummariesAsync(startingPlayers);
-            await this.database.InsertStartingPlayers(startingPlayers, Logger);
-            await this.database.InsertMap(mapName, Logger);
-            var (teamNum2ID, teamNum3ID) = await this.database.InsertTeamsAndTeamPlayers(startingPlayers, Logger);
-            var matchID = await this.database.InsertMatch(mapName, Logger);
+            teamNum2ID = GenerateTeamID(team2, Logger);
+            teamNum3ID = GenerateTeamID(team3, Logger);
+            startingPlayers[teamNum2ID] = team2;
+            startingPlayers[teamNum3ID] = team3;
+
+            this.database.StartTransaction();
+            this.database.InsertMap(mapName, Logger).GetAwaiter().GetResult();
+            this.database.InsertTeamsAndTeamPlayers(startingPlayers, Logger).GetAwaiter().GetResult();
+            matchID = this.database.InsertMatch(mapName, Logger).GetAwaiter().GetResult();
 
             Logger.LogInformation("Match started.");
 
         }
     }
 }
+

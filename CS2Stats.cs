@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API.Core;
 using Microsoft.Extensions.Logging;
+using static CounterStrikeSharp.API.Core.Listeners;
 
 namespace CS2Stats
 {
@@ -11,10 +12,13 @@ namespace CS2Stats
 
         public Database? database;
         public SteamAPIClient? steamAPIClient;
-        public Dictionary<ulong, Player>? startingPlayers;
+        public Dictionary<string, List<ulong>>? startingPlayers;
         public Config Config { get; set; }
 
-        public bool teamsNeedSwapping = false;
+        // public bool teamsNeedSwapping = false;
+        public int? matchID;
+        public int? roundID;
+        public string? teamNum2ID, teamNum3ID;
 
         public void OnConfigParsed(Config config) {
             Config = config;
@@ -30,10 +34,13 @@ namespace CS2Stats
 
             RegisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
             RegisterEventHandler<EventRoundStart>(EventRoundStartHandler);
+            RegisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
+            RegisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
+            RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
+            RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
 
             /*
             RegisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
-            RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             */
 
             Logger.LogInformation("Plugin loaded.");    
