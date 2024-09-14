@@ -12,7 +12,7 @@ namespace CS2Stats {
             _steamAPIKey = steamAPIKey;
         }
 
-        public async Task<Player?> GetSteamSummaryAsync(ulong steamId) {
+        public async Task<PlayerInfo?> GetSteamSummaryAsync(ulong steamId) {
             try {
                 using (var client = new HttpClient()) {
                     var url = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={_steamAPIKey}&steamids={steamId}";
@@ -27,7 +27,7 @@ namespace CS2Stats {
                             foreach (var playerData in playersData) {
                                 var steamIdStr = playerData["steamid"]?.ToString();
                                 if (steamIdStr != null && ulong.TryParse(steamIdStr, out ulong parsedSteamId) && parsedSteamId == steamId) {
-                                    var player = new Player();
+                                    var player = new PlayerInfo();
 
                                     var personaname = playerData["personaname"]?.ToString();
                                     if (!string.IsNullOrEmpty(personaname)) {
@@ -48,6 +48,8 @@ namespace CS2Stats {
                                     if (!string.IsNullOrEmpty(avatarL)) {
                                         player.AvatarL = avatarL;
                                     }
+
+                                    player.PlayerID = steamId;
 
                                     return player;
                                 }
