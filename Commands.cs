@@ -22,8 +22,10 @@ namespace CS2Stats {
                 return;
             }
 
-            var mapName = Server.MapName;
+            string mapName = Server.MapName;
             startingPlayers = new Dictionary<string, TeamInfo>();
+            hurtEvents = new List<HurtEvent>();
+            deathEvents = new List<DeathEvent>();
 
             List<ulong> team2 = new List<ulong>();
             List<ulong> team3 = new List<ulong>();

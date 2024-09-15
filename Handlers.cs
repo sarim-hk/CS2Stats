@@ -77,10 +77,21 @@ namespace CS2Stats
                 }
             }
 
+            if (hurtEvents != null) {
+                this.database.InsertBatchedHurtEvents(hurtEvents, Logger).GetAwaiter().GetResult();
+            }
+
+            if (deathEvents != null) {
+                this.database.InsertBatchedDeathEvents(deathEvents, Logger).GetAwaiter().GetResult();
+            }
+
             roundID = null;
             matchID = null;
             teamNum2ID = null;
             teamNum3ID = null;
+
+            hurtEvents = null;
+            deathEvents = null;
             startingPlayers = null;
 
             this.database.CommitTransaction();
@@ -95,8 +106,13 @@ namespace CS2Stats
             }
 
             if (@event.Attacker != null && @event.Userid != null) {
-                this.database.InsertHurt(@event.Attacker.SteamID, @event.Userid.SteamID, @event.DmgHealth,
-                    @event.Weapon, @event.Hitgroup, Logger).GetAwaiter().GetResult();
+                var hurtEvent = new HurtEvent(@event.Attacker.SteamID, @event.Userid.SteamID,
+                    @event.DmgHealth, @event.Weapon, @event.Hitgroup
+                );
+
+                if (hurtEvents != null) {
+                    hurtEvents.Add(hurtEvent);
+                }
             }
 
             return HookResult.Continue;
@@ -108,9 +124,15 @@ namespace CS2Stats
                 return HookResult.Continue;
             }
 
-            if (@event.Userid != null) {
-                this.database.InsertDeath(roundID, @event.Attacker?.SteamID, @event.Assister?.SteamID, @event.Userid.SteamID,
-                    @event.Weapon, @event.Hitgroup, Logger).GetAwaiter().GetResult();
+            if (@event.Userid != null && deathEvents != null) {
+                deathEvents.Add(new DeathEvent(
+                    roundID,
+                    @event.Attacker?.SteamID,
+                    @event.Assister?.SteamID,
+                    @event.Userid.SteamID,
+                    @event.Weapon,
+                    @event.Hitgroup
+                ));
             }
 
             return HookResult.Continue;
@@ -214,7 +236,6 @@ namespace CS2Stats
             });
 
         }
-    
 
-}
+    }
 }

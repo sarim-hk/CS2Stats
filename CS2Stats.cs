@@ -12,6 +12,9 @@ namespace CS2Stats
         public Config Config { get; set; }
         public Database? database;
         public SteamAPIClient? steamAPIClient;
+
+        private List<HurtEvent>? hurtEvents;
+        private List<DeathEvent>? deathEvents;
         public Dictionary<string, TeamInfo>? startingPlayers;
         public CounterStrikeSharp.API.Modules.Timers.Timer? liveTimer;
 
