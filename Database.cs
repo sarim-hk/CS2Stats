@@ -173,58 +173,6 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertHurt(ulong attackerID, ulong victimID, int damageAmount, string weapon, int hitgroup, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_Hurt (AttackerID, VictimID, DamageAmount, Weapon, Hitgroup)
-                VALUES (@AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup);
-                ";
-
-                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@AttackerID", attackerID);
-                    cmd.Parameters.AddWithValue("@VictimID", victimID);
-                    cmd.Parameters.AddWithValue("@DamageAmount", damageAmount);
-                    cmd.Parameters.AddWithValue("@Weapon", weapon);
-                    cmd.Parameters.AddWithValue("@Hitgroup", hitgroup);
-                    await cmd.ExecuteNonQueryAsync();
-
-                    Logger.LogInformation($"Hurt event inserted successfully.");
-                }
-            }
-            catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting hurt event.");
-            }
-        }
-
-        public async Task InsertDeath(int? roundID, ulong? attackerID, ulong? assisterID, ulong victimID, string weapon, int hitgroup, ILogger Logger) {
-            if (roundID == null) {
-                Logger.LogInformation("Round ID is null.");
-                return;
-            }
-
-            try {
-                string query = @"
-                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup)
-                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup);
-                ";
-
-                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@RoundID", roundID);
-                    cmd.Parameters.AddWithValue("@AttackerID", attackerID);
-                    cmd.Parameters.AddWithValue("@AssisterID", assisterID);
-                    cmd.Parameters.AddWithValue("@VictimID", victimID);
-                    cmd.Parameters.AddWithValue("@Weapon", weapon);
-                    cmd.Parameters.AddWithValue("@Hitgroup", hitgroup);
-                    await cmd.ExecuteNonQueryAsync();
-
-                    Logger.LogInformation($"Death event inserted successfully.");
-                }
-            }
-            catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting Death event.");
-            }
-        }
-
         public async Task UpdateRound(int? roundID, string winningTeamID, string losingTeamID, int winningSide, int roundEndReason, ILogger Logger) {
             try {
                 string query = @"
@@ -284,6 +232,71 @@ namespace CS2Stats {
 
             catch (Exception ex) {
                 Logger.LogInformation(ex, "Error occurred while updating match.");
+            }
+        }
+
+        public async Task InsertBatchedHurtEvents(List<HurtEvent> hurtEvents, ILogger Logger) {
+            if (hurtEvents == null || hurtEvents.Count == 0) {
+                Logger.LogInformation("Hurt events are null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Hurt (AttackerID, VictimID, DamageAmount, Weapon, Hitgroup)
+                VALUES (@AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup);
+                ";
+
+                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    foreach (var hurtEvent in hurtEvents) {
+                        cmd.Parameters.Clear();
+
+                        cmd.Parameters.AddWithValue("@AttackerID", hurtEvent.AttackerID);
+                        cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
+                        cmd.Parameters.AddWithValue("@DamageAmount", hurtEvent.DamageAmount);
+                        cmd.Parameters.AddWithValue("@Weapon", hurtEvent.Weapon);
+                        cmd.Parameters.AddWithValue("@Hitgroup", hurtEvent.Hitgroup);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    Logger.LogInformation($"Batch of hurt events inserted successfully.");
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogInformation(ex, "Error occurred while inserting batch of hurt events.");
+            }
+        }
+
+        public async Task InsertBatchedDeathEvents(List<DeathEvent> deathEvents, ILogger Logger) {
+            if (deathEvents == null || deathEvents.Count == 0) {
+                Logger.LogInformation("Hurt events are null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup)
+                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup);
+                ";
+
+                using (var cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    foreach (var deathEvent in deathEvents) {
+                        cmd.Parameters.Clear();
+
+                        cmd.Parameters.AddWithValue("@RoundID", deathEvent.RoundID);
+                        cmd.Parameters.AddWithValue("@AttackerID", deathEvent.AttackerID);
+                        cmd.Parameters.AddWithValue("@AssisterID", deathEvent.AssisterID);
+                        cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
+                        cmd.Parameters.AddWithValue("@Weapon", deathEvent.Weapon);
+                        cmd.Parameters.AddWithValue("@Hitgroup", deathEvent.Hitgroup);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    Logger.LogInformation($"Batch of death events inserted successfully.");
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogInformation(ex, "Error occurred while inserting batch of death events.");
             }
         }
 

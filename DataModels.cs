@@ -52,4 +52,39 @@ namespace CS2Stats
 
     }
 
+    public class HurtEvent {
+        public ulong AttackerID;
+        public ulong VictimID;
+        public int DamageAmount;
+        public string Weapon;
+        public int Hitgroup;
+
+        public HurtEvent(ulong attackerID, ulong victimID, int damageAmount, string weapon, int hitGroup) {
+            this.AttackerID = attackerID;
+            this.VictimID = victimID;
+            this.DamageAmount = damageAmount;
+            this.Weapon = weapon;
+            this.Hitgroup = hitGroup;
+
+        }
+    }
+
+    public class DeathEvent {
+        public int? RoundID { get; set; }
+        public ulong? AttackerID { get; set; }
+        public ulong? AssisterID { get; set; }
+        public ulong VictimID { get; set; }
+        public string Weapon { get; set; }
+        public int Hitgroup { get; set; }
+
+        public DeathEvent(int? roundID, ulong? attackerID, ulong? assisterID, ulong victimID, string weapon, int hitgroup) {
+            RoundID = roundID;
+            AttackerID = attackerID;
+            AssisterID = assisterID;
+            VictimID = victimID;
+            Weapon = weapon;
+            Hitgroup = hitgroup;
+        }
+    }
+
 }
