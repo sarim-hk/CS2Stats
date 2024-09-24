@@ -1,5 +1,7 @@
-﻿using CounterStrikeSharp.API.Core;
+﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
+using CS2Stats;
 
 namespace CS2Stats
 {
@@ -85,6 +87,24 @@ namespace CS2Stats
             Weapon = weapon;
             Hitgroup = hitgroup;
         }
+    }
+
+    public class Match {
+        public int? MatchID;
+        public int? RoundID;
+        public string? MapName;
+        public bool TeamsNeedSwapping;
+
+        public Dictionary<string, TeamInfo> StartingPlayers;
+        public List<HurtEvent> HurtEvents;
+        public List<DeathEvent> DeathEvents;
+
+        public Match() {
+            this.StartingPlayers = new Dictionary<string, TeamInfo>();
+            this.HurtEvents = new List<HurtEvent>();
+            this.DeathEvents = new List<DeathEvent>();
+        }
+
     }
 
 }

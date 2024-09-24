@@ -335,20 +335,6 @@ namespace CS2Stats {
             }
         }
 
-        public async Task DeleteLive(ILogger Logger) {
-            try {
-                string query = "DELETE From CS2S_Live";
-                using (var cmd = new MySqlCommand(query, this.conn)) {
-                    await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation("Live data cleared successfully.");
-                }
-            }
-
-            catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while clearing live data.");
-            }
-        }
-
     }
 
 }
