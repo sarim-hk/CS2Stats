@@ -22,15 +22,12 @@ namespace CS2Stats {
                 return;
             }
 
-            string mapName = Server.MapName;
-            startingPlayers = new Dictionary<string, TeamInfo>();
-            hurtEvents = new List<HurtEvent>();
-            deathEvents = new List<DeathEvent>();
+            this.match = new Match();
+            this.match.MapName = Server.MapName;
 
             List<ulong> team2 = new List<ulong>();
             List<ulong> team3 = new List<ulong>();
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-
             foreach (var playerController in playerControllers) {
                 if (playerController.IsValid && !playerController.IsBot) {
                     if (playerController.TeamNum == 2) {
@@ -45,15 +42,13 @@ namespace CS2Stats {
             string teamNum2ID = GenerateTeamID(team2, Logger);
             string teamNum3ID = GenerateTeamID(team3, Logger);
 
-            startingPlayers[teamNum2ID] = new TeamInfo(2, team2);
-            startingPlayers[teamNum3ID] = new TeamInfo(3, team3);
+            match.StartingPlayers[teamNum2ID] = new TeamInfo(2, team2);
+            match.StartingPlayers[teamNum3ID] = new TeamInfo(3, team3);
 
             this.database.StartTransaction();
-            this.database.InsertMap(mapName, Logger).GetAwaiter().GetResult();
-            this.database.InsertTeamsAndTeamPlayers(startingPlayers, Logger).GetAwaiter().GetResult();
-            matchID = this.database.InsertMatch(mapName, Logger).GetAwaiter().GetResult();
-
-            this.liveTimer = new CounterStrikeSharp.API.Modules.Timers.Timer(5.0f, this.InsertLiveHandler, TimerFlags.REPEAT);
+            this.database.InsertMap(this.match.MapName, Logger).GetAwaiter().GetResult();
+            this.database.InsertTeamsAndTeamPlayers(match.StartingPlayers, Logger).GetAwaiter().GetResult();
+            match.MatchID = this.database.InsertMatch(this.match.MapName, Logger).GetAwaiter().GetResult();
 
             Logger.LogInformation("Match started.");
 

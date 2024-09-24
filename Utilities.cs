@@ -40,8 +40,8 @@ namespace CS2Stats {
         }
 
         private string? GetTeamIDByTeamNum(int teamNum) {
-            if (startingPlayers != null) {
-                foreach (var teamInfoKVP in startingPlayers) {
+            if (match != null) {
+                foreach (var teamInfoKVP in match.StartingPlayers) {
                     string teamID = teamInfoKVP.Key;
                     TeamInfo teamInfo = teamInfoKVP.Value;
 

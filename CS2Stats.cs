@@ -12,16 +12,7 @@ namespace CS2Stats
         public Config Config { get; set; }
         public Database? database;
         public SteamAPIClient? steamAPIClient;
-
-        private List<HurtEvent>? hurtEvents;
-        private List<DeathEvent>? deathEvents;
-        public Dictionary<string, TeamInfo>? startingPlayers;
-        public CounterStrikeSharp.API.Modules.Timers.Timer? liveTimer;
-
-        public bool teamsNeedSwapping;
-        public int? matchID;
-        public int? roundID;
-        public string? teamNum2ID, teamNum3ID;
+        public Match? match;
 
         public void OnConfigParsed(Config config) {
             Config = config;
@@ -42,12 +33,19 @@ namespace CS2Stats
             RegisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
             RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
-
             Logger.LogInformation("Plugin loaded.");    
         }
 
         public override void Unload(bool hotReload) {
+            DeregisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
+            DeregisterEventHandler<EventRoundStart>(EventRoundStartHandler);
+            DeregisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
+            DeregisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
+            DeregisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
+            DeregisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             Logger.LogInformation("Plugin unloaded.");
+
+
         }
 
 
