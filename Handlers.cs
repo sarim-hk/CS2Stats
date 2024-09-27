@@ -28,19 +28,8 @@ namespace CS2Stats
                 return HookResult.Continue;
             }
 
-            if (match.TeamsNeedSwapping) {
-                if (match.StartingPlayers != null) {
-                    foreach (var teamInfo in match.StartingPlayers.Keys) {
-                        Logger.LogInformation($"Swapping team for player {teamInfo}.");
-                        match.StartingPlayers[teamInfo].SwapSides();
-                    }
-                }
-                match.TeamsNeedSwapping = false;
-                Logger.LogInformation("Setting teamsNeedSwapping to false.");
-            }
-
-            match.RoundID = this.database.InsertRound(match.MatchID, Logger).GetAwaiter().GetResult();
-
+            this.SwapTeamsIfNeeded();
+            match.RoundID = this.database.BeginInsertRound(match.MatchID, Logger).GetAwaiter().GetResult();
             return HookResult.Continue;
         }
 
@@ -50,39 +39,18 @@ namespace CS2Stats
                 return HookResult.Continue;
             }
 
-            int? team2Score = GetCSTeamScore(2);
-            int? team3Score = GetCSTeamScore(3);
-
-            if (team2Score.HasValue && team3Score.HasValue) {
-                if (team2Score != team3Score) {
-                    int winningTeamNum = (team2Score > team3Score) ? 2 : 3;
-                    int losingTeamNum = (winningTeamNum == 2) ? 3 : 2;
-
-                    string? winningTeamID = GetTeamIDByTeamNum(winningTeamNum);
-                    string? losingTeamID = GetTeamIDByTeamNum(losingTeamNum);
-
-                    int? winningTeamScore = (winningTeamNum == 2) ? team2Score : team3Score;
-                    int? losingTeamScore = (losingTeamNum == 2) ? team2Score : team3Score;
-
-                    if (winningTeamID != null && losingTeamID != null) {
-                        this.database.UpdateMatch(match.MatchID, winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum, 25, Logger).GetAwaiter().GetResult();
-                    }
-                    else {
-                        Logger.LogInformation($"Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID} - not updating match info");
-                    }
-                }
-
-                else {
-                    Logger.LogInformation("Game is a tie - not updating match info");
+            foreach (string teamID in match.StartingPlayers.Keys) {
+                foreach (ulong playerID in match.StartingPlayers[teamID].PlayerIDs) {
+                    this.database.IncrementPlayerMatchesPlayed(playerID, Logger).GetAwaiter().GetResult();
                 }
             }
-            
+
+            this.UpdateMatchWithWinner();            
             this.database.InsertBatchedHurtEvents(match.HurtEvents, Logger).GetAwaiter().GetResult();
             this.database.InsertBatchedDeathEvents(match.DeathEvents, Logger).GetAwaiter().GetResult();
+            this.database.CommitTransaction();
 
             match = null;
-
-            this.database.CommitTransaction();
             Logger.LogInformation("Match ended.");
             return HookResult.Continue;
         }
@@ -94,7 +62,7 @@ namespace CS2Stats
             }
 
             if (@event.Attacker != null && @event.Userid != null) {
-                var hurtEvent = new HurtEvent(@event.Attacker.SteamID, @event.Userid.SteamID,
+                HurtEvent hurtEvent = new HurtEvent(@event.Attacker.SteamID, @event.Userid.SteamID,
                     @event.DmgHealth, @event.Weapon, @event.Hitgroup
                 );
                 
@@ -131,20 +99,29 @@ namespace CS2Stats
             }
 
             int winningTeamNum = @event.Winner;
-            int losingTeamNum = (winningTeamNum == 2) ? 3 : 2;
+            int losingTeamNum = (winningTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
             string? winningTeamID = GetTeamIDByTeamNum(winningTeamNum);
             string? losingTeamID = GetTeamIDByTeamNum(losingTeamNum);
 
-            if (winningTeamID != null && losingTeamID != null) {
-                this.database.UpdateRound(match.RoundID, winningTeamID, losingTeamID, @event.Winner, @event.Reason, Logger).GetAwaiter().GetResult();
+            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
+            foreach (CCSPlayerController playerController in playerControllers) {
+                if (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist) {
+                    this.database.IncrementPlayerRoundsPlayed(playerController.SteamID, Logger).GetAwaiter().GetResult();
+                }
             }
+
+            if (winningTeamID != null && losingTeamID != null) {
+                this.database.FinishRoundInsert(match.RoundID, winningTeamID, losingTeamID, @event.Winner, @event.Reason, Logger).GetAwaiter().GetResult();
+            }
+
             else {
                 Logger.LogInformation($"Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID}");
             }
+
             return HookResult.Continue;
         }
         
-        private void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
+        public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
             if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
                 Logger.LogInformation("OnClientAuthorized but database conn / transaction is null. Returning.");
             }

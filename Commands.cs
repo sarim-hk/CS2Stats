@@ -27,13 +27,14 @@ namespace CS2Stats {
 
             List<ulong> team2 = new List<ulong>();
             List<ulong> team3 = new List<ulong>();
+
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-            foreach (var playerController in playerControllers) {
+            foreach (CCSPlayerController playerController in playerControllers) {
                 if (playerController.IsValid && !playerController.IsBot) {
-                    if (playerController.TeamNum == 2) {
+                    if (playerController.TeamNum == (int)CsTeam.Terrorist) {
                         team2.Add(playerController.SteamID);
                     }
-                    else if (playerController.TeamNum == 3) {
+                    else if (playerController.TeamNum == (int)CsTeam.CounterTerrorist) {
                         team3.Add(playerController.SteamID);
                     }
                 }
@@ -42,13 +43,13 @@ namespace CS2Stats {
             string teamNum2ID = GenerateTeamID(team2, Logger);
             string teamNum3ID = GenerateTeamID(team3, Logger);
 
-            match.StartingPlayers[teamNum2ID] = new TeamInfo(2, team2);
-            match.StartingPlayers[teamNum3ID] = new TeamInfo(3, team3);
+            match.StartingPlayers[teamNum2ID] = new TeamInfo((int)CsTeam.Terrorist, team2);
+            match.StartingPlayers[teamNum3ID] = new TeamInfo((int)CsTeam.CounterTerrorist, team3);
 
             this.database.StartTransaction();
             this.database.InsertMap(this.match.MapName, Logger).GetAwaiter().GetResult();
             this.database.InsertTeamsAndTeamPlayers(match.StartingPlayers, Logger).GetAwaiter().GetResult();
-            match.MatchID = this.database.InsertMatch(this.match.MapName, Logger).GetAwaiter().GetResult();
+            match.MatchID = this.database.BeginInsertMatch(this.match.MapName, Logger).GetAwaiter().GetResult();
 
             Logger.LogInformation("Match started.");
 

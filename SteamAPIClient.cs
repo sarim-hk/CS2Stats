@@ -14,37 +14,37 @@ namespace CS2Stats {
 
         public async Task<PlayerInfo?> GetSteamSummaryAsync(ulong steamId) {
             try {
-                using (var client = new HttpClient()) {
-                    var url = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={_steamAPIKey}&steamids={steamId}";
+                using (HttpClient client = new HttpClient()) {
+                    string url = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={_steamAPIKey}&steamids={steamId}";
 
-                    var response = await client.GetAsync(url);
+                    HttpResponseMessage response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode) {
-                        var jsonData = await response.Content.ReadAsStringAsync();
-                        var data = JObject.Parse(jsonData);
+                        string jsonData = await response.Content.ReadAsStringAsync();
+                        JObject data = JObject.Parse(jsonData);
 
-                        var playersData = data["response"]?["players"];
+                        JToken? playersData = data["response"]?["players"];
                         if (playersData != null) {
-                            foreach (var playerData in playersData) {
-                                var steamIdStr = playerData["steamid"]?.ToString();
+                            foreach (JToken playerData in playersData) {
+                                string? steamIdStr = playerData["steamid"]?.ToString();
                                 if (steamIdStr != null && ulong.TryParse(steamIdStr, out ulong parsedSteamId) && parsedSteamId == steamId) {
-                                    var player = new PlayerInfo();
+                                    PlayerInfo player = new PlayerInfo();
 
-                                    var personaname = playerData["personaname"]?.ToString();
+                                    string? personaname = playerData["personaname"]?.ToString();
                                     if (!string.IsNullOrEmpty(personaname)) {
                                         player.Username = personaname;
                                     }
 
-                                    var avatar = playerData["avatar"]?.ToString();
+                                    string? avatar = playerData["avatar"]?.ToString();
                                     if (!string.IsNullOrEmpty(avatar)) {
                                         player.AvatarS = avatar;
                                     }
 
-                                    var avatarM = playerData["avatarmedium"]?.ToString();
+                                    string? avatarM = playerData["avatarmedium"]?.ToString();
                                     if (!string.IsNullOrEmpty(avatarM)) {
                                         player.AvatarM = avatarM;
                                     }
 
-                                    var avatarL = playerData["avatarfull"]?.ToString();
+                                    string? avatarL = playerData["avatarfull"]?.ToString();
                                     if (!string.IsNullOrEmpty(avatarL)) {
                                         player.AvatarL = avatarL;
                                     }
