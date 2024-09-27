@@ -174,6 +174,12 @@ namespace CS2Stats {
                         await IncrementPlayerKills(deathEvent.AttackerID, Logger);
                         await IncrementPlayerAssists(deathEvent.AssisterID, Logger);
                         await IncrementPlayerDeaths(deathEvent.VictimID, Logger);
+
+                        if (deathEvent.Hitgroup == 1) {
+                            await IncrementPlayerHeadshots(deathEvent.AttackerID, Logger);
+                        }
+
+
                     }
                     
                     Logger.LogInformation($"Batch of death events inserted successfully.");

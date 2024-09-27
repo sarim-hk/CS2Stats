@@ -260,6 +260,35 @@ namespace CS2Stats {
             }
         }
 
+        private async Task IncrementPlayerHeadshots(ulong? playerID, ILogger Logger) {
+            if (playerID == null) {
+                return;
+            }
+
+            try {
+                string query = @"
+                UPDATE CS2S_Player
+                SET Headshots = Headshots + 1
+                WHERE PlayerID = @PlayerID;
+                ";
+
+                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+
+                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+                    if (rowsAffected > 0) {
+                        Logger.LogInformation($"Successfully incremented Headshots for player {playerID}.");
+                    }
+                    else {
+                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                    }
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogInformation(ex, $"Error occurred while incrementing Headshots for player {playerID}.");
+            }
+        }
 
     }
 }
