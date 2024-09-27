@@ -44,8 +44,6 @@ namespace CS2Stats
             DeregisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
             DeregisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             Logger.LogInformation("Plugin unloaded.");
-
-
         }
 
 

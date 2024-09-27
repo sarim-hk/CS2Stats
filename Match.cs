@@ -26,11 +26,11 @@ namespace CS2Stats
         }
 
         public void SwapSides() {
-            if (this.Side == 2) {
-                this.Side = 3;
+            if (this.Side == (int)CsTeam.Terrorist) {
+                this.Side = (int)CsTeam.CounterTerrorist;
             }
-            else if (this.Side == 3) {
-                this.Side = 2;
+            else if (this.Side == (int)CsTeam.CounterTerrorist) {
+                this.Side = (int)CsTeam.Terrorist;
             }
         }
     }
