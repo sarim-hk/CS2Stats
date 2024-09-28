@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace CS2Stats {
+
     public class SteamAPIClient {
         public string _steamAPIKey;
 
@@ -12,10 +13,10 @@ namespace CS2Stats {
             _steamAPIKey = steamAPIKey;
         }
 
-        public async Task<PlayerInfo?> GetSteamSummaryAsync(ulong steamId) {
+        public async Task<PlayerInfo?> GetSteamSummaryAsync(ulong steamID) {
             try {
                 using (HttpClient client = new HttpClient()) {
-                    string url = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={_steamAPIKey}&steamids={steamId}";
+                    string url = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={_steamAPIKey}&steamids={steamID}";
 
                     HttpResponseMessage response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode) {
@@ -25,32 +26,14 @@ namespace CS2Stats {
                         JToken? playersData = data["response"]?["players"];
                         if (playersData != null) {
                             foreach (JToken playerData in playersData) {
-                                string? steamIdStr = playerData["steamid"]?.ToString();
-                                if (steamIdStr != null && ulong.TryParse(steamIdStr, out ulong parsedSteamId) && parsedSteamId == steamId) {
-                                    PlayerInfo player = new PlayerInfo();
-
+                                string? steamIDStr = playerData["steamid"]?.ToString();
+                                if (steamIDStr != null) {
                                     string? personaname = playerData["personaname"]?.ToString();
-                                    if (!string.IsNullOrEmpty(personaname)) {
-                                        player.Username = personaname;
-                                    }
-
                                     string? avatar = playerData["avatar"]?.ToString();
-                                    if (!string.IsNullOrEmpty(avatar)) {
-                                        player.AvatarS = avatar;
-                                    }
-
                                     string? avatarM = playerData["avatarmedium"]?.ToString();
-                                    if (!string.IsNullOrEmpty(avatarM)) {
-                                        player.AvatarM = avatarM;
-                                    }
-
                                     string? avatarL = playerData["avatarfull"]?.ToString();
-                                    if (!string.IsNullOrEmpty(avatarL)) {
-                                        player.AvatarL = avatarL;
-                                    }
 
-                                    player.PlayerID = steamId;
-
+                                    PlayerInfo player = new PlayerInfo(steamID, personaname, avatar, avatarM, avatarL);
                                     return player;
                                 }
                             }
@@ -67,4 +50,22 @@ namespace CS2Stats {
             return null;
         }
     }
+
+    public class PlayerInfo {
+        public ulong PlayerID;
+        public string? Username;
+        public string? AvatarS;
+        public string? AvatarM;
+        public string? AvatarL;
+
+        public PlayerInfo(ulong playerID, string? username, string? avatarS,  string? avatarM, string? avatarL) {
+            this.PlayerID = playerID;
+            this.Username = username;
+            this.AvatarS = avatarS;
+            this.AvatarM = avatarM;
+            this.AvatarL = avatarL;
+        }
+
+    }
+
 }

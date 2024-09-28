@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Serilog.Core;
 
 namespace CS2Stats {
+
     public partial class CS2Stats {
 
         // thanks to switz https://discord.com/channels/1160907911501991946/1160925208203493468/1170817201473855619
@@ -36,7 +37,7 @@ namespace CS2Stats {
                     )
                 )
             ).Replace("-", "");
-            Logger.LogInformation($"Team: {string.Join(", ", teamPlayers)} are {teamID}");
+            Logger.LogInformation($"[GenerateTeamID] Team: {string.Join(", ", teamPlayers)} are {teamID}");
             return teamID;
         }
 
@@ -61,11 +62,11 @@ namespace CS2Stats {
                     match.StartingPlayers[teamID].SwapSides();
                 }
                 match.TeamsNeedSwapping = false;
-                Logger.LogInformation("Setting teamsNeedSwapping to false.");
+                Logger.LogInformation("[SwapTeamsIfNeeded] Setting teamsNeedSwapping to false.");
             }
         }
 
-        private void UpdateMatchWithWinner() {
+        private async Task UpdateMatchWithWinner() {
             if (this.database == null || this.match == null) {
                 return;
             }
@@ -85,21 +86,57 @@ namespace CS2Stats {
                     int? losingTeamScore = (losingTeamNum == (int)CsTeam.Terrorist) ? team2Score : team3Score;                 
 
                     if (winningTeamID != null && losingTeamID != null) {
-                        this.database.FinishMatchInsert(match.MatchID, winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum, 25, Logger).GetAwaiter().GetResult();
+                        await this.database.FinishMatchInsert(match.MatchID, winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum, 25, Logger);
                     }
                     else {
-                        Logger.LogInformation($"Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID} - not updating match info");
+                        Logger.LogInformation($"[UpdateMatchWithWinner] Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID} - not updating match info");
                     }
                 }
 
                 else {
-                    Logger.LogInformation("Game is a tie - not updating match info");
+                    Logger.LogInformation("[UpdateMatchWithWinner] Game is a tie - not updating match info");
                 }
             }
         }
 
-    }
+        private LiveData GetLiveMatchData() {
+            List<LivePlayer> tPlayers = new List<LivePlayer>();
+            List<LivePlayer> ctPlayers = new List<LivePlayer>();
 
+            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
+            foreach (var playerController in playerControllers) {
+                if (playerController.ActionTrackingServices != null) {
+                    var livePlayer = new LivePlayer(playerController.ActionTrackingServices.MatchStats.Kills,
+                        playerController.ActionTrackingServices.MatchStats.Assists,
+                        playerController.ActionTrackingServices.MatchStats.Deaths,
+                        playerController.ActionTrackingServices.MatchStats.Damage,
+                        playerController.Health,
+                        playerController.ActionTrackingServices.MatchStats.MoneySaved);
+
+                    if (playerController.TeamNum == 2) {
+                        tPlayers.Add(livePlayer);
+                    }
+                    else {
+                        ctPlayers.Add(livePlayer);
+                    }
+                }
+            }
+
+            int? tScore = GetCSTeamScore(2);
+            int? ctScore = GetCSTeamScore(3);
+            float roundTime = (GetGameRules().RoundStartTime + GetGameRules().RoundTime) - Server.CurrentTime;
+
+            int bombStatus = GetGameRules().BombPlanted switch {
+                true => 1,
+                false => GetGameRules().BombDefused ? 2 : 0
+            };
+
+            LiveData liveData = new LiveData(tPlayers, ctPlayers, tScore, ctScore, roundTime, bombStatus);
+            return liveData;
+
+        }
+
+    }
 
     public partial class Database {
 
@@ -112,7 +149,7 @@ namespace CS2Stats {
             using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
                 cmd.Parameters.AddWithValue("@TeamID", teamId);
                 await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"Team with ID {teamId} inserted successfully.");
+                Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamId} inserted successfully.");
             }
         }
 
@@ -128,7 +165,7 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@TeamID", teamId);
                     cmd.Parameters.AddWithValue("@PlayerID", playerId);
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"Player {playerId} added to Team {teamId}.");
+                    Logger.LogInformation($"[InsertTeamPlayersAsync] Player {playerId} added to Team {teamId}.");
                 }
             }
 
@@ -153,15 +190,15 @@ namespace CS2Stats {
                     int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                     if (rowsAffected > 0) {
-                        Logger.LogInformation($"Successfully incremented Kills for player {playerID}.");
+                        Logger.LogInformation($"[IncrementPlayerKills] Successfully incremented Kills for player {playerID}.");
                     }
                     else {
-                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                        Logger.LogInformation($"[IncrementPlayerKills] No rows were updated. Player {playerID} might not exist.");
                     }
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, $"Error occurred while incrementing Kills for player {playerID}.");
+                Logger.LogError(ex, $"[IncrementPlayerKills] Error occurred while incrementing Kills for player {playerID}.");
             }
         }
 
@@ -183,15 +220,15 @@ namespace CS2Stats {
                     int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                     if (rowsAffected > 0) {
-                        Logger.LogInformation($"Successfully incremented Assists for player {playerID}.");
+                        Logger.LogInformation($"[IncrementPlayerAssists] Successfully incremented Assists for player {playerID}.");
                     }
                     else {
-                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                        Logger.LogInformation($"[IncrementPlayerAssists] No rows were updated. Player {playerID} might not exist.");
                     }
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, $"Error occurred while incrementing Assists for player {playerID}.");
+                Logger.LogError(ex, $"[IncrementPlayerAssists] Error occurred while incrementing Assists for player {playerID}.");
             }
         }
 
@@ -209,15 +246,15 @@ namespace CS2Stats {
                     int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                     if (rowsAffected > 0) {
-                        Logger.LogInformation($"Successfully incremented Deaths for player {playerID}.");
+                        Logger.LogInformation($"[IncrementPlayerDeaths] Successfully incremented Deaths for player {playerID}.");
                     }
                     else {
-                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                        Logger.LogInformation($"[IncrementPlayerDeaths] No rows were updated. Player {playerID} might not exist.");
                     }
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, $"Error occurred while incrementing Deaths for player {playerID}.");
+                Logger.LogError(ex, $"[IncrementPlayerDeaths] Error occurred while incrementing Deaths for player {playerID}.");
             }
         }
 
@@ -248,15 +285,15 @@ namespace CS2Stats {
                     int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                     if (rowsAffected > 0) {
-                        Logger.LogInformation($"Successfully incremented damage for player {playerID} using {weapon}. Damage: {damageAmount}");
+                        Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented damage for player {playerID} using {weapon}. Damage: {damageAmount}");
                     }
                     else {
-                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                        Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
                     }
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, $"Error occurred while incrementing damage for player {playerID} with weapon {weapon}.");
+                Logger.LogError(ex, $"[IncrementPlayerDamage] Error occurred while incrementing damage for player {playerID} with weapon {weapon}.");
             }
         }
 
@@ -278,17 +315,18 @@ namespace CS2Stats {
                     int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                     if (rowsAffected > 0) {
-                        Logger.LogInformation($"Successfully incremented Headshots for player {playerID}.");
+                        Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented Headshots for player {playerID}.");
                     }
                     else {
-                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                        Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
                     }
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, $"Error occurred while incrementing Headshots for player {playerID}.");
+                Logger.LogError(ex, $"[IncrementPlayerDamage] Error occurred while incrementing Headshots for player {playerID}.");
             }
         }
 
     }
+
 }

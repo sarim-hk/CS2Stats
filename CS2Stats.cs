@@ -22,7 +22,7 @@ namespace CS2Stats
 
         public override void Load(bool hotReload) {
             if (this.database == null) {
-                Logger.LogInformation("Database is null. Unloading...");
+                Logger.LogInformation("[Load] Database is null. Unloading...");
                 base.Unload(false);
             }
 
@@ -33,7 +33,7 @@ namespace CS2Stats
             RegisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
             RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
-            Logger.LogInformation("Plugin loaded.");    
+            Logger.LogInformation("[Load] Plugin loaded.");    
         }
 
         public override void Unload(bool hotReload) {
@@ -43,7 +43,7 @@ namespace CS2Stats
             DeregisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
             DeregisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
             DeregisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
-            Logger.LogInformation("Plugin unloaded.");
+            Logger.LogInformation("[Unload] Plugin unloaded.");
         }
 
 

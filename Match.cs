@@ -6,16 +6,6 @@ using CS2Stats;
 namespace CS2Stats
 {
 
-    public class PlayerInfo
-    {
-        public ulong PlayerID;
-        public string? Username;
-        public string? AvatarS;
-        public string? AvatarM;
-        public string? AvatarL;
-
-    }
-
     public class TeamInfo {
         public int Side;
         public List<ulong> PlayerIDs;
@@ -33,25 +23,6 @@ namespace CS2Stats
                 this.Side = (int)CsTeam.Terrorist;
             }
         }
-    }
-
-    public class LivePlayer {
-        public int Kills;
-        public int Assists;
-        public int Deaths;
-        public int Damage;
-        public int Health;
-        public int MoneySaved;
-
-        public LivePlayer(int kills, int assists, int deaths, int damage, int health, int moneySaved) {
-            this.Kills = kills;
-            this.Assists = assists;
-            this.Deaths = deaths;
-            this.Damage = damage;
-            this.Health = health;
-            this.MoneySaved = moneySaved;
-        }
-
     }
 
     public class HurtEvent {
