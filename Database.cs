@@ -8,51 +8,53 @@ using System.Numerics;
 using Org.BouncyCastle.Security;
 using CounterStrikeSharp.API.Modules.Entities.Constants;
 using Newtonsoft.Json;
+using System.Transactions;
 
 namespace CS2Stats {
     public partial class Database {
 
         public MySqlConnection? conn;
         public MySqlTransaction? transaction;
+        private string ConnString;
 
         public Database(string server, string db, string username, string password) {
-            string constring = $"SERVER={server};" +
+            this.ConnString = $"SERVER={server};" +
                                $"DATABASE={db};" +
                                $"UID={username};" +
                                $"PASSWORD={password};";
 
-            MySqlConnection conn = new MySqlConnection(constring);
+            MySqlConnection conn = new MySqlConnection(this.ConnString);
             conn.OpenAsync();
             this.conn = conn;
 
         }
 
-        public void StartTransaction() {
+        public async Task StartTransaction() {
             if (this.conn == null) {
                 return;
             }
 
             if (this.transaction != null) {
-                this.transaction.Rollback();
-                this.transaction.Dispose();
+                await this.transaction.RollbackAsync();
+                await this.transaction.DisposeAsync();
                 this.transaction = null;
             }
 
             this.transaction = this.conn.BeginTransaction();
         }
 
-        public void CommitTransaction() {
+        public async Task CommitTransaction() {
             if (this.transaction != null) {
-                this.transaction.Commit();
-                this.transaction.Dispose();
+                await this.transaction.CommitAsync();
+                await this.transaction.DisposeAsync();
                 this.transaction = null;
             }
         }
 
-        public async Task InsertPlayer(PlayerInfo player, ILogger Logger) {
+        public async Task InsertPlayerInfo(PlayerInfo player, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_Player (PlayerID, Username, AvatarS, AvatarM, AvatarL)
+                INSERT INTO CS2S_PlayerInfo (PlayerID, Username, AvatarS, AvatarM, AvatarL)
                 VALUES (@PlayerID, @Username, @AvatarS, @AvatarM, @AvatarL)
                 ON DUPLICATE KEY UPDATE 
                 Username = VALUES(Username),
@@ -69,12 +71,12 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
 
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"Player {player.Username} inserted successfully.");
+                    Logger.LogInformation($"[InsertPlayerInfo] PlayerInfo {player.Username} inserted successfully.");
                 }
             }
 
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting players.");
+                Logger.LogError(ex, "[InsertPlayerInfo] Error occurred while inserting players.");
             }
         }
 
@@ -87,7 +89,7 @@ namespace CS2Stats {
 
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting teams and team players.");
+                Logger.LogError(ex, "[InsertTeamsAndTeamPlayers] Error occurred while inserting teams and team players.");
                 return;
             }
         }
@@ -103,18 +105,18 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@MapID", mapName);
                     await cmd.ExecuteNonQueryAsync();
 
-                    Logger.LogInformation($"Map {mapName} inserted successfully.");
+                    Logger.LogInformation($"[InsertMap] Map {mapName} inserted successfully.");
                 }
             }
 
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting the map.");
+                Logger.LogError(ex, "[InsertMap] Error occurred while inserting the map.");
             }
         }
 
         public async Task InsertBatchedHurtEvents(List<HurtEvent> hurtEvents, ILogger Logger) {
             if (hurtEvents == null || hurtEvents.Count == 0) {
-                Logger.LogInformation("Hurt events are null.");
+                Logger.LogInformation("[InsertBatchedHurtEvents] Hurt events are null.");
                 return;
             }
 
@@ -135,21 +137,20 @@ namespace CS2Stats {
                         cmd.Parameters.AddWithValue("@Hitgroup", hurtEvent.Hitgroup);
                         await cmd.ExecuteNonQueryAsync();
                         await IncrementPlayerDamage(hurtEvent.AttackerID, hurtEvent.Weapon, hurtEvent.DamageAmount, Logger);
-
                     }
 
-                    Logger.LogInformation($"Batch of hurt events inserted successfully.");
+                    Logger.LogInformation($"[InsertBatchedHurtEvents] Batch of hurt events inserted successfully.");
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting batch of hurt events.");
+                Logger.LogError(ex, "[InsertBatchedHurtEvents] Error occurred while inserting batch of hurt events.");
             }
 
         }
 
         public async Task InsertBatchedDeathEvents(List<DeathEvent> deathEvents, ILogger Logger) {
             if (deathEvents == null || deathEvents.Count == 0) {
-                Logger.LogInformation("Hurt events are null.");
+                Logger.LogInformation("[InsertBatchedDeathEvents] Hurt events are null.");
                 return;
             }
 
@@ -182,18 +183,18 @@ namespace CS2Stats {
 
                     }
                     
-                    Logger.LogInformation($"Batch of death events inserted successfully.");
+                    Logger.LogInformation($"[InsertBatchedDeathEvents] Batch of death events inserted successfully.");
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting batch of death events.");
+                Logger.LogError(ex, "[InsertBatchedDeathEvents] Error occurred while inserting batch of death events.");
             }
         }
 
-        public async Task InsertLive(List<LivePlayer>? tPlayers, List<LivePlayer>? ctPlayers, int? tScore, int? ctScore, int? bombStatus, float? roundTime, ILogger Logger) {
+        public async Task InsertLive(LiveData liveData, ILogger Logger) {
             try {
-                string tPlayersJson = JsonConvert.SerializeObject(tPlayers);
-                string ctPlayersJson = JsonConvert.SerializeObject(ctPlayers);
+                string tPlayersJson = JsonConvert.SerializeObject(liveData.TPlayers);
+                string ctPlayersJson = JsonConvert.SerializeObject(liveData.CTPlayers);
 
                 string query = @"
                 INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus, RoundTime)
@@ -206,22 +207,24 @@ namespace CS2Stats {
                     BombStatus = @BombStatus, 
                     RoundTime = @RoundTime";
 
-
-                using (MySqlCommand cmd = new MySqlCommand(query, this.conn)) {
+                MySqlConnection tempConn = new MySqlConnection(this.ConnString);
+                await tempConn.OpenAsync();
+                using (MySqlCommand cmd = new MySqlCommand(query, tempConn)) {
                     cmd.Parameters.AddWithValue("@TPlayers", tPlayersJson);
                     cmd.Parameters.AddWithValue("@CTPlayers", ctPlayersJson);
-                    cmd.Parameters.AddWithValue("@TScore", tScore);
-                    cmd.Parameters.AddWithValue("@CTScore", ctScore);
-                    cmd.Parameters.AddWithValue("@BombStatus", bombStatus);
-                    cmd.Parameters.AddWithValue("@RoundTime", roundTime);
+                    cmd.Parameters.AddWithValue("@TScore", liveData.TScore);
+                    cmd.Parameters.AddWithValue("@CTScore", liveData.CTScore);
+                    cmd.Parameters.AddWithValue("@BombStatus", liveData.BombStatus);
+                    cmd.Parameters.AddWithValue("@RoundTime", liveData.RoundTime);
 
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation("Live data inserted successfully.");
+                    Logger.LogInformation("[InsertLive] Live data inserted successfully.");
                 }
+
             }
 
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting live data.");
+                Logger.LogError(ex, "[InsertLive] Error occurred while inserting live data.");
             }
         }
 
@@ -238,24 +241,24 @@ namespace CS2Stats {
                     object? result = await cmd.ExecuteScalarAsync();
 
                     if (result != null && int.TryParse(result.ToString(), out int matchID)) {
-                        Logger.LogInformation($"New match inserted successfully with MatchID {matchID}.");
+                        Logger.LogInformation($"[BeginInsertMatch] New match inserted successfully with MatchID {matchID}.");
                         return matchID;
                     }
                     else {
-                        Logger.LogInformation("Failed to retrieve the MatchID.");
+                        Logger.LogInformation("[BeginInsertMatch] Failed to retrieve the MatchID.");
                         return null;
                     }
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting the match.");
+                Logger.LogError(ex, "[BeginInsertMatch] Error occurred while inserting the match.");
                 return null;
             }
         }
 
         public async Task<int?> BeginInsertRound(int? matchID, ILogger Logger) {
             if (matchID == null) {
-                Logger.LogInformation("Match ID is null.");
+                Logger.LogInformation("[BeginInsertRound] Match ID is null.");
                 return null;
             }
 
@@ -271,17 +274,17 @@ namespace CS2Stats {
                     object? result = await cmd.ExecuteScalarAsync();
 
                     if (result != null && int.TryParse(result.ToString(), out int roundID)) {
-                        Logger.LogInformation($"New round inserted successfully with RoundID {roundID}.");
+                        Logger.LogInformation($"[BeginInsertRound] New round inserted successfully with RoundID {roundID}.");
                         return roundID;
                     }
                     else {
-                        Logger.LogInformation("Failed to retrieve the RoundID.");
+                        Logger.LogInformation("[BeginInsertRound] Failed to retrieve the RoundID.");
                         return null;
                     }
                 }
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while inserting the round.");
+                Logger.LogError(ex, "[BeginInsertRound] Error occurred while inserting the round.");
                 return null;
             }
         }
@@ -306,12 +309,12 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundID", roundID);
 
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"Round {roundID} updated successfully.");
+                    Logger.LogInformation($"[FinishRoundInsert] Round {roundID} updated successfully.");
                 }
             }
 
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while updating round.");
+                Logger.LogError(ex, "[FinishRoundInsert] Error occurred while updating round.");
             }
         }
 
@@ -339,16 +342,45 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@MatchID", matchID);
 
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"Match {matchID} updated successfully.");
+                    Logger.LogInformation($"[FinishMatchInsert] Match {matchID} updated successfully.");
                 }
             }
 
             catch (Exception ex) {
-                Logger.LogInformation(ex, "Error occurred while updating match.");
+                Logger.LogError(ex, "[FinishMatchInsert] Error occurred while updating match.");
             }
         }
 
-        public async Task IncrementPlayerRoundsPlayed(ulong playerID, ILogger Logger) {
+        public async Task InsertMultiplePlayers(List<ulong> playerIDs, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_Player (PlayerID)
+                VALUES (@PlayerID)
+                ON DUPLICATE KEY UPDATE
+                ELO = ELO
+                ";
+
+                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    foreach (ulong playerID in playerIDs) {
+                        cmd.Parameters.Clear();
+
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertMultiplePlayers] Error occurred while inserting player.");
+            }
+        }
+
+        public async Task IncrementMultiplePlayerRoundsPlayed(List<ulong> playerIDs, ILogger Logger) {
+            if (playerIDs == null || playerIDs.Count == 0) {
+                Logger.LogInformation("[IncrementMultiplePlayerRoundsPlayed] Player IDs list is null or empty.");
+                return;
+            }
+
             try {
                 string query = @"
                 UPDATE CS2S_Player
@@ -357,24 +389,27 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                    foreach (ulong playerID in playerIDs) {
+                        cmd.Parameters.Clear();
 
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
-
-                    if (rowsAffected > 0) {
-                        Logger.LogInformation($"Successfully incremented RoundsPlayed for player {playerID}.");
-                    }
-                    else {
-                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 }
+
+                Logger.LogInformation($"[IncrementMultiplePlayerRoundsPlayed] Successfully incremented RoundsPlayed for {playerIDs.Count} players.");
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, $"Error occurred while incrementing RoundsPlayed for player {playerID}.");
+                Logger.LogError(ex, "[IncrementMultiplePlayerRoundsPlayed] Error occurred while incrementing RoundsPlayed for batch of players.");
             }
         }
 
-        public async Task IncrementPlayerMatchesPlayed(ulong playerID, ILogger Logger) {
+        public async Task IncrementMultiplePlayerMatchesPlayed(List<ulong> playerIDs, ILogger Logger) {
+            if (playerIDs == null || playerIDs.Count == 0) {
+                Logger.LogInformation("[IncrementMultiplePlayerMatchesPlayed] Player IDs list is null or empty.");
+                return;
+            }
+
             try {
                 string query = @"
                 UPDATE CS2S_Player
@@ -383,20 +418,18 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                    foreach (ulong playerID in playerIDs) {
+                        cmd.Parameters.Clear();
 
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
-
-                    if (rowsAffected > 0) {
-                        Logger.LogInformation($"Successfully incremented MatchesPlayed for player {playerID}.");
-                    }
-                    else {
-                        Logger.LogInformation($"No rows were updated. Player {playerID} might not exist.");
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                        await cmd.ExecuteNonQueryAsync();
                     }
                 }
+
+                Logger.LogInformation($"[IncrementMultiplePlayerMatchesPlayed] Successfully incremented MatchesPlayed for {playerIDs.Count} players.");
             }
             catch (Exception ex) {
-                Logger.LogInformation(ex, $"Error occurred while incrementing MatchesPlayed for player {playerID}.");
+                Logger.LogError(ex, "[IncrementMultiplePlayerMatchesPlayed] Error occurred while incrementing MatchesPlayed for batch of players.");
             }
         }
 

@@ -18,7 +18,7 @@ namespace CS2Stats {
             }
 
             if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
-                Logger.LogInformation("Database or connection or SteamAPIClient is null. Returning.");
+                Logger.LogInformation("[StartMatch] Database or connection or SteamAPIClient is null. Returning.");
                 return;
             }
 
@@ -42,16 +42,22 @@ namespace CS2Stats {
 
             string teamNum2ID = GenerateTeamID(team2, Logger);
             string teamNum3ID = GenerateTeamID(team3, Logger);
-
             match.StartingPlayers[teamNum2ID] = new TeamInfo((int)CsTeam.Terrorist, team2);
             match.StartingPlayers[teamNum3ID] = new TeamInfo((int)CsTeam.CounterTerrorist, team3);
 
-            this.database.StartTransaction();
-            this.database.InsertMap(this.match.MapName, Logger).GetAwaiter().GetResult();
-            this.database.InsertTeamsAndTeamPlayers(match.StartingPlayers, Logger).GetAwaiter().GetResult();
-            match.MatchID = this.database.BeginInsertMatch(this.match.MapName, Logger).GetAwaiter().GetResult();
+            List<ulong> playerIDs = match.StartingPlayers.Values
+                .SelectMany(team => team.PlayerIDs)
+                .ToList();
 
-            Logger.LogInformation("Match started.");
+            Task.Run(async () => {
+                await this.database.StartTransaction();
+                await this.database.InsertMap(this.match.MapName, Logger);
+                await this.database.InsertMultiplePlayers(playerIDs, Logger);
+                await this.database.InsertTeamsAndTeamPlayers(match.StartingPlayers, Logger);
+                match.MatchID = await this.database.BeginInsertMatch(this.match.MapName, Logger);
+            });
+
+            Logger.LogInformation("[StartMatch] Match started.");
 
         }
     }

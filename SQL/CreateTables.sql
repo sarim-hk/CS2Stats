@@ -9,10 +9,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Team (
 
 CREATE TABLE IF NOT EXISTS CS2S_Player (
     PlayerID varchar(17) PRIMARY KEY NOT NULL,
-    Username varchar(255) NOT NULL,
-    AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg",
-    AvatarM varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg",
-    AvatarL varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg",
     ELO int DEFAULT 1000, -- Trigger update on CS2S_Match insert
     Kills int DEFAULT 0,
     Headshots int DEFAULT 0,
@@ -23,6 +19,14 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
     RoundsKAST int DEFAULT 0,
     RoundsPlayed int DEFAULT 0,
     MatchesPlayed int DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
+    TeamID varchar(32),
+    PlayerID varchar(17),
+    PRIMARY KEY (TeamID, PlayerID),
+    FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Match (
@@ -76,6 +80,14 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     FOREIGN KEY (VictimID) REFERENCES CS2S_Player(PlayerID)
 );
 
+CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
+    PlayerID varchar(17) PRIMARY KEY NOT NULL,
+    Username varchar(255) NOT NULL,
+    AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg",
+    AvatarM varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg",
+    AvatarL varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg"
+) ENGINE=MyISAM;
+
 CREATE TABLE IF NOT EXISTS CS2S_Live (
 	StaticID int PRIMARY KEY,
     TPlayers text, -- This can be a JSON object serialized as a string
@@ -85,11 +97,3 @@ CREATE TABLE IF NOT EXISTS CS2S_Live (
     BombStatus int,
     RoundTime int
 ) ENGINE=MyISAM;
-
-CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
-    TeamID varchar(32),
-    PlayerID varchar(17),
-    PRIMARY KEY (TeamID, PlayerID),
-    FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
-);

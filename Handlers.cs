@@ -12,52 +12,67 @@ namespace CS2Stats
 
         public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("EventRoundAnnounceLastRoundHalf but database conn/transaction or match is null. Returning.");
+                Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
             match.TeamsNeedSwapping = true;
-            Logger.LogInformation("Setting teamsNeedSwapping to true.");
+            Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Setting teamsNeedSwapping to true.");
 
             return HookResult.Continue;
         }
 
-        public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
+         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("EventRoundStart but database conn/transaction or match is null. Returning.");
+                Logger.LogInformation("[EventRoundStartHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
             this.SwapTeamsIfNeeded();
-            match.RoundID = this.database.BeginInsertRound(match.MatchID, Logger).GetAwaiter().GetResult();
+
+            LiveData liveData = GetLiveMatchData();
+
+            Task.Run(async () => {
+                await this.database.InsertLive(liveData, Logger);
+                match.RoundID = await this.database.BeginInsertRound(match.MatchID, Logger);
+            });
+
             return HookResult.Continue;
         }
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("EventCsWinPanelMatch but database conn/transaction or match is null. Returning.");
+                Logger.LogInformation("[EventCsWinPanelMatchHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
-            foreach (string teamID in match.StartingPlayers.Keys) {
-                foreach (ulong playerID in match.StartingPlayers[teamID].PlayerIDs) {
-                    this.database.IncrementPlayerMatchesPlayed(playerID, Logger).GetAwaiter().GetResult();
+            LiveData liveData = new LiveData(null, null, null, null, null, null);
+            List<ulong> playerIDs = match.StartingPlayers.Values
+                .SelectMany(team => team.PlayerIDs)
+                .ToList();
+            
+            Task.Run(async () => {
+                try {
+                    await this.UpdateMatchWithWinner();
+                    await this.database.IncrementMultiplePlayerMatchesPlayed(playerIDs, Logger);
+                    await this.database.InsertBatchedHurtEvents(match.HurtEvents, Logger);
+                    await this.database.InsertBatchedDeathEvents(match.DeathEvents, Logger);
+                    await this.database.InsertLive(liveData, Logger);
+                    await this.database.CommitTransaction();
+                    match = null;
                 }
-            }
+                catch (Exception ex) {
+                    Logger.LogError(ex, "[EventCsWinPanelMatchHandler] Error occurred while finishing up the match.");
+                }
+            });
 
-            this.UpdateMatchWithWinner();            
-            this.database.InsertBatchedHurtEvents(match.HurtEvents, Logger).GetAwaiter().GetResult();
-            this.database.InsertBatchedDeathEvents(match.DeathEvents, Logger).GetAwaiter().GetResult();
-            this.database.CommitTransaction();
-
-            match = null;
-            Logger.LogInformation("Match ended.");
+            Logger.LogInformation("[EventCsWinPanelMatchHandler] Match ended.");
             return HookResult.Continue;
         }
 
         public HookResult EventPlayerHurtHandler(EventPlayerHurt @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("EventPlayerHurt but database conn/transaction or match is null. Returning.");
+                Logger.LogInformation("[EventPlayerHurtHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -74,7 +89,7 @@ namespace CS2Stats
 
         public HookResult EventPlayerDeathHandler(EventPlayerDeath @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("EventPlayerDeath but database conn/transaction or match is null. Returning.");
+                Logger.LogInformation("[EventPlayerDeathHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -89,99 +104,71 @@ namespace CS2Stats
                 ));
             }
 
+            LiveData liveData = GetLiveMatchData();
+            Task.Run(() => this.database.InsertLive(liveData, Logger));
+
             return HookResult.Continue;
         }
 
         public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("EventRoundEnd but database conn/transaction or match is null. Returning.");
+                Logger.LogInformation("[EventPlayerDeathHandler] database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
             int winningTeamNum = @event.Winner;
+            int winningReason = @event.Reason;
             int losingTeamNum = (winningTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
             string? winningTeamID = GetTeamIDByTeamNum(winningTeamNum);
             string? losingTeamID = GetTeamIDByTeamNum(losingTeamNum);
 
-            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-            foreach (CCSPlayerController playerController in playerControllers) {
-                if (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist) {
-                    this.database.IncrementPlayerRoundsPlayed(playerController.SteamID, Logger).GetAwaiter().GetResult();
-                }
-            }
+            List<ulong> playerIDs = Utilities.GetPlayers()
+                .Where(playerController =>
+                    playerController.Team == CsTeam.Terrorist ||
+                    playerController.Team == CsTeam.CounterTerrorist)
+                .Select(playerController => playerController.SteamID)
+                .ToList();
 
-            if (winningTeamID != null && losingTeamID != null) {
-                this.database.FinishRoundInsert(match.RoundID, winningTeamID, losingTeamID, @event.Winner, @event.Reason, Logger).GetAwaiter().GetResult();
-            }
+            Task.Run(async () => {
+                await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
 
-            else {
-                Logger.LogInformation($"Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID}");
-            }
-
-            return HookResult.Continue;
-        }
-        
-        public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
-            if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
-                Logger.LogInformation("OnClientAuthorized but database conn / transaction is null. Returning.");
-            }
-
-            else {
-                PlayerInfo? player = this.steamAPIClient.GetSteamSummaryAsync(playerID.SteamId64).GetAwaiter().GetResult();
-                if (player == null) {
-                    Logger.LogInformation("Steam API PlayerInfo is null.");
+                if (winningTeamID != null && losingTeamID != null) {
+                    await this.database.FinishRoundInsert(match.RoundID, winningTeamID, losingTeamID, winningTeamNum, winningReason, Logger);
                 }
 
                 else {
-                    this.database.StartTransaction();
-                    this.database.InsertPlayer(player, Logger).GetAwaiter().GetResult();
-                    this.database.CommitTransaction();
+                    Logger.LogInformation($"[EventRoundEndHandler] Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID}");
                 }
-            }
+
+            });
+            
+            return HookResult.Continue;
         }
 
-        /*
-        public async void InsertLiveHandler() {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("InsertLiveHandler but database conn/transaction or match is null. Clearing LiveTable and returning.");
+        public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
+            if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
+                Logger.LogInformation("[OnClientAuthorizedHandler] Database conn/transaction or match is null. Returning..");
                 return;
             }
 
-            List<LivePlayer> tPlayers = new List<LivePlayer>();
-            List<LivePlayer> ctPlayers = new List<LivePlayer>();
-
-            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-            foreach (var playerController in playerControllers) {
-                if (playerController.ActionTrackingServices != null) {
-                    var livePlayer = new LivePlayer(playerController.ActionTrackingServices.MatchStats.Kills,
-                        playerController.ActionTrackingServices.MatchStats.Assists,
-                        playerController.ActionTrackingServices.MatchStats.Deaths,
-                        playerController.ActionTrackingServices.MatchStats.Damage,
-                        playerController.Health,
-                        playerController.ActionTrackingServices.MatchStats.MoneySaved);
-
-                    if (playerController.TeamNum == 2) {
-                        tPlayers.Add(livePlayer);
-                    }
-                    else {
-                        ctPlayers.Add(livePlayer);
-                    }
+            Task.Run(async () => {
+                PlayerInfo? playerInfo = await this.steamAPIClient.GetSteamSummaryAsync(playerID.SteamId64);
+                if (playerInfo == null) {
+                    Logger.LogInformation("[OnClientAuthorizedHandler] Steam API PlayerInfo is null.");
+                    return;
                 }
-            }
 
-            int? tScore = GetCSTeamScore(2);
-            int? ctScore = GetCSTeamScore(3);
-            float roundTime = (GetGameRules().RoundStartTime + GetGameRules().RoundTime) - Server.CurrentTime;
-
-            int bombStatus = GetGameRules().BombPlanted switch {
-                true => 1,
-                false => GetGameRules().BombDefused ? 2 : 0
-            };
-
-            await this.database.InsertLive(tPlayers, ctPlayers, tScore, ctScore, bombStatus, roundTime, Logger);
-
+                await this.database.StartTransaction();
+                try {
+                    await this.database.InsertPlayerInfo(playerInfo, Logger);
+                    await this.database.CommitTransaction();
+                }
+                catch (Exception ex) {
+                    Logger.LogError(ex, "[OnClientAuthorizedHandler] Error occurred while inserting player.");
+                }
+            });
         }
-        */
+
 
     }
 }
