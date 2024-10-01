@@ -3,6 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
+using Mysqlx.Session;
 using System.Transactions;
 
 namespace CS2Stats
@@ -47,23 +48,42 @@ namespace CS2Stats
             }
 
             LiveData liveData = new LiveData(null, null, null, null, null, null);
-            List<ulong> playerIDs = match.StartingPlayers.Values
+            List<ulong> startingPlayerIDs = match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
                 .ToList();
             
             Task.Run(async () => {
+                
                 try {
-                    await this.UpdateMatchWithWinner();
-                    await this.database.IncrementMultiplePlayerMatchesPlayed(playerIDs, Logger);
+                    (string? winningTeamID, string? losingTeamID, int? winningTeamScore, int? losingTeamScore, int? winningTeamNum) = this.GetMatchWinner();
+
+                    if (winningTeamID != null && losingTeamID != null) {
+                        int? winningTeamAverageELO = await this.database.GetTeamAverageELO(winningTeamID, Logger);
+                        int? losingTeamAverageELO = await this.database.GetTeamAverageELO(losingTeamID, Logger);
+
+                        if (winningTeamAverageELO != null && losingTeamAverageELO != null) {
+                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(losingTeamAverageELO - winningTeamAverageELO) / 400));
+                            int deltaELO = (int)Math.Round(50 * (1 - expectedWin));
+
+                            await this.database.FinishInsertMatch(match.MatchID, winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum, deltaELO, Logger);
+                            await this.database.UpdateTeamELO(winningTeamID, deltaELO, true, Logger);
+                            await this.database.UpdateTeamELO(losingTeamID, deltaELO, false, Logger);
+
+                        }
+                    }
+
+                    await this.database.IncrementMultiplePlayerMatchesPlayed(startingPlayerIDs, Logger);
                     await this.database.InsertBatchedHurtEvents(match.HurtEvents, Logger);
                     await this.database.InsertBatchedDeathEvents(match.DeathEvents, Logger);
                     await this.database.InsertLive(liveData, Logger);
                     await this.database.CommitTransaction();
                     match = null;
                 }
+
                 catch (Exception ex) {
                     Logger.LogError(ex, "[EventCsWinPanelMatchHandler] Error occurred while finishing up the match.");
                 }
+
             });
 
             Logger.LogInformation("[EventCsWinPanelMatchHandler] Match ended.");
@@ -133,7 +153,7 @@ namespace CS2Stats
                 await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
 
                 if (winningTeamID != null && losingTeamID != null) {
-                    await this.database.FinishRoundInsert(match.RoundID, winningTeamID, losingTeamID, winningTeamNum, winningReason, Logger);
+                    await this.database.FinishInsertRound(match.RoundID, winningTeamID, losingTeamID, winningTeamNum, winningReason, Logger);
                 }
 
                 else {

@@ -58,7 +58,7 @@ namespace CS2Stats {
         private void SwapTeamsIfNeeded() {
             if (match != null && match.TeamsNeedSwapping) {
                 foreach (string teamID in match.StartingPlayers.Keys) {
-                    Logger.LogInformation($"Swapping team for teamID {teamID}.");
+                    Logger.LogInformation($"[SwapTeamsIfNeeded] Swapping team for teamID {teamID}.");
                     match.StartingPlayers[teamID].SwapSides();
                 }
                 match.TeamsNeedSwapping = false;
@@ -66,9 +66,9 @@ namespace CS2Stats {
             }
         }
 
-        private async Task UpdateMatchWithWinner() {
+        private (string?, string?, int?, int?, int?) GetMatchWinner() {
             if (this.database == null || this.match == null) {
-                return;
+                return (null, null, null, null, null);
             }
 
             int? team2Score = GetCSTeamScore((int)CsTeam.Terrorist);
@@ -84,19 +84,16 @@ namespace CS2Stats {
 
                     int? winningTeamScore = (winningTeamNum == (int)CsTeam.Terrorist) ? team2Score : team3Score;
                     int? losingTeamScore = (losingTeamNum == (int)CsTeam.Terrorist) ? team2Score : team3Score;                 
-
-                    if (winningTeamID != null && losingTeamID != null) {
-                        await this.database.FinishMatchInsert(match.MatchID, winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum, 25, Logger);
-                    }
-                    else {
-                        Logger.LogInformation($"[UpdateMatchWithWinner] Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID} - not updating match info");
-                    }
+                    return (winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum);
                 }
 
                 else {
                     Logger.LogInformation("[UpdateMatchWithWinner] Game is a tie - not updating match info");
                 }
+
             }
+            return (null, null, null, null, null);
+
         }
 
         private LiveData GetLiveMatchData() {

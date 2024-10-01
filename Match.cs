@@ -2,6 +2,7 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
 using CS2Stats;
+using System.Text.RegularExpressions;
 
 namespace CS2Stats
 {
