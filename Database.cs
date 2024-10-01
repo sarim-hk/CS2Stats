@@ -51,6 +51,41 @@ namespace CS2Stats {
             }
         }
 
+        public async Task<int?> GetTeamAverageELO(string teamID, ILogger Logger) {
+            if (string.IsNullOrWhiteSpace(teamID)) {
+                Logger.LogInformation("[GetTeamAverageELO] Team ID is null or empty.");
+                return null;
+            }
+
+            try {
+                string query = @"
+                SELECT AVG(p.ELO) 
+                FROM CS2S_Player p
+                INNER JOIN CS2S_Team_Players tp ON p.PlayerID = tp.PlayerID
+                WHERE tp.TeamID = @TeamID;
+                ";
+
+                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@TeamID", teamID);
+                    object? result = await cmd.ExecuteScalarAsync();
+
+                    if (result != null && double.TryParse(result.ToString(), out double averageELO)) {
+                        int roundedELO = (int)Math.Round(averageELO);
+                        Logger.LogInformation($"[GetTeamAverageELO] Average ELO for team {teamID} is {roundedELO}.");
+                        return roundedELO;
+                    }
+                    else {
+                        Logger.LogInformation($"[GetTeamAverageELO] No players found for team {teamID} or failed to retrieve average ELO.");
+                        return null;
+                    }
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[GetTeamAverageELO] Error occurred while retrieving average ELO for team.");
+                return null;
+            }
+        }
+
         public async Task InsertPlayerInfo(PlayerInfo player, ILogger Logger) {
             try {
                 string query = @"
@@ -289,7 +324,7 @@ namespace CS2Stats {
             }
         }
 
-        public async Task FinishRoundInsert(int? roundID, string winningTeamID, string losingTeamID, int winningSide, int roundEndReason, ILogger Logger) {
+        public async Task FinishInsertRound(int? roundID, string winningTeamID, string losingTeamID, int winningSide, int roundEndReason, ILogger Logger) {
             try {
                 string query = @"
                 UPDATE CS2S_Round
@@ -309,16 +344,16 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundID", roundID);
 
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[FinishRoundInsert] Round {roundID} updated successfully.");
+                    Logger.LogInformation($"[FinishInsertRound] Round {roundID} updated successfully.");
                 }
             }
 
             catch (Exception ex) {
-                Logger.LogError(ex, "[FinishRoundInsert] Error occurred while updating round.");
+                Logger.LogError(ex, "[FinishInsertRound] Error occurred while updating round.");
             }
         }
 
-        public async Task FinishMatchInsert(int? matchID, string winningTeamID, string losingTeamID, int? winningTeamScore, int? losingTeamScore, int? winningSide, int deltaELO, ILogger Logger) {
+        public async Task FinishInsertMatch(int? matchID, string winningTeamID, string losingTeamID, int? winningTeamScore, int? losingTeamScore, int? winningSide, int deltaELO, ILogger Logger) {
             try {
                 string query = @"
                 UPDATE CS2S_Match
@@ -342,12 +377,12 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@MatchID", matchID);
 
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[FinishMatchInsert] Match {matchID} updated successfully.");
+                    Logger.LogInformation($"[FinishInsertMatch] Match {matchID} updated successfully.");
                 }
             }
 
             catch (Exception ex) {
-                Logger.LogError(ex, "[FinishMatchInsert] Error occurred while updating match.");
+                Logger.LogError(ex, "[FinishInsertMatch] Error occurred while updating match.");
             }
         }
 
@@ -430,6 +465,47 @@ namespace CS2Stats {
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[IncrementMultiplePlayerMatchesPlayed] Error occurred while incrementing MatchesPlayed for batch of players.");
+            }
+        }
+
+        public async Task UpdateTeamELO(string teamID, int deltaELO, bool isWin, ILogger Logger) {
+            if (string.IsNullOrWhiteSpace(teamID)) {
+                Logger.LogInformation("[IncrementTeamELO] Team ID is null or empty.");
+                return;
+            }
+
+            try {
+                int finalDelta = isWin ? deltaELO : -deltaELO;
+
+                string updateTeamELOQuery = @"
+                UPDATE CS2S_Team
+                SET ELO = ELO + @DeltaELO
+                WHERE TeamID = @TeamID;
+                ";
+
+                using (MySqlCommand cmd = new MySqlCommand(updateTeamELOQuery, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@DeltaELO", finalDelta);
+                    cmd.Parameters.AddWithValue("@TeamID", teamID);
+                    await cmd.ExecuteNonQueryAsync();
+                    Logger.LogInformation($"[IncrementTeamELO] Team {teamID} ELO updated by {finalDelta}.");
+                }
+
+                string updatePlayerELOQuery = @"
+                UPDATE CS2S_Player p
+                JOIN CS2S_Team_Players tp ON p.PlayerID = tp.PlayerID
+                SET p.ELO = p.ELO + @DeltaELO
+                WHERE tp.TeamID = @TeamID;
+                ";
+
+                using (MySqlCommand cmd = new MySqlCommand(updatePlayerELOQuery, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@DeltaELO", finalDelta);
+                    cmd.Parameters.AddWithValue("@TeamID", teamID);
+                    await cmd.ExecuteNonQueryAsync();
+                    Logger.LogInformation($"[IncrementTeamELO] Players in team {teamID} ELO updated by {finalDelta}.");
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[IncrementTeamELO] Error occurred while updating team and players ELO.");
             }
         }
 

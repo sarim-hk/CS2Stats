@@ -4,12 +4,13 @@ CREATE TABLE IF NOT EXISTS CS2S_Map (
 
 CREATE TABLE IF NOT EXISTS CS2S_Team (
     TeamID varchar(32) PRIMARY KEY,
+    ELO int DEFAULT 1000,
     Name varchar(64) DEFAULT "Team"
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Player (
     PlayerID varchar(17) PRIMARY KEY NOT NULL,
-    ELO int DEFAULT 1000, -- Trigger update on CS2S_Match insert
+    ELO int DEFAULT 1000,
     Kills int DEFAULT 0,
     Headshots int DEFAULT 0,
     Assists int DEFAULT 0,
