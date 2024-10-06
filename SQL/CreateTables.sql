@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Map (
 
 CREATE TABLE IF NOT EXISTS CS2S_Team (
     TeamID varchar(32) PRIMARY KEY,
+	TeamSize int,
     ELO int DEFAULT 1000,
     Name varchar(64) DEFAULT "Team"
 );
@@ -15,7 +16,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
     Headshots int DEFAULT 0,
     Assists int DEFAULT 0,
     Deaths int DEFAULT 0,
-    TotalDamage int DEFAULT 0,
+	Damage int DEFAULT 0,
     UtilityDamage int DEFAULT 0,
     RoundsKAST int DEFAULT 0,
     RoundsPlayed int DEFAULT 0,
@@ -64,6 +65,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
     VictimID varchar(17),
     Weapon varchar(32),
     Hitgroup int,
+    ServerTick int,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
     FOREIGN KEY (AttackerID) REFERENCES CS2S_Player(PlayerID),
     FOREIGN KEY (AssisterID) REFERENCES CS2S_Player(PlayerID),
@@ -72,11 +74,14 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
 
 CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     HurtID int PRIMARY KEY AUTO_INCREMENT,
+    RoundID int,
     AttackerID varchar(17),
     VictimID varchar(17),
     DamageAmount int,
     Weapon varchar(32),
     Hitgroup int,
+    ServerTick int,
+	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
     FOREIGN KEY (AttackerID) REFERENCES CS2S_Player(PlayerID),
     FOREIGN KEY (VictimID) REFERENCES CS2S_Player(PlayerID)
 );

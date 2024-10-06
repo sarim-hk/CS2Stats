@@ -1,12 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using CounterStrikeSharp.API.Core.Attributes.Registration;
+﻿using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API;
-using CounterStrikeSharp.API.Modules.Timers;
 
 namespace CS2Stats {
     public partial class CS2Stats {

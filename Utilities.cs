@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Logging;
-using Serilog.Core;
+using CounterStrikeSharp.API.Modules.Entities;
 
 namespace CS2Stats {
 
@@ -137,14 +137,16 @@ namespace CS2Stats {
 
     public partial class Database {
 
-        private async Task InsertOrUpdateTeamAsync(string teamId, ILogger Logger) {
+        private async Task InsertOrUpdateTeamAsync(string teamId, int teamSize, ILogger Logger) {
             string query = @"
-            INSERT INTO CS2S_Team (TeamID)
-            VALUES (@TeamID)
+            INSERT INTO CS2S_Team (TeamID, TeamSize)
+            VALUES (@TeamID, @TeamSize)
             ";
 
             using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
                 cmd.Parameters.AddWithValue("@TeamID", teamId);
+                cmd.Parameters.AddWithValue("@TeamSize", teamSize);
+
                 await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamId} inserted successfully.");
             }
@@ -270,7 +272,7 @@ namespace CS2Stats {
                 else {
                     query = @"
                     UPDATE CS2S_Player
-                    SET TotalDamage = TotalDamage + @DamageAmount
+                    SET Damage = Damage + @DamageAmount
                     WHERE PlayerID = @PlayerID;
                     ";
                 }
@@ -323,6 +325,7 @@ namespace CS2Stats {
                 Logger.LogError(ex, $"[IncrementPlayerDamage] Error occurred while incrementing Headshots for player {playerID}.");
             }
         }
+
 
     }
 
