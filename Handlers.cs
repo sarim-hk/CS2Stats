@@ -3,8 +3,6 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
-using Mysqlx.Session;
-using System.Transactions;
 
 namespace CS2Stats
 {
@@ -23,19 +21,20 @@ namespace CS2Stats
             return HookResult.Continue;
         }
 
-         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
+        public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
                 Logger.LogInformation("[EventRoundStartHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
+            this.match.Round = new Round();
             this.SwapTeamsIfNeeded();
 
             LiveData liveData = GetLiveMatchData();
 
             Task.Run(async () => {
                 await this.database.InsertLive(liveData, Logger);
-                match.RoundID = await this.database.BeginInsertRound(match.MatchID, Logger);
+                match.Round.RoundID = await this.database.BeginInsertRound(match.MatchID, Logger);
             });
 
             return HookResult.Continue;
@@ -68,15 +67,13 @@ namespace CS2Stats
                             await this.database.FinishInsertMatch(match.MatchID, winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum, deltaELO, Logger);
                             await this.database.UpdateTeamELO(winningTeamID, deltaELO, true, Logger);
                             await this.database.UpdateTeamELO(losingTeamID, deltaELO, false, Logger);
-
                         }
                     }
 
                     await this.database.IncrementMultiplePlayerMatchesPlayed(startingPlayerIDs, Logger);
-                    await this.database.InsertBatchedHurtEvents(match.HurtEvents, Logger);
-                    await this.database.InsertBatchedDeathEvents(match.DeathEvents, Logger);
                     await this.database.InsertLive(liveData, Logger);
                     await this.database.CommitTransaction();
+
                     match = null;
                 }
 
@@ -97,11 +94,16 @@ namespace CS2Stats
             }
 
             if (@event.Attacker != null && @event.Userid != null) {
-                HurtEvent hurtEvent = new HurtEvent(@event.Attacker.SteamID, @event.Userid.SteamID,
-                    @event.DmgHealth, @event.Weapon, @event.Hitgroup
+                HurtEvent hurtEvent = new HurtEvent(
+                    @event.Attacker.SteamID,
+                    @event.Userid.SteamID,
+                    Math.Clamp(@event.DmgHealth, 1, @event.Userid.Health), // test if this works as expected!
+                    @event.Weapon,
+                    @event.Hitgroup,
+                    Server.TickCount
                 );
-                
-                match.HurtEvents.Add(hurtEvent);
+
+                match.Round.hurtEvents.Add(hurtEvent);
             }
 
             return HookResult.Continue;
@@ -114,14 +116,29 @@ namespace CS2Stats
             }
 
             if (@event.Userid != null) {
-                match.DeathEvents.Add(new DeathEvent(
-                    match.RoundID,
+
+                var matchingDeathEvent = match.Round.deathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
+
+                if (matchingDeathEvent != null && Server.TickCount !> matchingDeathEvent.ServerTick + (5 * Server.TickInterval)) {
+                    match.Round.playersKAST.Add(matchingDeathEvent.VictimID);
+                }
+
+                match.Round.deathEvents.Add(new DeathEvent(
                     @event.Attacker?.SteamID,
                     @event.Assister?.SteamID,
                     @event.Userid.SteamID,
                     @event.Weapon,
-                    @event.Hitgroup
+                    @event.Hitgroup,
+                    Server.TickCount
                 ));
+
+                if (@event.Attacker != null) {
+                    match.Round.playersKAST.Add(@event.Attacker.SteamID);
+                }
+
+                else if (@event.Assister != null) {
+                    match.Round.playersKAST.Add(@event.Assister.SteamID);
+                }
             }
 
             LiveData liveData = GetLiveMatchData();
@@ -149,13 +166,35 @@ namespace CS2Stats
                 .Select(playerController => playerController.SteamID)
                 .ToList();
 
-            Task.Run(async () => {
-                await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
+            List<ulong> alivePlayerIDs = Utilities.GetPlayers()
+                .Where(playerController =>
+                    (playerController.Team == CsTeam.Terrorist ||
+                    playerController.Team == CsTeam.CounterTerrorist) &&
+                    playerController.PawnIsAlive)
+                .Select(playerController => playerController.SteamID)
+                .ToList();
 
-                if (winningTeamID != null && losingTeamID != null) {
-                    await this.database.FinishInsertRound(match.RoundID, winningTeamID, losingTeamID, winningTeamNum, winningReason, Logger);
+
+            Task.Run(async () => {
+
+                foreach (ulong playerID in alivePlayerIDs) {
+                    this.match.Round.playersKAST.Add(playerID);
                 }
 
+                await this.database.IncrementMultiplePlayerRoundsKAST(match.Round.playersKAST.ToList(), Logger);
+                await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
+
+                if (match.Round.RoundID != null) {
+                    await this.database.InsertBatchedHurtEvents(match.Round.hurtEvents, match.Round.RoundID, Logger);
+                    await this.database.InsertBatchedDeathEvents(match.Round.deathEvents, match.Round.RoundID, Logger);
+                }
+                else {
+                    Logger.LogInformation($"[EventRoundEndHandler] Round ID is null. Could not insert hurt and death events.");
+                }
+
+                if (winningTeamID != null && losingTeamID != null) {
+                    await this.database.FinishInsertRound(match.Round.RoundID, winningTeamID, losingTeamID, winningTeamNum, winningReason, Logger);
+                }
                 else {
                     Logger.LogInformation($"[EventRoundEndHandler] Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID}");
                 }
@@ -188,7 +227,6 @@ namespace CS2Stats
                 }
             });
         }
-
 
     }
 }

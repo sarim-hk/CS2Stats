@@ -1,14 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
-using System.Text;
-using Serilog.Core;
-using CounterStrikeSharp.API.Modules.Entities;
-using System.Numerics;
-using Org.BouncyCastle.Security;
-using CounterStrikeSharp.API.Modules.Entities.Constants;
 using Newtonsoft.Json;
-using System.Transactions;
 
 namespace CS2Stats {
     public partial class Database {
@@ -118,7 +110,7 @@ namespace CS2Stats {
         public async Task InsertTeamsAndTeamPlayers(Dictionary<string, TeamInfo> startingPlayers, ILogger Logger) {
             try {
                 foreach (string teamID in startingPlayers.Keys) {
-                    await InsertOrUpdateTeamAsync(teamID, Logger);
+                    await InsertOrUpdateTeamAsync(teamID, startingPlayers[teamID].PlayerIDs.Count, Logger);
                     await InsertTeamPlayersAsync(teamID, startingPlayers[teamID].PlayerIDs, Logger);
                 } 
 
@@ -149,7 +141,7 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertBatchedHurtEvents(List<HurtEvent> hurtEvents, ILogger Logger) {
+        public async Task InsertBatchedHurtEvents(List<HurtEvent> hurtEvents, int? roundID, ILogger Logger) {
             if (hurtEvents == null || hurtEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedHurtEvents] Hurt events are null.");
                 return;
@@ -157,14 +149,15 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Hurt (AttackerID, VictimID, DamageAmount, Weapon, Hitgroup)
-                VALUES (@AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup);
+                INSERT INTO CS2S_Hurt (RoundID, AttackerID, VictimID, DamageAmount, Weapon, Hitgroup)
+                VALUES (@RoundID, @AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup);
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
                     foreach (HurtEvent hurtEvent in hurtEvents) {
                         cmd.Parameters.Clear();
 
+                        cmd.Parameters.AddWithValue("@RoundID", roundID);
                         cmd.Parameters.AddWithValue("@AttackerID", hurtEvent.AttackerID);
                         cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
                         cmd.Parameters.AddWithValue("@DamageAmount", hurtEvent.DamageAmount);
@@ -183,7 +176,7 @@ namespace CS2Stats {
 
         }
 
-        public async Task InsertBatchedDeathEvents(List<DeathEvent> deathEvents, ILogger Logger) {
+        public async Task InsertBatchedDeathEvents(List<DeathEvent> deathEvents, int? roundID, ILogger Logger) {
             if (deathEvents == null || deathEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedDeathEvents] Hurt events are null.");
                 return;
@@ -199,7 +192,7 @@ namespace CS2Stats {
                     foreach (DeathEvent deathEvent in deathEvents) {
                         cmd.Parameters.Clear();
 
-                        cmd.Parameters.AddWithValue("@RoundID", deathEvent.RoundID);
+                        cmd.Parameters.AddWithValue("@RoundID", roundID);
                         cmd.Parameters.AddWithValue("@AttackerID", deathEvent.AttackerID);
                         cmd.Parameters.AddWithValue("@AssisterID", deathEvent.AssisterID);
                         cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
@@ -436,6 +429,35 @@ namespace CS2Stats {
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[IncrementMultiplePlayerRoundsPlayed] Error occurred while incrementing RoundsPlayed for batch of players.");
+            }
+        }
+        
+        public async Task IncrementMultiplePlayerRoundsKAST(List<ulong> playerIDs, ILogger Logger) {
+            if (playerIDs == null || playerIDs.Count == 0) {
+                Logger.LogInformation("[IncrementMultiplePlayerRoundsKAST] Player IDs list is null or empty.");
+                return;
+            }
+
+            try {
+                string query = @"
+                UPDATE CS2S_Player
+                SET RoundsKAST = RoundsKAST + 1
+                WHERE PlayerID = @PlayerID;
+                ";
+
+                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    foreach (ulong playerID in playerIDs) {
+                        cmd.Parameters.Clear();
+
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+
+                Logger.LogInformation($"[IncrementMultiplePlayerRoundsKAST] Successfully incremented RoundsKAST for {playerIDs.Count} players.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[IncrementMultiplePlayerRoundsKAST] Error occurred while incrementing RoundsKAST for batch of players.");
             }
         }
 
