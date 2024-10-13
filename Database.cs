@@ -259,16 +259,18 @@ namespace CS2Stats {
             }
         }
 
-        public async Task<int?> BeginInsertMatch(string mapName, ILogger Logger) {
+        public async Task<int?> BeginInsertMatch(Match match, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_Match (MapID, WinningTeamID, LosingTeamID, WinningTeamScore, LosingTeamScore, WinningSide)
-                VALUES (@MapID, NULL, NULL, NULL, NULL, NULL);
+                INSERT INTO CS2S_Match (MapID, WinningTeamID, LosingTeamID, WinningTeamScore, LosingTeamScore, WinningSide, ServerTick)
+                VALUES (@MapID, NULL, NULL, NULL, NULL, NULL, @ServerTick);
                 SELECT LAST_INSERT_ID();
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@MapID", mapName);
+                    cmd.Parameters.AddWithValue("@MapID", match.MapName);
+                    cmd.Parameters.AddWithValue("@ServerTick", match.serverTick);
+
                     object? result = await cmd.ExecuteScalarAsync();
 
                     if (result != null && int.TryParse(result.ToString(), out int matchID)) {
@@ -287,21 +289,17 @@ namespace CS2Stats {
             }
         }
 
-        public async Task<int?> BeginInsertRound(int? matchID, ILogger Logger) {
-            if (matchID == null) {
-                Logger.LogInformation("[BeginInsertRound] Match ID is null.");
-                return null;
-            }
-
+        public async Task<int?> BeginInsertRound(Match match, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_Round (MatchID, WinningTeamID, LosingTeamID, WinningSide, RoundEndReason)
-                VALUES (@MatchID, NULL, NULL, NULL, NULL);
+                INSERT INTO CS2S_Round (MatchID, WinningTeamID, LosingTeamID, WinningSide, RoundEndReason, ServerTick)
+                VALUES (@MatchID, NULL, NULL, NULL, NULL, @ServerTick);
                 SELECT LAST_INSERT_ID();
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@MatchID", matchID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@ServerTick", match.Round.serverTick);
                     object? result = await cmd.ExecuteScalarAsync();
 
                     if (result != null && int.TryParse(result.ToString(), out int roundID)) {

@@ -28,13 +28,15 @@ namespace CS2Stats
             }
 
             this.match.Round = new Round();
+            this.match.Round.serverTick = Server.TickCount;
+
             this.SwapTeamsIfNeeded();
 
             LiveData liveData = GetLiveMatchData();
 
             Task.Run(async () => {
                 await this.database.InsertLive(liveData, Logger);
-                match.Round.RoundID = await this.database.BeginInsertRound(match.MatchID, Logger);
+                match.Round.RoundID = await this.database.BeginInsertRound(match, Logger);
             });
 
             return HookResult.Continue;
@@ -97,7 +99,7 @@ namespace CS2Stats
                 HurtEvent hurtEvent = new HurtEvent(
                     @event.Attacker.SteamID,
                     @event.Userid.SteamID,
-                    @event.DmgHealth,
+                    Math.Clamp(@event.DmgHealth, 1, 100),
                     @event.Weapon,
                     @event.Hitgroup,
                     Server.TickCount
@@ -149,7 +151,7 @@ namespace CS2Stats
 
         public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] database conn/transaction or match is null. Returning.");
+                Logger.LogInformation("[EventPlayerDeathHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
 
