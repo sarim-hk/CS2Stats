@@ -141,8 +141,8 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertBatchedHurtEvents(List<HurtEvent> hurtEvents, int? roundID, ILogger Logger) {
-            if (hurtEvents == null || hurtEvents.Count == 0) {
+        public async Task InsertBatchedHurtEvents(Round round, ILogger Logger) {
+            if (round.hurtEvents == null || round.hurtEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedHurtEvents] Hurt events are null.");
                 return;
             }
@@ -154,10 +154,10 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    foreach (HurtEvent hurtEvent in hurtEvents) {
+                    foreach (HurtEvent hurtEvent in round.hurtEvents) {
                         cmd.Parameters.Clear();
 
-                        cmd.Parameters.AddWithValue("@RoundID", roundID);
+                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                         cmd.Parameters.AddWithValue("@AttackerID", hurtEvent.AttackerID);
                         cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
                         cmd.Parameters.AddWithValue("@DamageAmount", hurtEvent.DamageAmount);
@@ -178,28 +178,29 @@ namespace CS2Stats {
 
         }
 
-        public async Task InsertBatchedDeathEvents(List<DeathEvent> deathEvents, int? roundID, ILogger Logger) {
-            if (deathEvents == null || deathEvents.Count == 0) {
+        public async Task InsertBatchedDeathEvents(Round round, ILogger Logger) {
+            if (round.deathEvents == null || round.deathEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedDeathEvents] Hurt events are null.");
                 return;
             }
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup, ServerTick)
-                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup, @ServerTick);
+                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup, OpeningDeath, ServerTick)
+                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup, @OpeningDeath, @ServerTick);
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    foreach (DeathEvent deathEvent in deathEvents) {
+                    foreach (DeathEvent deathEvent in round.deathEvents) {
                         cmd.Parameters.Clear();
 
-                        cmd.Parameters.AddWithValue("@RoundID", roundID);
+                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                         cmd.Parameters.AddWithValue("@AttackerID", deathEvent.AttackerID);
                         cmd.Parameters.AddWithValue("@AssisterID", deathEvent.AssisterID);
                         cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
                         cmd.Parameters.AddWithValue("@Weapon", deathEvent.Weapon);
                         cmd.Parameters.AddWithValue("@Hitgroup", deathEvent.Hitgroup);
+                        cmd.Parameters.AddWithValue("@OpeningDeath", deathEvent.OpeningDeath);
                         cmd.Parameters.AddWithValue("@ServerTick", deathEvent.ServerTick);
 
                         await cmd.ExecuteNonQueryAsync();

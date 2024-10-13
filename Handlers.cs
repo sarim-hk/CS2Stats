@@ -131,6 +131,7 @@ namespace CS2Stats
                     @event.Userid.SteamID,
                     @event.Weapon,
                     @event.Hitgroup,
+                    !this.match.Round.openingDeathOccurred,
                     Server.TickCount
                 ));
 
@@ -142,6 +143,8 @@ namespace CS2Stats
                     match.Round.playersKAST.Add(@event.Assister.SteamID);
                 }
             }
+
+            this.match.Round.openingDeathOccurred = true;
 
             LiveData liveData = GetLiveMatchData();
             Task.Run(() => this.database.InsertLive(liveData, Logger));
@@ -187,8 +190,8 @@ namespace CS2Stats
                 await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
 
                 if (match.Round.RoundID != null) {
-                    await this.database.InsertBatchedHurtEvents(match.Round.hurtEvents, match.Round.RoundID, Logger);
-                    await this.database.InsertBatchedDeathEvents(match.Round.deathEvents, match.Round.RoundID, Logger);
+                    await this.database.InsertBatchedHurtEvents(match.Round, Logger);
+                    await this.database.InsertBatchedDeathEvents(match.Round, Logger);
                 }
                 else {
                     Logger.LogInformation($"[EventRoundEndHandler] Round ID is null. Could not insert hurt and death events.");
