@@ -149,8 +149,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Hurt (RoundID, AttackerID, VictimID, DamageAmount, Weapon, Hitgroup)
-                VALUES (@RoundID, @AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup);
+                INSERT INTO CS2S_Hurt (RoundID, AttackerID, VictimID, DamageAmount, Weapon, Hitgroup, ServerTick)
+                VALUES (@RoundID, @AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup, @ServerTick);
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
@@ -163,6 +163,8 @@ namespace CS2Stats {
                         cmd.Parameters.AddWithValue("@DamageAmount", hurtEvent.DamageAmount);
                         cmd.Parameters.AddWithValue("@Weapon", hurtEvent.Weapon);
                         cmd.Parameters.AddWithValue("@Hitgroup", hurtEvent.Hitgroup);
+                        cmd.Parameters.AddWithValue("@ServerTick", hurtEvent.ServerTick);
+
                         await cmd.ExecuteNonQueryAsync();
                         await IncrementPlayerDamage(hurtEvent.AttackerID, hurtEvent.Weapon, hurtEvent.DamageAmount, Logger);
                     }
@@ -184,8 +186,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup)
-                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup);
+                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup, ServerTick)
+                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup, @ServerTick);
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
@@ -198,7 +200,8 @@ namespace CS2Stats {
                         cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
                         cmd.Parameters.AddWithValue("@Weapon", deathEvent.Weapon);
                         cmd.Parameters.AddWithValue("@Hitgroup", deathEvent.Hitgroup);
-                        
+                        cmd.Parameters.AddWithValue("@ServerTick", deathEvent.ServerTick);
+
                         await cmd.ExecuteNonQueryAsync();
                         await IncrementPlayerKills(deathEvent.AttackerID, Logger);
                         await IncrementPlayerAssists(deathEvent.AssisterID, Logger);

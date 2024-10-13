@@ -29,7 +29,7 @@ namespace CS2Stats
             RegisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
             RegisterEventHandler<EventRoundStart>(EventRoundStartHandler);
             RegisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
-            RegisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler, HookMode.Pre);
+            RegisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
             RegisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
             RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
