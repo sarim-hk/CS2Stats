@@ -97,7 +97,7 @@ namespace CS2Stats
                 HurtEvent hurtEvent = new HurtEvent(
                     @event.Attacker.SteamID,
                     @event.Userid.SteamID,
-                    Math.Clamp(@event.DmgHealth, 1, @event.Userid.Health), // test if this works as expected!
+                    @event.DmgHealth,
                     @event.Weapon,
                     @event.Hitgroup,
                     Server.TickCount
