@@ -26,6 +26,7 @@ namespace CS2Stats
         public int? MatchID;
         public string? MapName;
         public bool TeamsNeedSwapping;
+        public int? serverTick;
 
         public Dictionary<string, TeamInfo> StartingPlayers;
         public Round Round;

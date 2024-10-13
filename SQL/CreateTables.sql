@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Match (
     LosingTeamScore int,
     WinningSide int,
     DeltaELO int DEFAULT 0,
+	ServerTick int,
+    MatchDate datetime DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (MapID) REFERENCES CS2S_Map(MapID),
     FOREIGN KEY (WinningTeamID) REFERENCES CS2S_Team(TeamID),
     FOREIGN KEY (LosingTeamID) REFERENCES CS2S_Team(TeamID)
@@ -52,6 +54,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Round (
     LosingTeamID varchar(32),
     WinningSide int,
     RoundEndReason int,
+    ServerTick int,
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (WinningTeamID) REFERENCES CS2S_Team(TeamID),
     FOREIGN KEY (LosingTeamID) REFERENCES CS2S_Team(TeamID)

@@ -3,6 +3,7 @@
     public class Round {
 
         public int? RoundID;
+        public int? serverTick;
         public HashSet<ulong> playersKAST;
         public List<HurtEvent> hurtEvents;
         public List<DeathEvent> deathEvents;

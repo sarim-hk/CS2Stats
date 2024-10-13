@@ -21,6 +21,7 @@ namespace CS2Stats {
 
             this.match = new Match();
             this.match.MapName = Server.MapName;
+            this.match.serverTick = Server.TickCount;
 
             List<ulong> team2 = new List<ulong>();
             List<ulong> team3 = new List<ulong>();
@@ -51,7 +52,7 @@ namespace CS2Stats {
                 await this.database.InsertMap(this.match.MapName, Logger);
                 await this.database.InsertMultiplePlayers(playerIDs, Logger);
                 await this.database.InsertTeamsAndTeamPlayers(match.StartingPlayers, Logger);
-                match.MatchID = await this.database.BeginInsertMatch(this.match.MapName, Logger);
+                match.MatchID = await this.database.BeginInsertMatch(this.match, Logger);
             });
 
             Logger.LogInformation("[StartMatch] Match started.");
