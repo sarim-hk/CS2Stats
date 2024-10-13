@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
     Weapon varchar(32),
     Hitgroup int,
     ServerTick int,
+    OpeningDeath bool,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
     FOREIGN KEY (AttackerID) REFERENCES CS2S_Player(PlayerID),
     FOREIGN KEY (AssisterID) REFERENCES CS2S_Player(PlayerID),
