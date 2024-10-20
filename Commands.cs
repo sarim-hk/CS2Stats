@@ -51,7 +51,7 @@ namespace CS2Stats {
                 await this.database.StartTransaction();
                 await this.database.InsertMap(this.match.MapName, Logger);
 
-                match.MatchID = await this.database.BeginInsertMatch(this.match, match.StartingPlayers[teamNum2ID], match.StartingPlayers[teamNum3ID], Logger);
+                match.MatchID = await this.database.BeginInsertMatch(this.match, Logger);
                 await this.database.InsertMultiplePlayers(playerIDs, Logger);
                 await this.database.InsertTeamsAndTeamPlayers(match, Logger);
             });
