@@ -4,10 +4,12 @@ namespace CS2Stats
 {
 
     public class TeamInfo {
+        public string TeamID;
         public int Side;
         public List<ulong> PlayerIDs;
 
-        public TeamInfo(int side, List<ulong> playerIDs) {
+        public TeamInfo(string teamID, int side, List<ulong> playerIDs) {
+            this.TeamID = teamID;
             this.Side = side;
             this.PlayerIDs = playerIDs;
         }
@@ -26,7 +28,8 @@ namespace CS2Stats
         public int? MatchID;
         public string? MapName;
         public bool TeamsNeedSwapping;
-        public int? serverTick;
+        public int? startServerTick;
+        public int? endServerTick;
 
         public Dictionary<string, TeamInfo> StartingPlayers;
         public Round Round;

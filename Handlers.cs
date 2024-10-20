@@ -3,6 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
+using System.Numerics;
 
 namespace CS2Stats
 {
@@ -121,7 +122,7 @@ namespace CS2Stats
 
                 var matchingDeathEvent = match.Round.deathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
 
-                if (matchingDeathEvent != null && Server.TickCount !> matchingDeathEvent.ServerTick + (5 * Server.TickInterval)) {
+                if (matchingDeathEvent != null && Server.TickCount < matchingDeathEvent.ServerTick + (5 * Server.TickInterval)) {
                     match.Round.playersKAST.Add(matchingDeathEvent.VictimID);
                 }
 
@@ -175,7 +176,7 @@ namespace CS2Stats
                 .Where(playerController =>
                     (playerController.Team == CsTeam.Terrorist ||
                     playerController.Team == CsTeam.CounterTerrorist) &&
-                    playerController.PawnIsAlive)
+                    playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
                 .Select(playerController => playerController.SteamID)
                 .ToList();
 
@@ -189,10 +190,12 @@ namespace CS2Stats
                 await this.database.IncrementMultiplePlayerRoundsKAST(match.Round.playersKAST.ToList(), Logger);
                 await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
 
-                if (match.Round.RoundID != null) {
-                    await this.database.InsertBatchedHurtEvents(match.Round, Logger);
-                    await this.database.InsertBatchedDeathEvents(match.Round, Logger);
+                if (match.MatchID != null && match.Round.RoundID != null) {
+                    await this.database.InsertBatchedHurtEvents(match, Logger);
+                    await this.database.InsertBatchedDeathEvents(match, Logger);
+                    await this.database.InsertBatchedKAST(match, Logger);
                 }
+
                 else {
                     Logger.LogInformation($"[EventRoundEndHandler] Round ID is null. Could not insert hurt and death events.");
                 }
