@@ -21,7 +21,7 @@ namespace CS2Stats {
 
             this.match = new Match();
             this.match.MapName = Server.MapName;
-            this.match.serverTick = Server.TickCount;
+            this.match.startServerTick = Server.TickCount;
 
             List<ulong> team2 = new List<ulong>();
             List<ulong> team3 = new List<ulong>();
@@ -40,8 +40,8 @@ namespace CS2Stats {
 
             string teamNum2ID = GenerateTeamID(team2, Logger);
             string teamNum3ID = GenerateTeamID(team3, Logger);
-            match.StartingPlayers[teamNum2ID] = new TeamInfo((int)CsTeam.Terrorist, team2);
-            match.StartingPlayers[teamNum3ID] = new TeamInfo((int)CsTeam.CounterTerrorist, team3);
+            match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, team2);
+            match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, team3);
 
             List<ulong> playerIDs = match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
@@ -50,9 +50,10 @@ namespace CS2Stats {
             Task.Run(async () => {
                 await this.database.StartTransaction();
                 await this.database.InsertMap(this.match.MapName, Logger);
+
+                match.MatchID = await this.database.BeginInsertMatch(this.match, match.StartingPlayers[teamNum2ID], match.StartingPlayers[teamNum3ID], Logger);
                 await this.database.InsertMultiplePlayers(playerIDs, Logger);
-                await this.database.InsertTeamsAndTeamPlayers(match.StartingPlayers, Logger);
-                match.MatchID = await this.database.BeginInsertMatch(this.match, Logger);
+                await this.database.InsertTeamsAndTeamPlayers(match, Logger);
             });
 
             Logger.LogInformation("[StartMatch] Match started.");

@@ -9,6 +9,14 @@ CREATE TABLE IF NOT EXISTS CS2S_Team (
     Name varchar(64) DEFAULT "Team"
 );
 
+CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
+    PlayerID varchar(17) PRIMARY KEY NOT NULL,
+    Username varchar(255) NOT NULL,
+    AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg",
+    AvatarM varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg",
+    AvatarL varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg"
+) ENGINE=MyISAM;
+
 CREATE TABLE IF NOT EXISTS CS2S_Player (
     PlayerID varchar(17) PRIMARY KEY NOT NULL,
     ELO int DEFAULT 1000,
@@ -23,14 +31,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
     MatchesPlayed int DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
-    TeamID varchar(32),
-    PlayerID varchar(17),
-    PRIMARY KEY (TeamID, PlayerID),
-    FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
-);
-
 CREATE TABLE IF NOT EXISTS CS2S_Match (
     MatchID int PRIMARY KEY AUTO_INCREMENT,
     MapID varchar(128),
@@ -40,12 +40,24 @@ CREATE TABLE IF NOT EXISTS CS2S_Match (
     LosingTeamScore int,
     WinningSide int,
     DeltaELO int DEFAULT 0,
-	ServerTick int,
+    StartServerTick int,
+    EndServerTick int,
     MatchDate datetime DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (MapID) REFERENCES CS2S_Map(MapID),
     FOREIGN KEY (WinningTeamID) REFERENCES CS2S_Team(TeamID),
     FOREIGN KEY (LosingTeamID) REFERENCES CS2S_Team(TeamID)
 );
+
+/*
+CREATE TABLE IF NOT EXISTS CS2S_MatchTeams (
+    MatchID int,
+    TeamID varchar(32),
+    TeamScore int DEFAULT 0,  -- Score of the team in this match
+    FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+    FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
+    PRIMARY KEY (MatchID, TeamID)
+);
+*/
 
 CREATE TABLE IF NOT EXISTS CS2S_Round (
     RoundID int PRIMARY KEY AUTO_INCREMENT,
@@ -63,6 +75,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Round (
 CREATE TABLE IF NOT EXISTS CS2S_Death (
     DeathID int PRIMARY KEY AUTO_INCREMENT,
     RoundID int,
+    MatchID int,
     AttackerID varchar(17),
     AssisterID varchar(17),
     VictimID varchar(17),
@@ -71,6 +84,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
     ServerTick int,
     OpeningDeath bool,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
+	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (AttackerID) REFERENCES CS2S_Player(PlayerID),
     FOREIGN KEY (AssisterID) REFERENCES CS2S_Player(PlayerID),
     FOREIGN KEY (VictimID) REFERENCES CS2S_Player(PlayerID)
@@ -79,6 +93,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
 CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     HurtID int PRIMARY KEY AUTO_INCREMENT,
     RoundID int,
+    MatchID int,
     AttackerID varchar(17),
     VictimID varchar(17),
     DamageAmount int,
@@ -86,17 +101,36 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     Hitgroup int,
     ServerTick int,
 	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
+	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (AttackerID) REFERENCES CS2S_Player(PlayerID),
     FOREIGN KEY (VictimID) REFERENCES CS2S_Player(PlayerID)
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
-    PlayerID varchar(17) PRIMARY KEY NOT NULL,
-    Username varchar(255) NOT NULL,
-    AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg",
-    AvatarM varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg",
-    AvatarL varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg"
-) ENGINE=MyISAM;
+CREATE TABLE IF NOT EXISTS CS2S_KAST (
+    KASTID int PRIMARY KEY AUTO_INCREMENT,
+    RoundID int,
+    MatchID int,
+    PlayerID varchar(17),
+	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+);
+
+/*
+CREATE TABLE IF NOT EXISTS CS2S_PlayerRoundStat (
+   PlayerRoundStatID int PRIMARY KEY AUTO_INCREMENT,
+   RoundID int,
+   MatchID int,
+   PlayerID varchar(17),
+   Kills int DEFAULT 0,
+   Assists int DEFAULT 0,
+   Deaths int DEFAULT 0,
+   Damage int DEFAULT 0,
+   UtilityDamage int DEFAULT 0,
+   FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
+   FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+   FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+);
+*/
 
 CREATE TABLE IF NOT EXISTS CS2S_Live (
 	StaticID int PRIMARY KEY,
@@ -107,3 +141,27 @@ CREATE TABLE IF NOT EXISTS CS2S_Live (
     BombStatus int,
     RoundTime int
 ) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
+    TeamID varchar(32),
+    PlayerID varchar(17),
+    PRIMARY KEY (TeamID, PlayerID),
+    FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+);
+
+CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
+    PlayerID varchar(17),
+	MatchID int,
+    PRIMARY KEY (PlayerID, MatchID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID),
+    FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID)
+);
+
+CREATE TABLE IF NOT EXISTS CS2S_Team_Matches (
+    TeamID varchar(32),
+	MatchID int,
+    PRIMARY KEY (TeamID, MatchID),
+    FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
+    FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID)
+);

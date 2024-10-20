@@ -137,38 +137,72 @@ namespace CS2Stats {
 
     public partial class Database {
 
-        private async Task InsertOrUpdateTeamAsync(string teamId, int teamSize, ILogger Logger) {
+        private async Task InsertTeamAsync(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team (TeamID, TeamSize)
             VALUES (@TeamID, @TeamSize)
+            ON DUPLICATE KEY UPDATE
+                TeamID = TeamID
             ";
 
             using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                cmd.Parameters.AddWithValue("@TeamID", teamId);
-                cmd.Parameters.AddWithValue("@TeamSize", teamSize);
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                cmd.Parameters.AddWithValue("@TeamSize", teamInfo.PlayerIDs.Count);
 
                 await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamId} inserted successfully.");
+                Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
             }
         }
 
-        private async Task InsertTeamPlayersAsync(string teamId, IEnumerable<ulong> playerIds, ILogger Logger) {
+        private async Task InsertTeamPlayersAsync(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team_Players (TeamID, PlayerID)
             VALUES (@TeamID, @PlayerID)
             ";
 
             using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                foreach (ulong playerId in playerIds) {
+                foreach (ulong playerID in teamInfo.PlayerIDs) {
                     cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@TeamID", teamId);
-                    cmd.Parameters.AddWithValue("@PlayerID", playerId);
+                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[InsertTeamPlayersAsync] Player {playerId} added to Team {teamId}.");
+                    Logger.LogInformation($"[InsertTeamPlayersAsync] Player {playerID} added to Team {teamInfo.TeamID}.");
                 }
             }
+        }
 
+        private async Task InsertTeamMatchAsync(TeamInfo teamInfo, Match match, ILogger Logger) {
+            string query = @"
+            INSERT INTO CS2S_Team_Matches (TeamID, MatchID)
+            VALUES (@TeamID, @MatchID)
+            ";
 
+            using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[InsertTeamMatchAsync] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
+            }
+        }
+
+        private async Task InsertPlayerMatchesAsync(Match match, TeamInfo teamInfo, ILogger Logger) {
+            string query = @"
+            INSERT INTO CS2S_Player_Matches (PlayerID, MatchID)
+            VALUES (@PlayerID, @MatchID)
+            ";
+
+            using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                foreach (ulong playerID in teamInfo.PlayerIDs) {
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+
+                    await cmd.ExecuteNonQueryAsync();
+                    Logger.LogInformation($"[InsertPlayerMatchesAsync] Match {match.MatchID} added to Player {playerID}.");
+                }
+            }
         }
 
         private async Task IncrementPlayerKills(ulong? playerID, ILogger Logger) {

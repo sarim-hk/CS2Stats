@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace CS2Stats {
     public partial class Database {
@@ -84,10 +85,10 @@ namespace CS2Stats {
                 INSERT INTO CS2S_PlayerInfo (PlayerID, Username, AvatarS, AvatarM, AvatarL)
                 VALUES (@PlayerID, @Username, @AvatarS, @AvatarM, @AvatarL)
                 ON DUPLICATE KEY UPDATE 
-                Username = VALUES(Username),
-                AvatarS = VALUES(AvatarS),
-                AvatarM = VALUES(AvatarM),
-                AvatarL = VALUES(AvatarL);
+                    Username = VALUES(Username),
+                    AvatarS = VALUES(AvatarS),
+                    AvatarM = VALUES(AvatarM),
+                    AvatarL = VALUES(AvatarL)
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
@@ -107,11 +108,13 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertTeamsAndTeamPlayers(Dictionary<string, TeamInfo> startingPlayers, ILogger Logger) {
+        public async Task InsertTeamsAndTeamPlayers(Match match, ILogger Logger) {
             try {
-                foreach (string teamID in startingPlayers.Keys) {
-                    await InsertOrUpdateTeamAsync(teamID, startingPlayers[teamID].PlayerIDs.Count, Logger);
-                    await InsertTeamPlayersAsync(teamID, startingPlayers[teamID].PlayerIDs, Logger);
+                foreach (TeamInfo teamInfo in match.StartingPlayers.Values) {
+                    await InsertTeamAsync(teamInfo, Logger);
+                    await InsertTeamPlayersAsync(teamInfo, Logger);
+                    await InsertTeamMatchAsync(teamInfo, match, Logger);
+                    await InsertPlayerMatchesAsync(match, teamInfo, Logger);
                 } 
 
             }
@@ -141,23 +144,24 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertBatchedHurtEvents(Round round, ILogger Logger) {
-            if (round.hurtEvents == null || round.hurtEvents.Count == 0) {
+        public async Task InsertBatchedHurtEvents(Match match, ILogger Logger) {
+            if (match.Round.hurtEvents == null || match.Round.hurtEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedHurtEvents] Hurt events are null.");
                 return;
             }
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Hurt (RoundID, AttackerID, VictimID, DamageAmount, Weapon, Hitgroup, ServerTick)
-                VALUES (@RoundID, @AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup, @ServerTick);
+                INSERT INTO CS2S_Hurt (RoundID, MatchID, AttackerID, VictimID, DamageAmount, Weapon, Hitgroup, ServerTick)
+                VALUES (@RoundID, @MatchID, @AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup, @ServerTick);
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    foreach (HurtEvent hurtEvent in round.hurtEvents) {
+                    foreach (HurtEvent hurtEvent in match.Round.hurtEvents) {
                         cmd.Parameters.Clear();
 
-                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                        cmd.Parameters.AddWithValue("@RoundID", match.Round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                         cmd.Parameters.AddWithValue("@AttackerID", hurtEvent.AttackerID);
                         cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
                         cmd.Parameters.AddWithValue("@DamageAmount", hurtEvent.DamageAmount);
@@ -178,23 +182,24 @@ namespace CS2Stats {
 
         }
 
-        public async Task InsertBatchedDeathEvents(Round round, ILogger Logger) {
-            if (round.deathEvents == null || round.deathEvents.Count == 0) {
+        public async Task InsertBatchedDeathEvents(Match match, ILogger Logger) {
+            if (match.Round.deathEvents == null || match.Round.deathEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedDeathEvents] Hurt events are null.");
                 return;
             }
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Death (RoundID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup, OpeningDeath, ServerTick)
-                VALUES (@RoundID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup, @OpeningDeath, @ServerTick);
+                INSERT INTO CS2S_Death (RoundID, MatchID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup, OpeningDeath, ServerTick)
+                VALUES (@RoundID, @MatchID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup, @OpeningDeath, @ServerTick);
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    foreach (DeathEvent deathEvent in round.deathEvents) {
+                    foreach (DeathEvent deathEvent in match.Round.deathEvents) {
                         cmd.Parameters.Clear();
 
-                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                        cmd.Parameters.AddWithValue("@RoundID", match.Round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                         cmd.Parameters.AddWithValue("@AttackerID", deathEvent.AttackerID);
                         cmd.Parameters.AddWithValue("@AssisterID", deathEvent.AssisterID);
                         cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
@@ -223,6 +228,37 @@ namespace CS2Stats {
             }
         }
 
+        public async Task InsertBatchedKAST(Match match, ILogger Logger) {
+            if (match.Round.playersKAST == null || match.Round.playersKAST.Count == 0) {
+                Logger.LogInformation("[InsertBatchedKAST] Players KAST is null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_KAST (RoundID, MatchID, PlayerID)
+                VALUES (@RoundID, @MatchID, @PlayerID);
+                ";
+
+                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    foreach (ulong playerID in match.Round.playersKAST) {
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@RoundID", match.Round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of players KAST inserted successfully.");
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of players KAST.");
+            }
+
+        }
+
         public async Task InsertLive(LiveData liveData, ILogger Logger) {
             try {
                 string tPlayersJson = JsonConvert.SerializeObject(liveData.TPlayers);
@@ -232,12 +268,13 @@ namespace CS2Stats {
                 INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus, RoundTime)
                 VALUES (1, @TPlayers, @CTPlayers, @TScore, @CTScore, @BombStatus, @RoundTime)
                 ON DUPLICATE KEY UPDATE 
-                    TPlayers = @TPlayers, 
-                    CTPlayers = @CTPlayers, 
-                    TScore = @TScore, 
-                    CTScore = @CTScore, 
-                    BombStatus = @BombStatus, 
-                    RoundTime = @RoundTime";
+                    TPlayers = VALUES(TPlayers), 
+                    CTPlayers = VALUES(CTPlayers), 
+                    TScore = VALUES(TScore), 
+                    CTScore = VALUES(CTScore), 
+                    BombStatus = VALUES(BombStatus), 
+                    RoundTime = VALUES(RoundTime)
+                ";
 
                 MySqlConnection tempConn = new MySqlConnection(this.ConnString);
                 await tempConn.OpenAsync();
@@ -263,14 +300,14 @@ namespace CS2Stats {
         public async Task<int?> BeginInsertMatch(Match match, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_Match (MapID, WinningTeamID, LosingTeamID, WinningTeamScore, LosingTeamScore, WinningSide, ServerTick)
-                VALUES (@MapID, NULL, NULL, NULL, NULL, NULL, @ServerTick);
+                INSERT INTO CS2S_Match (MapID, WinningTeamID, LosingTeamID, WinningTeamScore, LosingTeamScore, WinningSide, StartServerTick, EndServerTick)
+                VALUES (@MapID, NULL, NULL, NULL, NULL, NULL, @StartServerTick, NULL);
                 SELECT LAST_INSERT_ID();
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
                     cmd.Parameters.AddWithValue("@MapID", match.MapName);
-                    cmd.Parameters.AddWithValue("@ServerTick", match.serverTick);
+                    cmd.Parameters.AddWithValue("@StartServerTick", match.startServerTick);
 
                     object? result = await cmd.ExecuteScalarAsync();
 
@@ -279,7 +316,7 @@ namespace CS2Stats {
                         return matchID;
                     }
                     else {
-                        Logger.LogInformation("[BeginInsertMatch] Failed to retrieve the MatchID.");
+                        Logger.LogInformation("[BeginInsertMatch] Failed to retrieve MatchID.");
                         return null;
                     }
                 }
@@ -387,7 +424,7 @@ namespace CS2Stats {
                 INSERT INTO CS2S_Player (PlayerID)
                 VALUES (@PlayerID)
                 ON DUPLICATE KEY UPDATE
-                ELO = ELO
+                    PlayerID = PlayerID
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
