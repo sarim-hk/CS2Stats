@@ -29,7 +29,7 @@ namespace CS2Stats
             }
 
             this.match.Round = new Round();
-            this.match.Round.serverTick = Server.TickCount;
+            this.match.Round.ServerTick = Server.TickCount;
 
             this.SwapTeamsIfNeeded();
 
@@ -126,7 +126,7 @@ namespace CS2Stats
                     Server.TickCount
                 );
 
-                this.match.Round.hurtEvents.Add(hurtEvent);
+                this.match.Round.HurtEvents.Add(hurtEvent);
             }
 
             return HookResult.Continue;
@@ -140,19 +140,19 @@ namespace CS2Stats
 
             if (@event.Userid != null) {
 
-                var matchingDeathEvent = this.match.Round.deathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
+                var matchingDeathEvent = this.match.Round.DeathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
 
                 if (matchingDeathEvent != null && Server.TickCount < matchingDeathEvent.ServerTick + (5 * Server.TickInterval)) {
                     this.match.Round.KASTEvents.Add(matchingDeathEvent.VictimID);
                 }
 
-                this.match.Round.deathEvents.Add(new DeathEvent(
+                this.match.Round.DeathEvents.Add(new DeathEvent(
                     @event.Attacker?.SteamID,
                     @event.Assister?.SteamID,
                     @event.Userid.SteamID,
                     @event.Weapon,
                     @event.Hitgroup,
-                    !this.match.Round.openingDeathOccurred,
+                    !this.match.Round.OpeningDeathOccurred,
                     Server.TickCount
                 ));
 
@@ -165,7 +165,7 @@ namespace CS2Stats
                 }
             }
 
-            this.match.Round.openingDeathOccurred = true;
+            this.match.Round.OpeningDeathOccurred = true;
 
             LiveData liveData = GetLiveMatchData();
             Task.Run(() => this.database.InsertLive(liveData, Logger));
