@@ -8,15 +8,15 @@ namespace CS2Stats {
 
         public MySqlConnection? conn;
         public MySqlTransaction? transaction;
-        private string ConnString;
+        private string connString;
 
         public Database(string server, string db, string username, string password) {
-            this.ConnString = $"SERVER={server};" +
+            this.connString = $"SERVER={server};" +
                                $"DATABASE={db};" +
                                $"UID={username};" +
                                $"PASSWORD={password};";
 
-            MySqlConnection conn = new MySqlConnection(this.ConnString);
+            MySqlConnection conn = new MySqlConnection(this.connString);
             conn.OpenAsync();
             this.conn = conn;
 
@@ -172,7 +172,10 @@ namespace CS2Stats {
                         cmd.Parameters.AddWithValue("@ServerTick", hurtEvent.ServerTick);
 
                         await cmd.ExecuteNonQueryAsync();
-                        await IncrementPlayerDamage(hurtEvent.AttackerID, hurtEvent.Weapon, hurtEvent.DamageAmount, Logger);
+
+                        if (hurtEvent.AttackerID != null) {
+                            await IncrementPlayerDamage(hurtEvent.AttackerID, hurtEvent.Weapon, hurtEvent.DamageAmount, Logger);
+                        }
                     }
 
                     Logger.LogInformation($"[InsertBatchedHurtEvents] Batch of hurt events inserted successfully.");
@@ -278,7 +281,7 @@ namespace CS2Stats {
                     RoundTime = VALUES(RoundTime)
                 ";
 
-                MySqlConnection tempConn = new MySqlConnection(this.ConnString);
+                MySqlConnection tempConn = new MySqlConnection(this.connString);
                 await tempConn.OpenAsync();
                 using (MySqlCommand cmd = new MySqlCommand(query, tempConn)) {
                     cmd.Parameters.AddWithValue("@TPlayers", tPlayersJson);

@@ -12,7 +12,7 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         // thanks to switz https://discord.com/channels/1160907911501991946/1160925208203493468/1170817201473855619
-        private int? GetCSTeamScore(int teamNum) {
+        private static int? GetCSTeamScore(int teamNum) {
             IEnumerable<CCSTeam> teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
 
             foreach (CCSTeam teamManager in teamManagers) {
@@ -29,9 +29,9 @@ namespace CS2Stats {
             return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
         }
 
-        private string GenerateTeamID(HashSet<ulong> teamPlayerIDs, ILogger Logger) {
+        private static string GenerateTeamID(HashSet<ulong> teamPlayerIDs, ILogger Logger) {
             string teamID = BitConverter.ToString(
-                MD5.Create().ComputeHash(
+                MD5.HashData(
                     Encoding.UTF8.GetBytes(
                         string.Join("", teamPlayerIDs.OrderBy(id => id))
                     )
@@ -66,7 +66,7 @@ namespace CS2Stats {
             }
         }
 
-        private LiveData GetLiveMatchData() {
+        private static LiveData GetLiveMatchData() {
             HashSet<LivePlayer> tPlayers = new HashSet<LivePlayer>();
             HashSet<LivePlayer> ctPlayers = new HashSet<LivePlayer>();
 
@@ -270,7 +270,7 @@ namespace CS2Stats {
             }
         }
 
-        private async Task IncrementPlayerDamage(ulong playerID, string weapon, int damageAmount, ILogger Logger) {
+        private async Task IncrementPlayerDamage(ulong? playerID, string weapon, int damageAmount, ILogger Logger) {
             try {
                 string query;
 
