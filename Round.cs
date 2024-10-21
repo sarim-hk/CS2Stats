@@ -11,9 +11,9 @@
 
         public Round() {
             this.OpeningDeathOccurred = false;
-            this.KASTEvents = new HashSet<ulong>();
-            this.HurtEvents = new HashSet<HurtEvent>();
-            this.DeathEvents = new HashSet<DeathEvent>();
+            this.KASTEvents = [];
+            this.HurtEvents = [];
+            this.DeathEvents = [];
         }
     }
 

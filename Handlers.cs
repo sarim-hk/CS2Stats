@@ -3,10 +3,8 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
-using System.Numerics;
 
-namespace CS2Stats
-{
+namespace CS2Stats {
 
     public partial class CS2Stats {
 
@@ -28,8 +26,9 @@ namespace CS2Stats
                 return HookResult.Continue;
             }
 
-            this.match.Round = new Round();
-            this.match.Round.ServerTick = Server.TickCount;
+            this.match.Round = new Round {
+                ServerTick = Server.TickCount
+            };
 
             this.SwapTeamsIfNeeded();
 
@@ -48,14 +47,14 @@ namespace CS2Stats
                 Logger.LogInformation("[EventCsWinPanelMatchHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
-            
+
             this.match.finishServerTick = Server.TickCount;
 
-            LiveData liveData = new LiveData(null, null, null, null, null, null);
+            LiveData liveData = new(null, null, null, null, null, null);
             HashSet<ulong> startingPlayerIDs = this.match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
                 .ToHashSet();
-            
+
             Task.Run(async () => {
 
                 try {
@@ -77,7 +76,7 @@ namespace CS2Stats
                             teamNumInfo2.DeltaELO = (int)Math.Round(50 * (1 - expectedWin));
                             teamNumInfo3.DeltaELO = -teamNumInfo2.DeltaELO;
                         }
-                        
+
                         else if (teamNumInfo3.Result == "Win") {
                             double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo2.AverageELO - teamNumInfo3.AverageELO) / 400));
                             teamNumInfo3.DeltaELO = (int)Math.Round(50 * (1 - expectedWin));
@@ -117,7 +116,7 @@ namespace CS2Stats
             }
 
             if (@event.Userid != null) {
-                HurtEvent hurtEvent = new HurtEvent(
+                HurtEvent hurtEvent = new(
                     @event.Attacker?.SteamID,
                     @event.Userid.SteamID,
                     Math.Clamp(@event.DmgHealth, 1, 100),
@@ -228,7 +227,7 @@ namespace CS2Stats
                 }
 
             });
-            
+
             return HookResult.Continue;
         }
 
