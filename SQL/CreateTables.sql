@@ -2,13 +2,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Map (
     MapID varchar(128) PRIMARY KEY NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_Team (
-    TeamID varchar(32) PRIMARY KEY,
-	TeamSize int,
-    ELO int DEFAULT 1000,
-    Name varchar(64) DEFAULT "Team"
-);
-
 CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
     PlayerID varchar(17) PRIMARY KEY NOT NULL,
     Username varchar(255) NOT NULL,
@@ -31,33 +24,32 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
     MatchesPlayed int DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS CS2S_Team (
+    TeamID varchar(32) PRIMARY KEY,
+	TeamSize int,
+    ELO int DEFAULT 1000,
+    Name varchar(64) DEFAULT "Team"
+);
+
 CREATE TABLE IF NOT EXISTS CS2S_Match (
     MatchID int PRIMARY KEY AUTO_INCREMENT,
     MapID varchar(128),
-    WinningTeamID varchar(32),
-    LosingTeamID varchar(32),
-    WinningTeamScore int,
-    LosingTeamScore int,
-    WinningSide int,
-    DeltaELO int DEFAULT 0,
-    StartServerTick int,
-    EndServerTick int,
+    BeginServerTick int,
+    FinishServerTick int,
     MatchDate datetime DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (MapID) REFERENCES CS2S_Map(MapID),
-    FOREIGN KEY (WinningTeamID) REFERENCES CS2S_Team(TeamID),
-    FOREIGN KEY (LosingTeamID) REFERENCES CS2S_Team(TeamID)
+    FOREIGN KEY (MapID) REFERENCES CS2S_Map(MapID)
 );
 
-/*
-CREATE TABLE IF NOT EXISTS CS2S_MatchTeams (
-    MatchID int,
+CREATE TABLE IF NOT EXISTS CS2S_TeamResult (
     TeamID varchar(32),
-    TeamScore int DEFAULT 0,  -- Score of the team in this match
-    FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+	MatchID int,
+	Score int,
+    Result ENUM("Win", "Loss", "Tie"),
+    DeltaELO int,
+    PRIMARY KEY (TeamID, MatchID),
     FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
-    PRIMARY KEY (MatchID, TeamID)
+    FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID)
 );
-*/
 
 CREATE TABLE IF NOT EXISTS CS2S_Round (
     RoundID int PRIMARY KEY AUTO_INCREMENT,
@@ -158,10 +150,3 @@ CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID)
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_Team_Matches (
-    TeamID varchar(32),
-	MatchID int,
-    PRIMARY KEY (TeamID, MatchID),
-    FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
-    FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID)
-);

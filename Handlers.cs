@@ -48,6 +48,8 @@ namespace CS2Stats
                 Logger.LogInformation("[EventCsWinPanelMatchHandler] Database conn/transaction or match is null. Returning.");
                 return HookResult.Continue;
             }
+            
+            this.match.finishServerTick = Server.TickCount;
 
             LiveData liveData = new LiveData(null, null, null, null, null, null);
             List<ulong> startingPlayerIDs = match.StartingPlayers.Values
@@ -55,24 +57,42 @@ namespace CS2Stats
                 .ToList();
             
             Task.Run(async () => {
-                
+
                 try {
-                    (string? winningTeamID, string? losingTeamID, int? winningTeamScore, int? losingTeamScore, int? winningTeamNum) = this.GetMatchWinner();
+                    TeamInfo? teamNumInfo2 = GetTeamInfoByTeamNum((int)CsTeam.Terrorist);
+                    TeamInfo? teamNumInfo3 = GetTeamInfoByTeamNum((int)CsTeam.CounterTerrorist);
 
-                    if (winningTeamID != null && losingTeamID != null) {
-                        int? winningTeamAverageELO = await this.database.GetTeamAverageELO(winningTeamID, Logger);
-                        int? losingTeamAverageELO = await this.database.GetTeamAverageELO(losingTeamID, Logger);
+                    if (teamNumInfo2 != null && teamNumInfo3 != null) {
+                        teamNumInfo2.Score = GetCSTeamScore((int)CsTeam.Terrorist);
+                        teamNumInfo3.Score = GetCSTeamScore((int)CsTeam.CounterTerrorist);
 
-                        if (winningTeamAverageELO != null && losingTeamAverageELO != null) {
-                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(losingTeamAverageELO - winningTeamAverageELO) / 400));
-                            int deltaELO = (int)Math.Round(50 * (1 - expectedWin));
+                        teamNumInfo2.Result = teamNumInfo2.Score > teamNumInfo3.Score ? "Win" : (teamNumInfo2.Score < teamNumInfo3.Score ? "Loss" : "Tie");
+                        teamNumInfo3.Result = teamNumInfo3.Score > teamNumInfo2.Score ? "Win" : (teamNumInfo3.Score < teamNumInfo2.Score ? "Loss" : "Tie");
 
-                            await this.database.FinishInsertMatch(match.MatchID, winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum, deltaELO, Logger);
-                            await this.database.UpdateTeamELO(winningTeamID, deltaELO, true, Logger);
-                            await this.database.UpdateTeamELO(losingTeamID, deltaELO, false, Logger);
+                        teamNumInfo2.AverageELO = await this.database.GetTeamAverageELO(teamNumInfo2.TeamID, Logger);
+                        teamNumInfo3.AverageELO = await this.database.GetTeamAverageELO(teamNumInfo3.TeamID, Logger);
+
+                        if (teamNumInfo2.Result == "Win") {
+                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo3.AverageELO - teamNumInfo2.AverageELO) / 400));
+                            teamNumInfo2.DeltaELO = (int)Math.Round(50 * (1 - expectedWin));
+                            teamNumInfo3.DeltaELO = -teamNumInfo2.DeltaELO;
                         }
+                        
+                        else if (teamNumInfo3.Result == "Win") {
+                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo2.AverageELO - teamNumInfo3.AverageELO) / 400));
+                            teamNumInfo3.DeltaELO = (int)Math.Round(50 * (1 - expectedWin));
+                            teamNumInfo2.DeltaELO = -teamNumInfo3.DeltaELO;
+                        }
+
+                        Logger.LogInformation($"Team 2 Info: {teamNumInfo2.TeamID}, Score: {teamNumInfo2.Score}, Result: {teamNumInfo2.Result}, ELO: {teamNumInfo2.AverageELO}, DeltaELO: {teamNumInfo2.DeltaELO}");
+                        Logger.LogInformation($"Team 3 Info: {teamNumInfo3.TeamID}, Score: {teamNumInfo3.Score}, Result: {teamNumInfo3.Result}, ELO: {teamNumInfo3.AverageELO}, DeltaELO: {teamNumInfo3.DeltaELO}");
+                        await this.database.FinishInsertTeamResult(match, teamNumInfo2, Logger);
+                        await this.database.FinishInsertTeamResult(match, teamNumInfo3, Logger);
+                        await this.database.UpdateELO(teamNumInfo2, Logger);
+                        await this.database.UpdateELO(teamNumInfo3, Logger);
                     }
 
+                    await this.database.FinishInsertMatch(match, Logger);
                     await this.database.IncrementMultiplePlayerMatchesPlayed(startingPlayerIDs, Logger);
                     await this.database.InsertLive(liveData, Logger);
                     await this.database.CommitTransaction();
@@ -162,8 +182,8 @@ namespace CS2Stats
             int winningTeamNum = @event.Winner;
             int winningReason = @event.Reason;
             int losingTeamNum = (winningTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
-            string? winningTeamID = GetTeamIDByTeamNum(winningTeamNum);
-            string? losingTeamID = GetTeamIDByTeamNum(losingTeamNum);
+            string? winningTeamID = GetTeamInfoByTeamNum(winningTeamNum)?.TeamID;
+            string? losingTeamID = GetTeamInfoByTeamNum(losingTeamNum)?.TeamID;
 
             List<ulong> playerIDs = Utilities.GetPlayers()
                 .Where(playerController =>

@@ -41,13 +41,13 @@ namespace CS2Stats {
             return teamID;
         }
 
-        private string? GetTeamIDByTeamNum(int teamNum) {
+        private TeamInfo? GetTeamInfoByTeamNum(int teamNum) {
             if (match != null) {
                 foreach (string teamID in match.StartingPlayers.Keys) {
                     TeamInfo teamInfo = match.StartingPlayers[teamID];
 
                     if (teamInfo.Side == teamNum) {
-                        return teamID;
+                        return teamInfo;
                     }
                 }
             }
@@ -64,36 +64,6 @@ namespace CS2Stats {
                 match.TeamsNeedSwapping = false;
                 Logger.LogInformation("[SwapTeamsIfNeeded] Setting teamsNeedSwapping to false.");
             }
-        }
-
-        private (string?, string?, int?, int?, int?) GetMatchWinner() {
-            if (this.database == null || this.match == null) {
-                return (null, null, null, null, null);
-            }
-
-            int? team2Score = GetCSTeamScore((int)CsTeam.Terrorist);
-            int? team3Score = GetCSTeamScore((int)CsTeam.CounterTerrorist);
-
-            if (team2Score.HasValue && team3Score.HasValue) {
-                if (team2Score != team3Score) {
-                    int winningTeamNum = (team2Score > team3Score) ? (int)CsTeam.Terrorist : (int)CsTeam.CounterTerrorist;
-                    int losingTeamNum = (winningTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
-
-                    string? winningTeamID = GetTeamIDByTeamNum(winningTeamNum);
-                    string? losingTeamID = GetTeamIDByTeamNum(losingTeamNum);
-
-                    int? winningTeamScore = (winningTeamNum == (int)CsTeam.Terrorist) ? team2Score : team3Score;
-                    int? losingTeamScore = (losingTeamNum == (int)CsTeam.Terrorist) ? team2Score : team3Score;                 
-                    return (winningTeamID, losingTeamID, winningTeamScore, losingTeamScore, winningTeamNum);
-                }
-
-                else {
-                    Logger.LogInformation("[UpdateMatchWithWinner] Game is a tie - not updating match info");
-                }
-
-            }
-            return (null, null, null, null, null);
-
         }
 
         private LiveData GetLiveMatchData() {
@@ -158,6 +128,8 @@ namespace CS2Stats {
             string query = @"
             INSERT INTO CS2S_Team_Players (TeamID, PlayerID)
             VALUES (@TeamID, @PlayerID)
+            ON DUPLICATE KEY UPDATE
+                TeamID = TeamID
             ";
 
             using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
@@ -172,18 +144,25 @@ namespace CS2Stats {
             }
         }
 
-        private async Task InsertTeamMatchAsync(TeamInfo teamInfo, Match match, ILogger Logger) {
-            string query = @"
-            INSERT INTO CS2S_Team_Matches (TeamID, MatchID)
-            VALUES (@TeamID, @MatchID)
-            ";
+        private async Task BeginInsertTeamResultAsync(Match match, TeamInfo teamInfo, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
+                VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
+                ";
 
-            using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
 
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[InsertTeamMatchAsync] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
+                    await cmd.ExecuteNonQueryAsync();
+                    Logger.LogInformation($"[BeginInsertTeamResultAsync] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
+                }
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, $"[BeginInsertTeamResultAsync] Error occurred while inserting team results for team {teamInfo.TeamID}.");
             }
         }
 
