@@ -29,15 +29,15 @@ namespace CS2Stats {
             return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
         }
 
-        private string GenerateTeamID(List<ulong> teamPlayers, ILogger Logger) {
+        private string GenerateTeamID(HashSet<ulong> teamPlayerIDs, ILogger Logger) {
             string teamID = BitConverter.ToString(
                 MD5.Create().ComputeHash(
                     Encoding.UTF8.GetBytes(
-                        string.Join("", teamPlayers.OrderBy(id => id))
+                        string.Join("", teamPlayerIDs.OrderBy(id => id))
                     )
                 )
             ).Replace("-", "");
-            Logger.LogInformation($"[GenerateTeamID] Team: {string.Join(", ", teamPlayers)} are {teamID}");
+            Logger.LogInformation($"[GenerateTeamID] Team: {string.Join(", ", teamPlayerIDs)} are {teamID}");
             return teamID;
         }
 
@@ -67,8 +67,8 @@ namespace CS2Stats {
         }
 
         private LiveData GetLiveMatchData() {
-            List<LivePlayer> tPlayers = new List<LivePlayer>();
-            List<LivePlayer> ctPlayers = new List<LivePlayer>();
+            HashSet<LivePlayer> tPlayers = new HashSet<LivePlayer>();
+            HashSet<LivePlayer> ctPlayers = new HashSet<LivePlayer>();
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
             foreach (var playerController in playerControllers) {

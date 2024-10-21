@@ -5,15 +5,15 @@
         public int? RoundID;
         public int? serverTick;
         public bool openingDeathOccurred;
-        public HashSet<ulong> playersKAST;
-        public List<HurtEvent> hurtEvents;
-        public List<DeathEvent> deathEvents;
+        public HashSet<ulong> KASTEvents;
+        public HashSet<HurtEvent> hurtEvents;
+        public HashSet<DeathEvent> deathEvents;
 
         public Round() {
             this.openingDeathOccurred = false;
-            this.playersKAST = new HashSet<ulong>();
-            this.hurtEvents = new List<HurtEvent>();
-            this.deathEvents = new List<DeathEvent>();
+            this.KASTEvents = new HashSet<ulong>();
+            this.hurtEvents = new HashSet<HurtEvent>();
+            this.deathEvents = new HashSet<DeathEvent>();
         }
     }
 

@@ -20,14 +20,14 @@
     }
 
     public class LiveData {
-        public List<LivePlayer>? TPlayers;
-        public List<LivePlayer>? CTPlayers;
+        public HashSet<LivePlayer>? TPlayers;
+        public HashSet<LivePlayer>? CTPlayers;
         public int? TScore;
         public int? CTScore;
         public float? RoundTime;
         public int? BombStatus;
 
-        public LiveData(List<LivePlayer>? tPlayers, List<LivePlayer>? ctPlayers, int? tScore, int? ctScore, float? roundTime, int? bombStatus) {
+        public LiveData(HashSet<LivePlayer>? tPlayers, HashSet<LivePlayer>? ctPlayers, int? tScore, int? ctScore, float? roundTime, int? bombStatus) {
             this.TPlayers = tPlayers;
             this.CTPlayers = ctPlayers;
             this.TScore = tScore;
