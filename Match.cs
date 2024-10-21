@@ -33,8 +33,8 @@ namespace CS2Stats {
         public int? MatchID;
         public string? MapName;
         public bool TeamsNeedSwapping;
-        public int? beginServerTick;
-        public int? finishServerTick;
+        public int? StartTick;
+        public int? EndTick;
 
         public Dictionary<string, TeamInfo> StartingPlayers;
         public Round Round;

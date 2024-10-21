@@ -21,7 +21,7 @@ namespace CS2Stats {
 
             this.match = new Match();
             this.match.MapName = Server.MapName;
-            this.match.beginServerTick = Server.TickCount;
+            this.match.StartTick = Server.TickCount;
 
             HashSet<ulong> team2 = new();
             HashSet<ulong> team3 = new();
