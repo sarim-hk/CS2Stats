@@ -42,9 +42,9 @@ namespace CS2Stats {
         }
 
         private TeamInfo? GetTeamInfoByTeamNum(int teamNum) {
-            if (match != null) {
-                foreach (string teamID in match.StartingPlayers.Keys) {
-                    TeamInfo teamInfo = match.StartingPlayers[teamID];
+            if (this.match != null) {
+                foreach (string teamID in this.match.StartingPlayers.Keys) {
+                    TeamInfo teamInfo = this.match.StartingPlayers[teamID];
 
                     if (teamInfo.Side == teamNum) {
                         return teamInfo;
@@ -56,12 +56,12 @@ namespace CS2Stats {
         }
 
         private void SwapTeamsIfNeeded() {
-            if (match != null && match.TeamsNeedSwapping) {
-                foreach (string teamID in match.StartingPlayers.Keys) {
+            if (this.match != null && this.match.TeamsNeedSwapping) {
+                foreach (string teamID in this.match.StartingPlayers.Keys) {
                     Logger.LogInformation($"[SwapTeamsIfNeeded] Swapping team for teamID {teamID}.");
-                    match.StartingPlayers[teamID].SwapSides();
+                    this.match.StartingPlayers[teamID].SwapSides();
                 }
-                match.TeamsNeedSwapping = false;
+                this.match.TeamsNeedSwapping = false;
                 Logger.LogInformation("[SwapTeamsIfNeeded] Setting teamsNeedSwapping to false.");
             }
         }
