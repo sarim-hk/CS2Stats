@@ -89,14 +89,14 @@ namespace CS2Stats {
 
             int? tScore = GetCSTeamScore(2);
             int? ctScore = GetCSTeamScore(3);
-            float roundTime = Server.TickCount - round.StartTick;
+            int roundTick = Server.TickCount - round.StartTick;
 
             int bombStatus = GetGameRules().BombPlanted switch {
                 true => 1,
                 false => GetGameRules().BombDefused ? 2 : 0
             };
 
-            LiveData liveData = new(tPlayers, ctPlayers, tScore, ctScore, roundTime, bombStatus);
+            LiveData liveData = new(tPlayers, ctPlayers, tScore, ctScore, roundTick, bombStatus);
             return liveData;
 
         }
@@ -328,6 +328,30 @@ namespace CS2Stats {
             }
         }
 
+        private async Task IncrementPlayerEnemiesFlashed(ulong playerID, ILogger Logger) {
+            try {
+                string query = @"
+                UPDATE CS2S_Player
+                SET EnemiesFlashed = EnemiesFlashed + 1
+                WHERE PlayerID = @PlayerID;
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
+
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+                if (rowsAffected > 0) {
+                    Logger.LogInformation($"[IncrementPlayerEnemiesFlashed] Successfully incremented enemies flashed for player {playerID}.");
+                }
+                else {
+                    Logger.LogInformation($"[IncrementPlayerEnemiesFlashed] No rows were updated. Player {playerID} might not exist.");
+                }
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, $"[IncrementPlayerEnemiesFlashed] Error occurred while incrementing enemies flashed for player {playerID}.");
+            }
+        }
 
     }
 

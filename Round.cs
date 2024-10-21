@@ -9,6 +9,7 @@
         public HashSet<ulong> KASTEvents;
         public HashSet<HurtEvent> HurtEvents;
         public HashSet<DeathEvent> DeathEvents;
+        public HashSet<BlindEvent> BlindEvents;
 
         public string? WinningTeamID;
         public string? LosingTeamID;
@@ -21,6 +22,7 @@
             this.KASTEvents = [];
             this.HurtEvents = [];
             this.DeathEvents = [];
+            this.BlindEvents = [];
         }
     }
 
@@ -58,6 +60,22 @@
             this.Weapon = weapon;
             this.Hitgroup = hitgroup;
             this.OpeningDeath = openingDeath;
+            this.RoundTick = roundTick;
+        }
+    }
+
+    public class BlindEvent {
+        public ulong ThrowerID;
+        public ulong BlindedID;
+        public float Duration;
+        public bool TeamFlash;
+        public int RoundTick;
+
+        public BlindEvent(ulong throwerID, ulong blindedID, float duration, bool teamFlash, int roundTick) {
+            this.ThrowerID = throwerID;
+            this.BlindedID = blindedID;
+            this.Duration = duration;
+            this.TeamFlash = teamFlash;
             this.RoundTick = roundTick;
         }
     }
