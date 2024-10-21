@@ -116,9 +116,9 @@ namespace CS2Stats
                 return HookResult.Continue;
             }
 
-            if (@event.Attacker != null && @event.Userid != null) {
+            if (@event.Userid != null) {
                 HurtEvent hurtEvent = new HurtEvent(
-                    @event.Attacker.SteamID,
+                    @event.Attacker?.SteamID,
                     @event.Userid.SteamID,
                     Math.Clamp(@event.DmgHealth, 1, 100),
                     @event.Weapon,

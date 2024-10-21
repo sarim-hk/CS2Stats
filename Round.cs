@@ -18,14 +18,14 @@
     }
 
     public class HurtEvent {
-        public ulong AttackerID;
+        public ulong? AttackerID;
         public ulong VictimID;
         public int DamageAmount;
         public string Weapon;
         public int Hitgroup;
         public int ServerTick;
 
-        public HurtEvent(ulong attackerID, ulong victimID, int damageAmount, string weapon, int hitGroup, int serverTick) {
+        public HurtEvent(ulong? attackerID, ulong victimID, int damageAmount, string weapon, int hitGroup, int serverTick) {
             this.AttackerID = attackerID;
             this.VictimID = victimID;
             this.DamageAmount = damageAmount;

@@ -3,7 +3,7 @@
 namespace CS2Stats {
 
     public class SteamAPIClient {
-        private string steamAPIKey;
+        private readonly string steamAPIKey;
 
         public SteamAPIClient(string steamAPIKey) {
             this.steamAPIKey = steamAPIKey;
