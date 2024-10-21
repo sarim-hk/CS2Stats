@@ -14,8 +14,8 @@ namespace CS2Stats {
                 return;
             }
 
-            if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
-                Logger.LogInformation("[StartMatch] Database or connection or SteamAPIClient is null. Returning.");
+            if (this.database == null) {
+                Logger.LogInformation("[StartMatch] Database is null. Returning.");
                 return;
             }
 
@@ -48,6 +48,7 @@ namespace CS2Stats {
                 .ToHashSet();
 
             Task.Run(async () => {
+                await this.database.CreateConnection();
                 await this.database.StartTransaction();
                 await this.database.InsertMap(this.match.MapName, Logger);
 

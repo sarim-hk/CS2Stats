@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Match (
     MatchID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     MapID varchar(128) NOT NULL,
     BeginServerTick int NOT NULL,
-    FinishServerTick int NOT NULL,
+    FinishServerTick int NULL,
     MatchDate datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (MapID) REFERENCES CS2S_Map(MapID)
 );
@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Team (
 CREATE TABLE IF NOT EXISTS CS2S_TeamResult (
     TeamID varchar(32) NOT NULL,
 	MatchID int NOT NULL,
-	Score int NOT NULL,
-    Result ENUM("Win", "Loss", "Tie") NOT NULL,
+	Score int NULL,
+    Result ENUM("Win", "Loss", "Tie") NULL,
     DeltaELO int DEFAULT 0 NOT NULL,
     PRIMARY KEY (TeamID, MatchID),
     FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
@@ -54,10 +54,10 @@ CREATE TABLE IF NOT EXISTS CS2S_TeamResult (
 CREATE TABLE IF NOT EXISTS CS2S_Round (
     RoundID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     MatchID int NOT NULL,
-    WinningTeamID varchar(32) NOT NULL,
-    LosingTeamID varchar(32) NOT NULL,
-    WinningSide int NOT NULL,
-    RoundEndReason int NOT NULL,
+    WinningTeamID varchar(32) NULL,
+    LosingTeamID varchar(32) NULL,
+    WinningSide int NULL,
+    RoundEndReason int NULL,
     ServerTick int NOT NULL,
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (WinningTeamID) REFERENCES CS2S_Team(TeamID),

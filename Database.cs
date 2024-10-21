@@ -14,14 +14,17 @@ namespace CS2Stats {
                                $"DATABASE={db};" +
                                $"UID={username};" +
                                $"PASSWORD={password};";
+        }
 
+        public async Task CreateConnection() {
+            if (this.conn != null) {
+                await this.conn.CloseAsync();
+                this.conn = null;
+            }            
+            
             MySqlConnection conn = new(this.connString);
-
-            Task.Run(async () => {
-                await conn.OpenAsync();
-                this.conn = conn;
-            });
-
+            await conn.OpenAsync();
+            this.conn = conn;
         }
 
         public async Task StartTransaction() {
@@ -92,7 +95,10 @@ namespace CS2Stats {
                     AvatarL = VALUES(AvatarL)
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                MySqlConnection tempConn = new(this.connString);
+                await tempConn.OpenAsync();
+
+                using MySqlCommand cmd = new(query, tempConn);
                 cmd.Parameters.AddWithValue("@PlayerID", player.PlayerID);
                 cmd.Parameters.AddWithValue("@Username", player.Username);
                 cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
@@ -279,6 +285,7 @@ namespace CS2Stats {
 
                 MySqlConnection tempConn = new(this.connString);
                 await tempConn.OpenAsync();
+
                 using MySqlCommand cmd = new(query, tempConn);
                 cmd.Parameters.AddWithValue("@TPlayers", tPlayersJson);
                 cmd.Parameters.AddWithValue("@CTPlayers", ctPlayersJson);
