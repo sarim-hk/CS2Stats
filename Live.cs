@@ -24,15 +24,15 @@
         public HashSet<LivePlayer>? CTPlayers;
         public int? TScore;
         public int? CTScore;
-        public float? RoundTime;
+        public int? RoundTick;
         public int? BombStatus;
 
-        public LiveData(HashSet<LivePlayer>? tPlayers, HashSet<LivePlayer>? ctPlayers, int? tScore, int? ctScore, float? roundTime, int? bombStatus) {
+        public LiveData(HashSet<LivePlayer>? tPlayers, HashSet<LivePlayer>? ctPlayers, int? tScore, int? ctScore, int? roundTick, int? bombStatus) {
             this.TPlayers = tPlayers;
             this.CTPlayers = ctPlayers;
             this.TScore = tScore;
             this.CTScore = ctScore;
-            this.RoundTime = roundTime;
+            this.RoundTick = roundTick;
             this.BombStatus = bombStatus;
         }
 

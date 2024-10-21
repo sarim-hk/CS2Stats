@@ -193,7 +193,7 @@ namespace CS2Stats {
 
         public async Task InsertBatchedDeathEvents(Match match, ILogger Logger) {
             if (match.Round.DeathEvents == null || match.Round.DeathEvents.Count == 0) {
-                Logger.LogInformation("[InsertBatchedDeathEvents] Hurt events are null.");
+                Logger.LogInformation("[InsertBatchedDeathEvents] Death events are null.");
                 return;
             }
 
@@ -238,7 +238,7 @@ namespace CS2Stats {
 
         public async Task InsertBatchedKAST(Match match, ILogger Logger) {
             if (match.Round.KASTEvents == null || match.Round.KASTEvents.Count == 0) {
-                Logger.LogInformation("[InsertBatchedKAST] Players KAST is null.");
+                Logger.LogInformation("[InsertBatchedKAST] KAST events is null.");
                 return;
             }
 
@@ -258,12 +258,51 @@ namespace CS2Stats {
                     await cmd.ExecuteNonQueryAsync();
                 }
 
-                Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of players KAST inserted successfully.");
+                Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of KAST events inserted successfully.");
             }
             catch (Exception ex) {
-                Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of players KAST.");
+                Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of KAST events.");
             }
 
+        }
+
+        public async Task InsertBatchedBlindEvents(Match match, ILogger Logger) {
+            if (match.Round.BlindEvents == null || match.Round.BlindEvents.Count == 0) {
+                Logger.LogInformation("[InsertBatchedBlindEvents] Blind events are null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Blind (RoundID, MatchID, ThrowerID, BlindedID, Duration, TeamFlash, RoundTick)
+                VALUES (@RoundID, @MatchID, @ThrowerID, @BlindedID, @Duration, @TeamFlash, @RoundTick);
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                foreach (BlindEvent blindEvent in match.Round.BlindEvents) {
+                    cmd.Parameters.Clear();
+
+                    cmd.Parameters.AddWithValue("@RoundID", match.Round.RoundID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@ThrowerID", blindEvent.ThrowerID);
+                    cmd.Parameters.AddWithValue("@BlindedID", blindEvent.BlindedID);
+                    cmd.Parameters.AddWithValue("@Duration", blindEvent.Duration);
+                    cmd.Parameters.AddWithValue("@TeamFlash", blindEvent.TeamFlash);
+                    cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
+
+                    await cmd.ExecuteNonQueryAsync();
+
+                    if (blindEvent.TeamFlash == false) {
+                        await IncrementPlayerEnemiesFlashed(blindEvent.ThrowerID, Logger);
+                    }
+
+                }
+
+                Logger.LogInformation($"[InsertBatchedBlindEvents] Batch of death events inserted successfully.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertBatchedBlindEvents] Error occurred while inserting batch of death events.");
+            }
         }
 
         public async Task InsertLive(LiveData liveData, ILogger Logger) {
@@ -272,15 +311,15 @@ namespace CS2Stats {
                 string ctPlayersJson = JsonConvert.SerializeObject(liveData.CTPlayers);
 
                 string query = @"
-                INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus, RoundTime)
-                VALUES (1, @TPlayers, @CTPlayers, @TScore, @CTScore, @BombStatus, @RoundTime)
+                INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus, RoundTick)
+                VALUES (1, @TPlayers, @CTPlayers, @TScore, @CTScore, @BombStatus, @RoundTick)
                 ON DUPLICATE KEY UPDATE 
                     TPlayers = VALUES(TPlayers), 
                     CTPlayers = VALUES(CTPlayers), 
                     TScore = VALUES(TScore), 
                     CTScore = VALUES(CTScore), 
                     BombStatus = VALUES(BombStatus), 
-                    RoundTime = VALUES(RoundTime)
+                    RoundTick = VALUES(RoundTick)
                 ";
 
                 MySqlConnection tempConn = new(this.connString);
@@ -292,7 +331,7 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@TScore", liveData.TScore);
                 cmd.Parameters.AddWithValue("@CTScore", liveData.CTScore);
                 cmd.Parameters.AddWithValue("@BombStatus", liveData.BombStatus);
-                cmd.Parameters.AddWithValue("@RoundTime", liveData.RoundTime);
+                cmd.Parameters.AddWithValue("@RoundTick", liveData.RoundTick);
 
                 await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation("[InsertLive] Live data inserted successfully.");

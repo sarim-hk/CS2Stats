@@ -170,12 +170,27 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
-        public HookResult EventFlashbangDetonateHandler(EventFlashbangDetonate @event, GameEventInfo info) {
-            return HookResult.Continue;
-        }
+        //public HookResult EventFlashbangDetonateHandler(EventFlashbangDetonate @event, GameEventInfo info) {
+        //    return HookResult.Continue;
+        //}
 
         public HookResult EventPlayerBlindHandler(EventPlayerBlind @event, GameEventInfo info) {
+            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
+                Logger.LogInformation("[EventPlayerBlindHandler] Database conn/transaction or match is null. Returning.");
+                return HookResult.Continue;
+            }
 
+            if (@event.Userid != null && @event.Attacker != null) {
+
+                this.match.Round.BlindEvents.Add(new BlindEvent(
+                    @event.Attacker.SteamID,
+                    @event.Userid.SteamID,
+                    @event.BlindDuration,
+                    (@event.Attacker.TeamNum == @event.Userid.TeamNum),
+                    Server.TickCount - this.match.Round.StartTick
+                ));
+            }
+            
             return HookResult.Continue;
         }
 
@@ -221,6 +236,7 @@ namespace CS2Stats {
                     await this.database.InsertBatchedHurtEvents(this.match, Logger);
                     await this.database.InsertBatchedDeathEvents(this.match, Logger);
                     await this.database.InsertBatchedKAST(this.match, Logger);
+                    await this.database.InsertBatchedBlindEvents(this.match, Logger);
                 }
 
                 else {
