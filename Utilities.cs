@@ -105,6 +105,27 @@ namespace CS2Stats {
 
     public partial class Database {
 
+        private async Task BeginInsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
+                VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[BeginInsertTeamResult] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, $"[BeginInsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
+            }
+        }
+
         private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team (TeamID, TeamSize)
@@ -137,27 +158,6 @@ namespace CS2Stats {
 
                 await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation($"[InsertTeamPlayers] Player {playerID} added to Team {teamInfo.TeamID}.");
-            }
-        }
-
-        private async Task BeginInsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
-                VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
-                ";
-
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
-
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[BeginInsertTeamResult] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
-            }
-
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[BeginInsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
             }
         }
 

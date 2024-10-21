@@ -83,8 +83,6 @@ namespace CS2Stats {
                             teamNumInfo2.DeltaELO = -teamNumInfo3.DeltaELO;
                         }
 
-                        Logger.LogInformation($"Team 2 Info: {teamNumInfo2.TeamID}, Score: {teamNumInfo2.Score}, Result: {teamNumInfo2.Result}, ELO: {teamNumInfo2.AverageELO}, DeltaELO: {teamNumInfo2.DeltaELO}");
-                        Logger.LogInformation($"Team 3 Info: {teamNumInfo3.TeamID}, Score: {teamNumInfo3.Score}, Result: {teamNumInfo3.Result}, ELO: {teamNumInfo3.AverageELO}, DeltaELO: {teamNumInfo3.DeltaELO}");
                         await this.database.FinishInsertTeamResult(this.match, teamNumInfo2, Logger);
                         await this.database.FinishInsertTeamResult(this.match, teamNumInfo3, Logger);
                         await this.database.UpdateELO(teamNumInfo2, Logger);
@@ -232,8 +230,8 @@ namespace CS2Stats {
         }
 
         public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
-            if (this.database == null || this.database.conn == null || this.steamAPIClient == null) {
-                Logger.LogInformation("[OnClientAuthorizedHandler] Database conn/transaction or match is null. Returning..");
+            if (this.database == null || this.steamAPIClient == null) {
+                Logger.LogInformation("[OnClientAuthorizedHandler] Database transaction or match is null. Returning..");
                 return;
             }
 

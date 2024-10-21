@@ -10,12 +10,13 @@ namespace CS2Stats {
         public int? Score;
         public string? Result;
         public int? AverageELO;
-        public int? DeltaELO;
+        public int DeltaELO;
 
         public TeamInfo(string teamID, int side, HashSet<ulong> playerIDs) {
             this.TeamID = teamID;
             this.Side = side;
             this.PlayerIDs = playerIDs;
+            this.DeltaELO = 0;
         }
 
         public void SwapSides() {
