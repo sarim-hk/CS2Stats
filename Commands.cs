@@ -1,10 +1,9 @@
-﻿using CounterStrikeSharp.API.Core.Attributes.Registration;
+﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
-using Microsoft.Extensions.Logging;
 using CounterStrikeSharp.API.Modules.Utils;
-using CounterStrikeSharp.API;
-using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace CS2Stats {
     public partial class CS2Stats {
@@ -24,8 +23,8 @@ namespace CS2Stats {
             this.match.MapName = Server.MapName;
             this.match.beginServerTick = Server.TickCount;
 
-            HashSet<ulong> team2 = new HashSet<ulong>();
-            HashSet<ulong> team3 = new HashSet<ulong>();
+            HashSet<ulong> team2 = new();
+            HashSet<ulong> team3 = new();
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
             foreach (CCSPlayerController playerController in playerControllers) {

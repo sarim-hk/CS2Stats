@@ -1,7 +1,6 @@
 ﻿using CounterStrikeSharp.API.Modules.Utils;
 
-namespace CS2Stats
-{
+namespace CS2Stats {
 
     public class TeamInfo {
         public string TeamID;
@@ -40,8 +39,8 @@ namespace CS2Stats
         public Round Round;
 
         public Match() {
-            this.StartingPlayers = new Dictionary<string, TeamInfo>();
-            this.Round = new Round();
+            this.StartingPlayers = [];
+            this.Round = new();
         }
 
     }

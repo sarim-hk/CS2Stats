@@ -1,14 +1,13 @@
 ﻿using CounterStrikeSharp.API.Core;
 using Microsoft.Extensions.Logging;
 
-namespace CS2Stats
-{
+namespace CS2Stats {
 
     public partial class CS2Stats : BasePlugin, IPluginConfig<Config> {
 
         public override string ModuleName => "CS2Stats";
         public override string ModuleVersion => "2.0.0";
-        
+
         public Config Config { get; set; }
         public Database? database;
         public SteamAPIClient? steamAPIClient;
@@ -33,7 +32,7 @@ namespace CS2Stats
             RegisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
             RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
-            Logger.LogInformation("[Load] Plugin loaded.");    
+            Logger.LogInformation("[Load] Plugin loaded.");
         }
 
         public override void Unload(bool hotReload) {

@@ -1,11 +1,9 @@
-﻿using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Utils;
-using CounterStrikeSharp.API;
+﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using Microsoft.Extensions.Logging;
+using MySql.Data.MySqlClient;
 using System.Security.Cryptography;
 using System.Text;
-using MySql.Data.MySqlClient;
-using Microsoft.Extensions.Logging;
-using CounterStrikeSharp.API.Modules.Entities;
 
 namespace CS2Stats {
 
@@ -67,8 +65,8 @@ namespace CS2Stats {
         }
 
         private static LiveData GetLiveMatchData() {
-            HashSet<LivePlayer> tPlayers = new HashSet<LivePlayer>();
-            HashSet<LivePlayer> ctPlayers = new HashSet<LivePlayer>();
+            HashSet<LivePlayer> tPlayers = [];
+            HashSet<LivePlayer> ctPlayers = [];
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
             foreach (var playerController in playerControllers) {
@@ -98,7 +96,7 @@ namespace CS2Stats {
                 false => GetGameRules().BombDefused ? 2 : 0
             };
 
-            LiveData liveData = new LiveData(tPlayers, ctPlayers, tScore, ctScore, roundTime, bombStatus);
+            LiveData liveData = new(tPlayers, ctPlayers, tScore, ctScore, roundTime, bombStatus);
             return liveData;
 
         }
@@ -107,7 +105,7 @@ namespace CS2Stats {
 
     public partial class Database {
 
-        private async Task InsertTeamAsync(TeamInfo teamInfo, ILogger Logger) {
+        private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team (TeamID, TeamSize)
             VALUES (@TeamID, @TeamSize)
@@ -115,16 +113,15 @@ namespace CS2Stats {
                 TeamID = TeamID
             ";
 
-            using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@TeamSize", teamInfo.PlayerIDs.Count);
+            using MySqlCommand cmd = new(query, this.conn, this.transaction);
+            cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+            cmd.Parameters.AddWithValue("@TeamSize", teamInfo.PlayerIDs.Count);
 
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
-            }
+            await cmd.ExecuteNonQueryAsync();
+            Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
         }
 
-        private async Task InsertTeamPlayersAsync(TeamInfo teamInfo, ILogger Logger) {
+        private async Task InsertTeamPlayers(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team_Players (TeamID, PlayerID)
             VALUES (@TeamID, @PlayerID)
@@ -132,55 +129,52 @@ namespace CS2Stats {
                 TeamID = TeamID
             ";
 
-            using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                foreach (ulong playerID in teamInfo.PlayerIDs) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+            using MySqlCommand cmd = new(query, this.conn, this.transaction);
+            foreach (ulong playerID in teamInfo.PlayerIDs) {
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                    await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[InsertTeamPlayersAsync] Player {playerID} added to Team {teamInfo.TeamID}.");
-                }
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[InsertTeamPlayers] Player {playerID} added to Team {teamInfo.TeamID}.");
             }
         }
 
-        private async Task BeginInsertTeamResultAsync(Match match, TeamInfo teamInfo, ILogger Logger) {
+        private async Task BeginInsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
             try {
                 string query = @"
                 INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
                 VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
                 ";
 
-                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
 
-                    await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[BeginInsertTeamResultAsync] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
-                }
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[BeginInsertTeamResult] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
             }
 
             catch (Exception ex) {
-                Logger.LogError(ex, $"[BeginInsertTeamResultAsync] Error occurred while inserting team results for team {teamInfo.TeamID}.");
+                Logger.LogError(ex, $"[BeginInsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
             }
         }
 
-        private async Task InsertPlayerMatchesAsync(Match match, TeamInfo teamInfo, ILogger Logger) {
+        private async Task InsertPlayerMatches(Match match, TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Player_Matches (PlayerID, MatchID)
             VALUES (@PlayerID, @MatchID)
             ";
 
-            using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                foreach (ulong playerID in teamInfo.PlayerIDs) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+            using MySqlCommand cmd = new(query, this.conn, this.transaction);
+            foreach (ulong playerID in teamInfo.PlayerIDs) {
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                    await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[InsertPlayerMatchesAsync] Match {match.MatchID} added to Player {playerID}.");
-                }
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[InsertPlayerMatches] Match {match.MatchID} added to Player {playerID}.");
             }
         }
 
@@ -196,17 +190,16 @@ namespace CS2Stats {
                 WHERE PlayerID = @PlayerID;
                 ";
 
-                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
-                    if (rowsAffected > 0) {
-                        Logger.LogInformation($"[IncrementPlayerKills] Successfully incremented Kills for player {playerID}.");
-                    }
-                    else {
-                        Logger.LogInformation($"[IncrementPlayerKills] No rows were updated. Player {playerID} might not exist.");
-                    }
+                if (rowsAffected > 0) {
+                    Logger.LogInformation($"[IncrementPlayerKills] Successfully incremented Kills for player {playerID}.");
+                }
+                else {
+                    Logger.LogInformation($"[IncrementPlayerKills] No rows were updated. Player {playerID} might not exist.");
                 }
             }
             catch (Exception ex) {
@@ -226,17 +219,16 @@ namespace CS2Stats {
                 WHERE PlayerID = @PlayerID;
                 ";
 
-                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
-                    if (rowsAffected > 0) {
-                        Logger.LogInformation($"[IncrementPlayerAssists] Successfully incremented Assists for player {playerID}.");
-                    }
-                    else {
-                        Logger.LogInformation($"[IncrementPlayerAssists] No rows were updated. Player {playerID} might not exist.");
-                    }
+                if (rowsAffected > 0) {
+                    Logger.LogInformation($"[IncrementPlayerAssists] Successfully incremented Assists for player {playerID}.");
+                }
+                else {
+                    Logger.LogInformation($"[IncrementPlayerAssists] No rows were updated. Player {playerID} might not exist.");
                 }
             }
             catch (Exception ex) {
@@ -252,17 +244,16 @@ namespace CS2Stats {
                 WHERE PlayerID = @PlayerID;
                 ";
 
-                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
-                    if (rowsAffected > 0) {
-                        Logger.LogInformation($"[IncrementPlayerDeaths] Successfully incremented Deaths for player {playerID}.");
-                    }
-                    else {
-                        Logger.LogInformation($"[IncrementPlayerDeaths] No rows were updated. Player {playerID} might not exist.");
-                    }
+                if (rowsAffected > 0) {
+                    Logger.LogInformation($"[IncrementPlayerDeaths] Successfully incremented Deaths for player {playerID}.");
+                }
+                else {
+                    Logger.LogInformation($"[IncrementPlayerDeaths] No rows were updated. Player {playerID} might not exist.");
                 }
             }
             catch (Exception ex) {
@@ -290,18 +281,17 @@ namespace CS2Stats {
                     ";
                 }
 
-                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                    cmd.Parameters.AddWithValue("@DamageAmount", damageAmount);
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                cmd.Parameters.AddWithValue("@DamageAmount", damageAmount);
 
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
-                    if (rowsAffected > 0) {
-                        Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented damage for player {playerID} using {weapon}. Damage: {damageAmount}");
-                    }
-                    else {
-                        Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
-                    }
+                if (rowsAffected > 0) {
+                    Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented damage for player {playerID} using {weapon}. Damage: {damageAmount}");
+                }
+                else {
+                    Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
                 }
             }
             catch (Exception ex) {
@@ -321,17 +311,16 @@ namespace CS2Stats {
                 WHERE PlayerID = @PlayerID;
                 ";
 
-                using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
-                    if (rowsAffected > 0) {
-                        Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented Headshots for player {playerID}.");
-                    }
-                    else {
-                        Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
-                    }
+                if (rowsAffected > 0) {
+                    Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented Headshots for player {playerID}.");
+                }
+                else {
+                    Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
                 }
             }
             catch (Exception ex) {
