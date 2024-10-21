@@ -39,8 +39,8 @@ namespace CS2Stats {
             return teamID;
         }
 
-        private TeamInfo? GetTeamInfoByTeamNum(int teamNum) {
-            if (this.match != null) {
+        private TeamInfo? GetTeamInfoByTeamNum(int? teamNum) {
+            if (this.match != null && teamNum != null) {
                 foreach (string teamID in this.match.StartingPlayers.Keys) {
                     TeamInfo teamInfo = this.match.StartingPlayers[teamID];
 
@@ -64,7 +64,7 @@ namespace CS2Stats {
             }
         }
 
-        private static LiveData GetLiveMatchData() {
+        private static LiveData GetLiveMatchData(Round round) {
             HashSet<LivePlayer> tPlayers = [];
             HashSet<LivePlayer> ctPlayers = [];
 
@@ -89,7 +89,7 @@ namespace CS2Stats {
 
             int? tScore = GetCSTeamScore(2);
             int? ctScore = GetCSTeamScore(3);
-            float roundTime = (GetGameRules().RoundStartTime + GetGameRules().RoundTime) - Server.CurrentTime;
+            float roundTime = Server.TickCount - round.StartTick;
 
             int bombStatus = GetGameRules().BombPlanted switch {
                 true => 1,
@@ -128,15 +128,15 @@ namespace CS2Stats {
 
         private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
-            INSERT INTO CS2S_Team (TeamID, TeamSize)
-            VALUES (@TeamID, @TeamSize)
+            INSERT INTO CS2S_Team (TeamID, Size)
+            VALUES (@TeamID, @Size)
             ON DUPLICATE KEY UPDATE
                 TeamID = TeamID
             ";
 
             using MySqlCommand cmd = new(query, this.conn, this.transaction);
             cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-            cmd.Parameters.AddWithValue("@TeamSize", teamInfo.PlayerIDs.Count);
+            cmd.Parameters.AddWithValue("@Size", teamInfo.PlayerIDs.Count);
 
             await cmd.ExecuteNonQueryAsync();
             Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
