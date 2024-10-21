@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Logging;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API;
+using System.Linq;
 
 namespace CS2Stats {
     public partial class CS2Stats {
@@ -23,8 +24,8 @@ namespace CS2Stats {
             this.match.MapName = Server.MapName;
             this.match.beginServerTick = Server.TickCount;
 
-            List<ulong> team2 = new List<ulong>();
-            List<ulong> team3 = new List<ulong>();
+            HashSet<ulong> team2 = new HashSet<ulong>();
+            HashSet<ulong> team3 = new HashSet<ulong>();
 
             List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
             foreach (CCSPlayerController playerController in playerControllers) {
@@ -43,9 +44,9 @@ namespace CS2Stats {
             this.match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, team2);
             this.match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, team3);
 
-            List<ulong> playerIDs = this.match.StartingPlayers.Values
+            HashSet<ulong> playerIDs = this.match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
-                .ToList();
+                .ToHashSet();
 
             Task.Run(async () => {
                 await this.database.StartTransaction();

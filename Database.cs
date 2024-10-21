@@ -231,7 +231,7 @@ namespace CS2Stats {
         }
 
         public async Task InsertBatchedKAST(Match match, ILogger Logger) {
-            if (match.Round.playersKAST == null || match.Round.playersKAST.Count == 0) {
+            if (match.Round.KASTEvents == null || match.Round.KASTEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedKAST] Players KAST is null.");
                 return;
             }
@@ -243,7 +243,7 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    foreach (ulong playerID in match.Round.playersKAST) {
+                    foreach (ulong playerID in match.Round.KASTEvents) {
                         cmd.Parameters.Clear();
                         cmd.Parameters.AddWithValue("@RoundID", match.Round.RoundID);
                         cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
@@ -432,7 +432,7 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertMultiplePlayers(List<ulong> playerIDs, ILogger Logger) {
+        public async Task InsertMultiplePlayers(HashSet<ulong> playerIDs, ILogger Logger) {
             try {
                 string query = @"
                 INSERT INTO CS2S_Player (PlayerID)
@@ -456,7 +456,7 @@ namespace CS2Stats {
             }
         }
 
-        public async Task IncrementMultiplePlayerRoundsPlayed(List<ulong> playerIDs, ILogger Logger) {
+        public async Task IncrementMultiplePlayerRoundsPlayed(HashSet<ulong> playerIDs, ILogger Logger) {
             if (playerIDs == null || playerIDs.Count == 0) {
                 Logger.LogInformation("[IncrementMultiplePlayerRoundsPlayed] Player IDs list is null or empty.");
                 return;
@@ -485,7 +485,7 @@ namespace CS2Stats {
             }
         }
         
-        public async Task IncrementMultiplePlayerRoundsKAST(List<ulong> playerIDs, ILogger Logger) {
+        public async Task IncrementMultiplePlayerRoundsKAST(HashSet<ulong> playerIDs, ILogger Logger) {
             if (playerIDs == null || playerIDs.Count == 0) {
                 Logger.LogInformation("[IncrementMultiplePlayerRoundsKAST] Player IDs list is null or empty.");
                 return;
@@ -514,7 +514,7 @@ namespace CS2Stats {
             }
         }
 
-        public async Task IncrementMultiplePlayerMatchesPlayed(List<ulong> playerIDs, ILogger Logger) {
+        public async Task IncrementMultiplePlayerMatchesPlayed(HashSet<ulong> playerIDs, ILogger Logger) {
             if (playerIDs == null || playerIDs.Count == 0) {
                 Logger.LogInformation("[IncrementMultiplePlayerMatchesPlayed] Player IDs list is null or empty.");
                 return;

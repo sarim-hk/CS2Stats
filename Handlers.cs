@@ -52,9 +52,9 @@ namespace CS2Stats
             this.match.finishServerTick = Server.TickCount;
 
             LiveData liveData = new LiveData(null, null, null, null, null, null);
-            List<ulong> startingPlayerIDs = this.match.StartingPlayers.Values
+            HashSet<ulong> startingPlayerIDs = this.match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
-                .ToList();
+                .ToHashSet();
             
             Task.Run(async () => {
 
@@ -143,7 +143,7 @@ namespace CS2Stats
                 var matchingDeathEvent = this.match.Round.deathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
 
                 if (matchingDeathEvent != null && Server.TickCount < matchingDeathEvent.ServerTick + (5 * Server.TickInterval)) {
-                    this.match.Round.playersKAST.Add(matchingDeathEvent.VictimID);
+                    this.match.Round.KASTEvents.Add(matchingDeathEvent.VictimID);
                 }
 
                 this.match.Round.deathEvents.Add(new DeathEvent(
@@ -157,11 +157,11 @@ namespace CS2Stats
                 ));
 
                 if (@event.Attacker != null) {
-                    this.match.Round.playersKAST.Add(@event.Attacker.SteamID);
+                    this.match.Round.KASTEvents.Add(@event.Attacker.SteamID);
                 }
 
                 else if (@event.Assister != null) {
-                    this.match.Round.playersKAST.Add(@event.Assister.SteamID);
+                    this.match.Round.KASTEvents.Add(@event.Assister.SteamID);
                 }
             }
 
@@ -185,29 +185,29 @@ namespace CS2Stats
             string? winningTeamID = GetTeamInfoByTeamNum(winningTeamNum)?.TeamID;
             string? losingTeamID = GetTeamInfoByTeamNum(losingTeamNum)?.TeamID;
 
-            List<ulong> playerIDs = Utilities.GetPlayers()
+            HashSet<ulong> playerIDs = Utilities.GetPlayers()
                 .Where(playerController =>
                     playerController.Team == CsTeam.Terrorist ||
                     playerController.Team == CsTeam.CounterTerrorist)
                 .Select(playerController => playerController.SteamID)
-                .ToList();
+                .ToHashSet();
 
-            List<ulong> alivePlayerIDs = Utilities.GetPlayers()
+            HashSet<ulong> alivePlayerIDs = Utilities.GetPlayers()
                 .Where(playerController =>
                     (playerController.Team == CsTeam.Terrorist ||
                     playerController.Team == CsTeam.CounterTerrorist) &&
                     playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
                 .Select(playerController => playerController.SteamID)
-                .ToList();
+                .ToHashSet();
 
 
             Task.Run(async () => {
 
                 foreach (ulong playerID in alivePlayerIDs) {
-                    this.match.Round.playersKAST.Add(playerID);
+                    this.match.Round.KASTEvents.Add(playerID);
                 }
 
-                await this.database.IncrementMultiplePlayerRoundsKAST(this.match.Round.playersKAST.ToList(), Logger);
+                await this.database.IncrementMultiplePlayerRoundsKAST(this.match.Round.KASTEvents, Logger);
                 await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
 
                 if (this.match.MatchID != null && this.match.Round.RoundID != null) {
