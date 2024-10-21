@@ -8,10 +8,16 @@ namespace CS2Stats
         public int Side;
         public List<ulong> PlayerIDs;
 
+        public int? Score;
+        public string? Result;
+        public int? AverageELO;
+        public int DeltaELO;
+
         public TeamInfo(string teamID, int side, List<ulong> playerIDs) {
             this.TeamID = teamID;
             this.Side = side;
             this.PlayerIDs = playerIDs;
+            this.DeltaELO = 0;
         }
 
         public void SwapSides() {
@@ -28,8 +34,8 @@ namespace CS2Stats
         public int? MatchID;
         public string? MapName;
         public bool TeamsNeedSwapping;
-        public int? startServerTick;
-        public int? endServerTick;
+        public int? beginServerTick;
+        public int? finishServerTick;
 
         public Dictionary<string, TeamInfo> StartingPlayers;
         public Round Round;

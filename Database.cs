@@ -113,9 +113,9 @@ namespace CS2Stats {
                 foreach (TeamInfo teamInfo in match.StartingPlayers.Values) {
                     await InsertTeamAsync(teamInfo, Logger);
                     await InsertTeamPlayersAsync(teamInfo, Logger);
-                    await InsertTeamMatchAsync(teamInfo, match, Logger);
                     await InsertPlayerMatchesAsync(match, teamInfo, Logger);
-                } 
+                    await BeginInsertTeamResultAsync(match, teamInfo, Logger);
+                }
 
             }
             catch (Exception ex) {
@@ -129,6 +129,8 @@ namespace CS2Stats {
                 string query = @"
                 INSERT INTO CS2S_Map (MapID)
                 VALUES (@MapID)
+                ON DUPLICATE KEY UPDATE
+                    MapID = MapID
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
@@ -300,14 +302,14 @@ namespace CS2Stats {
         public async Task<int?> BeginInsertMatch(Match match, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_Match (MapID, WinningTeamID, LosingTeamID, WinningTeamScore, LosingTeamScore, WinningSide, StartServerTick, EndServerTick)
-                VALUES (@MapID, NULL, NULL, NULL, NULL, NULL, @StartServerTick, NULL);
+                INSERT INTO CS2S_Match (MapID, BeginServerTick, FinishServerTick)
+                VALUES (@MapID, @BeginServerTick, NULL);
                 SELECT LAST_INSERT_ID();
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
                     cmd.Parameters.AddWithValue("@MapID", match.MapName);
-                    cmd.Parameters.AddWithValue("@StartServerTick", match.startServerTick);
+                    cmd.Parameters.AddWithValue("@BeginServerTick", match.beginServerTick);
 
                     object? result = await cmd.ExecuteScalarAsync();
 
@@ -385,36 +387,48 @@ namespace CS2Stats {
             }
         }
 
-        public async Task FinishInsertMatch(int? matchID, string winningTeamID, string losingTeamID, int? winningTeamScore, int? losingTeamScore, int? winningSide, int deltaELO, ILogger Logger) {
+        public async Task FinishInsertMatch(Match match, ILogger Logger) {
             try {
                 string query = @"
                 UPDATE CS2S_Match
                 SET
-                WinningTeamID = @WinningTeamID,
-                LosingTeamID = @LosingTeamID,
-                WinningTeamScore = @WinningTeamScore,
-                LosingTeamScore = @LosingTeamScore,
-                WinningSide = @WinningSide,
-                DeltaELO = @DeltaELO
+                FinishServerTick = @FinishServerTick
                 WHERE MatchID = @MatchID
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@WinningTeamID", winningTeamID);
-                    cmd.Parameters.AddWithValue("@LosingTeamID", losingTeamID);
-                    cmd.Parameters.AddWithValue("@WinningTeamScore", winningTeamScore);
-                    cmd.Parameters.AddWithValue("@LosingTeamScore", losingTeamScore);
-                    cmd.Parameters.AddWithValue("@WinningSide", winningSide);
-                    cmd.Parameters.AddWithValue("@DeltaELO", deltaELO);
-                    cmd.Parameters.AddWithValue("@MatchID", matchID);
+                    cmd.Parameters.AddWithValue("@FinishServerTick", match.finishServerTick);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
 
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[FinishInsertMatch] Match {matchID} updated successfully.");
+                    Logger.LogInformation($"[FinishInsertMatch] Match {match.MatchID} updated successfully.");
                 }
             }
 
             catch (Exception ex) {
                 Logger.LogError(ex, "[FinishInsertMatch] Error occurred while updating match.");
+            }
+        }
+
+        public async Task FinishInsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
+            string query = @"
+            UPDATE CS2S_TeamResult
+            SET
+            Score = @Score,
+            Result = @Result,
+            DeltaELO = @DeltaELO
+            WHERE MatchID = @MatchID AND TeamID = @TeamID
+            ";
+
+            using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
+                cmd.Parameters.AddWithValue("@Score", teamInfo.Score);
+                cmd.Parameters.AddWithValue("@Result", teamInfo.Result);
+                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[FinishInsertTeamResult] Match {match.MatchID} TeamResult added to Team {teamInfo.TeamID}.");
             }
         }
 
@@ -529,15 +543,13 @@ namespace CS2Stats {
             }
         }
 
-        public async Task UpdateTeamELO(string teamID, int deltaELO, bool isWin, ILogger Logger) {
-            if (string.IsNullOrWhiteSpace(teamID)) {
+        public async Task UpdateELO(TeamInfo teamInfo, ILogger Logger) {
+            if (string.IsNullOrWhiteSpace(teamInfo.TeamID)) {
                 Logger.LogInformation("[IncrementTeamELO] Team ID is null or empty.");
                 return;
             }
 
             try {
-                int finalDelta = isWin ? deltaELO : -deltaELO;
-
                 string updateTeamELOQuery = @"
                 UPDATE CS2S_Team
                 SET ELO = ELO + @DeltaELO
@@ -545,10 +557,11 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(updateTeamELOQuery, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@DeltaELO", finalDelta);
-                    cmd.Parameters.AddWithValue("@TeamID", teamID);
+                    cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[IncrementTeamELO] Team {teamID} ELO updated by {finalDelta}.");
+
+                    Logger.LogInformation($"[UpdateELO] Team {teamInfo.TeamID} ELO updated by {teamInfo.DeltaELO}.");
                 }
 
                 string updatePlayerELOQuery = @"
@@ -559,14 +572,14 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(updatePlayerELOQuery, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@DeltaELO", finalDelta);
-                    cmd.Parameters.AddWithValue("@TeamID", teamID);
+                    cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
                     await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[IncrementTeamELO] Players in team {teamID} ELO updated by {finalDelta}.");
+                    Logger.LogInformation($"[UpdateELO] Players in team {teamInfo.TeamID} ELO updated by {teamInfo.DeltaELO}.");
                 }
             }
             catch (Exception ex) {
-                Logger.LogError(ex, "[IncrementTeamELO] Error occurred while updating team and players ELO.");
+                Logger.LogError(ex, "[UpdateELO] Error occurred while updating team and players ELO.");
             }
         }
 
