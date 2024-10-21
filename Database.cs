@@ -147,7 +147,7 @@ namespace CS2Stats {
         }
 
         public async Task InsertBatchedHurtEvents(Match match, ILogger Logger) {
-            if (match.Round.hurtEvents == null || match.Round.hurtEvents.Count == 0) {
+            if (match.Round.HurtEvents == null || match.Round.HurtEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedHurtEvents] Hurt events are null.");
                 return;
             }
@@ -159,7 +159,7 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    foreach (HurtEvent hurtEvent in match.Round.hurtEvents) {
+                    foreach (HurtEvent hurtEvent in match.Round.HurtEvents) {
                         cmd.Parameters.Clear();
 
                         cmd.Parameters.AddWithValue("@RoundID", match.Round.RoundID);
@@ -185,7 +185,7 @@ namespace CS2Stats {
         }
 
         public async Task InsertBatchedDeathEvents(Match match, ILogger Logger) {
-            if (match.Round.deathEvents == null || match.Round.deathEvents.Count == 0) {
+            if (match.Round.DeathEvents == null || match.Round.DeathEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedDeathEvents] Hurt events are null.");
                 return;
             }
@@ -197,7 +197,7 @@ namespace CS2Stats {
                 ";
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
-                    foreach (DeathEvent deathEvent in match.Round.deathEvents) {
+                    foreach (DeathEvent deathEvent in match.Round.DeathEvents) {
                         cmd.Parameters.Clear();
 
                         cmd.Parameters.AddWithValue("@RoundID", match.Round.RoundID);
@@ -339,7 +339,7 @@ namespace CS2Stats {
 
                 using (MySqlCommand cmd = new MySqlCommand(query, this.conn, this.transaction)) {
                     cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@ServerTick", match.Round.serverTick);
+                    cmd.Parameters.AddWithValue("@ServerTick", match.Round.ServerTick);
                     object? result = await cmd.ExecuteScalarAsync();
 
                     if (result != null && int.TryParse(result.ToString(), out int roundID)) {

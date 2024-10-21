@@ -3,17 +3,17 @@
     public class Round {
 
         public int? RoundID;
-        public int? serverTick;
-        public bool openingDeathOccurred;
+        public int? ServerTick;
+        public bool OpeningDeathOccurred;
         public HashSet<ulong> KASTEvents;
-        public HashSet<HurtEvent> hurtEvents;
-        public HashSet<DeathEvent> deathEvents;
+        public HashSet<HurtEvent> HurtEvents;
+        public HashSet<DeathEvent> DeathEvents;
 
         public Round() {
-            this.openingDeathOccurred = false;
+            this.OpeningDeathOccurred = false;
             this.KASTEvents = new HashSet<ulong>();
-            this.hurtEvents = new HashSet<HurtEvent>();
-            this.deathEvents = new HashSet<DeathEvent>();
+            this.HurtEvents = new HashSet<HurtEvent>();
+            this.DeathEvents = new HashSet<DeathEvent>();
         }
     }
 

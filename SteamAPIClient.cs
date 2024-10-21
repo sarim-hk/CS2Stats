@@ -3,16 +3,16 @@
 namespace CS2Stats {
 
     public class SteamAPIClient {
-        public string _steamAPIKey;
+        private string steamAPIKey;
 
         public SteamAPIClient(string steamAPIKey) {
-            _steamAPIKey = steamAPIKey;
+            this.steamAPIKey = steamAPIKey;
         }
 
         public async Task<PlayerInfo?> GetSteamSummaryAsync(ulong steamID) {
             try {
                 using (HttpClient client = new HttpClient()) {
-                    string url = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={_steamAPIKey}&steamids={steamID}";
+                    string url = $"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={steamAPIKey}&steamids={steamID}";
 
                     HttpResponseMessage response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode) {
