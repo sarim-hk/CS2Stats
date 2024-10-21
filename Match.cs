@@ -40,7 +40,7 @@ namespace CS2Stats {
 
         public Match() {
             this.StartingPlayers = [];
-            this.Round = new();
+            this.Round = new Round();
         }
 
     }
