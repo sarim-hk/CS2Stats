@@ -16,7 +16,7 @@ namespace CS2Stats
                 return HookResult.Continue;
             }
 
-            match.TeamsNeedSwapping = true;
+            this.match.TeamsNeedSwapping = true;
             Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Setting teamsNeedSwapping to true.");
 
             return HookResult.Continue;
@@ -37,7 +37,7 @@ namespace CS2Stats
 
             Task.Run(async () => {
                 await this.database.InsertLive(liveData, Logger);
-                match.Round.RoundID = await this.database.BeginInsertRound(match, Logger);
+                this.match.Round.RoundID = await this.database.BeginInsertRound(this.match, Logger);
             });
 
             return HookResult.Continue;
@@ -52,7 +52,7 @@ namespace CS2Stats
             this.match.finishServerTick = Server.TickCount;
 
             LiveData liveData = new LiveData(null, null, null, null, null, null);
-            List<ulong> startingPlayerIDs = match.StartingPlayers.Values
+            List<ulong> startingPlayerIDs = this.match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
                 .ToList();
             
@@ -86,18 +86,18 @@ namespace CS2Stats
 
                         Logger.LogInformation($"Team 2 Info: {teamNumInfo2.TeamID}, Score: {teamNumInfo2.Score}, Result: {teamNumInfo2.Result}, ELO: {teamNumInfo2.AverageELO}, DeltaELO: {teamNumInfo2.DeltaELO}");
                         Logger.LogInformation($"Team 3 Info: {teamNumInfo3.TeamID}, Score: {teamNumInfo3.Score}, Result: {teamNumInfo3.Result}, ELO: {teamNumInfo3.AverageELO}, DeltaELO: {teamNumInfo3.DeltaELO}");
-                        await this.database.FinishInsertTeamResult(match, teamNumInfo2, Logger);
-                        await this.database.FinishInsertTeamResult(match, teamNumInfo3, Logger);
+                        await this.database.FinishInsertTeamResult(this.match, teamNumInfo2, Logger);
+                        await this.database.FinishInsertTeamResult(this.match, teamNumInfo3, Logger);
                         await this.database.UpdateELO(teamNumInfo2, Logger);
                         await this.database.UpdateELO(teamNumInfo3, Logger);
                     }
 
-                    await this.database.FinishInsertMatch(match, Logger);
+                    await this.database.FinishInsertMatch(this.match, Logger);
                     await this.database.IncrementMultiplePlayerMatchesPlayed(startingPlayerIDs, Logger);
                     await this.database.InsertLive(liveData, Logger);
                     await this.database.CommitTransaction();
 
-                    match = null;
+                    this.match = null;
                 }
 
                 catch (Exception ex) {
@@ -126,7 +126,7 @@ namespace CS2Stats
                     Server.TickCount
                 );
 
-                match.Round.hurtEvents.Add(hurtEvent);
+                this.match.Round.hurtEvents.Add(hurtEvent);
             }
 
             return HookResult.Continue;
@@ -140,13 +140,13 @@ namespace CS2Stats
 
             if (@event.Userid != null) {
 
-                var matchingDeathEvent = match.Round.deathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
+                var matchingDeathEvent = this.match.Round.deathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
 
                 if (matchingDeathEvent != null && Server.TickCount < matchingDeathEvent.ServerTick + (5 * Server.TickInterval)) {
-                    match.Round.playersKAST.Add(matchingDeathEvent.VictimID);
+                    this.match.Round.playersKAST.Add(matchingDeathEvent.VictimID);
                 }
 
-                match.Round.deathEvents.Add(new DeathEvent(
+                this.match.Round.deathEvents.Add(new DeathEvent(
                     @event.Attacker?.SteamID,
                     @event.Assister?.SteamID,
                     @event.Userid.SteamID,
@@ -157,11 +157,11 @@ namespace CS2Stats
                 ));
 
                 if (@event.Attacker != null) {
-                    match.Round.playersKAST.Add(@event.Attacker.SteamID);
+                    this.match.Round.playersKAST.Add(@event.Attacker.SteamID);
                 }
 
                 else if (@event.Assister != null) {
-                    match.Round.playersKAST.Add(@event.Assister.SteamID);
+                    this.match.Round.playersKAST.Add(@event.Assister.SteamID);
                 }
             }
 
@@ -207,13 +207,13 @@ namespace CS2Stats
                     this.match.Round.playersKAST.Add(playerID);
                 }
 
-                await this.database.IncrementMultiplePlayerRoundsKAST(match.Round.playersKAST.ToList(), Logger);
+                await this.database.IncrementMultiplePlayerRoundsKAST(this.match.Round.playersKAST.ToList(), Logger);
                 await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
 
-                if (match.MatchID != null && match.Round.RoundID != null) {
-                    await this.database.InsertBatchedHurtEvents(match, Logger);
-                    await this.database.InsertBatchedDeathEvents(match, Logger);
-                    await this.database.InsertBatchedKAST(match, Logger);
+                if (this.match.MatchID != null && this.match.Round.RoundID != null) {
+                    await this.database.InsertBatchedHurtEvents(this.match, Logger);
+                    await this.database.InsertBatchedDeathEvents(this.match, Logger);
+                    await this.database.InsertBatchedKAST(this.match, Logger);
                 }
 
                 else {
@@ -221,7 +221,7 @@ namespace CS2Stats
                 }
 
                 if (winningTeamID != null && losingTeamID != null) {
-                    await this.database.FinishInsertRound(match.Round.RoundID, winningTeamID, losingTeamID, winningTeamNum, winningReason, Logger);
+                    await this.database.FinishInsertRound(this.match.Round.RoundID, winningTeamID, losingTeamID, winningTeamNum, winningReason, Logger);
                 }
                 else {
                     Logger.LogInformation($"[EventRoundEndHandler] Could not find both team IDs. Winning Team ID: {winningTeamID}, Losing Team ID: {losingTeamID}");

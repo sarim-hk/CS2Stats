@@ -40,10 +40,10 @@ namespace CS2Stats {
 
             string teamNum2ID = GenerateTeamID(team2, Logger);
             string teamNum3ID = GenerateTeamID(team3, Logger);
-            match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, team2);
-            match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, team3);
+            this.match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, team2);
+            this.match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, team3);
 
-            List<ulong> playerIDs = match.StartingPlayers.Values
+            List<ulong> playerIDs = this.match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
                 .ToList();
 
@@ -51,9 +51,9 @@ namespace CS2Stats {
                 await this.database.StartTransaction();
                 await this.database.InsertMap(this.match.MapName, Logger);
 
-                match.MatchID = await this.database.BeginInsertMatch(this.match, Logger);
+                this.match.MatchID = await this.database.BeginInsertMatch(this.match, Logger);
                 await this.database.InsertMultiplePlayers(playerIDs, Logger);
-                await this.database.InsertTeamsAndTeamPlayers(match, Logger);
+                await this.database.InsertTeamsAndTeamPlayers(this.match, Logger);
             });
 
             Logger.LogInformation("[StartMatch] Match started.");
