@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Match (
-    MatchID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    MatchID int PRIMARY KEY NOT NULL,
     MapID varchar(128) NOT NULL,
     StartTick int NOT NULL,
     EndTick int NULL,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS CS2S_TeamResult (
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Round (
-    RoundID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    RoundID int PRIMARY KEY NOT NULL,
     MatchID int NOT NULL,
     WinningTeamID varchar(32) NULL,
     LosingTeamID varchar(32) NULL,

@@ -20,8 +20,8 @@ namespace CS2Stats {
             if (this.conn != null) {
                 await this.conn.CloseAsync();
                 this.conn = null;
-            }            
-            
+            }
+
             MySqlConnection conn = new(this.connString);
             await conn.OpenAsync();
             this.conn = conn;
@@ -49,6 +49,60 @@ namespace CS2Stats {
             }
         }
 
+        public async Task<int> GetLastMatchID(ILogger Logger) {
+            try {
+                string query = @"
+                SELECT MAX(MatchID) 
+                FROM CS2S_Match
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                object? result = await cmd.ExecuteScalarAsync();
+
+                if (result != null && int.TryParse(result.ToString(), out int matchID)) {
+                    Logger.LogInformation($"[GetNextMatchID] Last MatchID is {matchID}.");
+                    return matchID;
+                }
+
+                else {
+                    Logger.LogInformation($"[GetNextMatchID] No previous MatchID found... Defaulting to 0.");
+                    return 0;
+                }
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[GetNextMatchID] Error occurred while retrieving last MatchID.");
+                return 0;
+            }
+        }
+
+        public async Task<int> GetLastRoundID(ILogger Logger) {
+            try {
+                string query = @"
+                SELECT MAX(RoundID) 
+                FROM CS2S_Round
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                object? result = await cmd.ExecuteScalarAsync();
+
+                if (result != null && int.TryParse(result.ToString(), out int roundID)) {
+                    Logger.LogInformation($"[GetLastRoundID] Last RoundID is {roundID}.");
+                    return roundID;
+                }
+
+                else {
+                    Logger.LogInformation($"[GetLastRoundID] No previous RoundID found... Defaulting to 0.");
+                    return 0;
+                }
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[GetLastRoundID] Error occurred while retrieving last RoundID.");
+                return 0;
+            }
+        }
+
         public async Task<int?> GetTeamAverageELO(string teamID, ILogger Logger) {
             if (string.IsNullOrWhiteSpace(teamID)) {
                 Logger.LogInformation("[GetTeamAverageELO] Team ID is null or empty.");
@@ -67,11 +121,11 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@TeamID", teamID);
                 object? result = await cmd.ExecuteScalarAsync();
 
-                if (result != null && double.TryParse(result.ToString(), out double averageELO)) {
-                    int roundedELO = (int)Math.Round(averageELO);
-                    Logger.LogInformation($"[GetTeamAverageELO] Average ELO for team {teamID} is {roundedELO}.");
-                    return roundedELO;
+                if (result != null && int.TryParse(result.ToString(), out int averageELO)) {
+                    Logger.LogInformation($"[GetTeamAverageELO] Average ELO for team {teamID} is {averageELO}.");
+                    return averageELO;
                 }
+
                 else {
                     Logger.LogInformation($"[GetTeamAverageELO] No players found for team {teamID} or failed to retrieve average ELO.");
                     return null;
@@ -148,6 +202,54 @@ namespace CS2Stats {
 
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertMap] Error occurred while inserting the map.");
+            }
+        }
+
+        public async Task InsertMatch(Match match, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_Match (MatchID, MapID, StartTick, EndTick)
+                VALUES (@MatchID, @MapID, @StartTick, EndTick);
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@MapID", match.MapName);
+                cmd.Parameters.AddWithValue("@StartTick", match.StartTick);
+                cmd.Parameters.AddWithValue("@EndTick", match.EndTick);
+
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation("[InsertMatch] Match inserted successfully.");
+
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertMatch] Error occurred while inserting the match.");
+            }
+        }
+
+        public async Task InsertRound(Match match, Round round, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_Round (RoundID, MatchID, WinningTeamID, LosingTeamID, WinningSide, RoundEndReason, StartTick, EndTick)
+                VALUES (@RoundID, @MatchID, @WinningTeamID, @LosingTeamID, @WinningSide, @RoundEndReason, @StartTick, @EndTick);
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@WinningTeamID", round.WinningTeamID);
+                cmd.Parameters.AddWithValue("@LosingTeamID", round.LosingTeamID);
+                cmd.Parameters.AddWithValue("@WinningSide", round.WinningTeamNum);
+                cmd.Parameters.AddWithValue("@RoundEndReason", round.WinningReason);
+                cmd.Parameters.AddWithValue("@StartTick", round.StartTick);
+                cmd.Parameters.AddWithValue("@EndTick", round.EndTick);
+
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation("[InsertRound] Round inserted successfully.");
+
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertRound] Error occurred while inserting the round.");
             }
         }
 
@@ -342,36 +444,7 @@ namespace CS2Stats {
                 Logger.LogError(ex, "[InsertLive] Error occurred while inserting live data.");
             }
         }
-
-        public async Task<int?> BeginInsertMatch(Match match, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_Match (MapID, StartTick, EndTick)
-                VALUES (@MapID, @StartTick, NULL);
-                SELECT LAST_INSERT_ID();
-                ";
-
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@MapID", match.MapName);
-                cmd.Parameters.AddWithValue("@StartTick", match.StartTick);
-
-                object? result = await cmd.ExecuteScalarAsync();
-
-                if (result != null && int.TryParse(result.ToString(), out int matchID)) {
-                    Logger.LogInformation($"[BeginInsertMatch] New match inserted successfully with MatchID {matchID}.");
-                    return matchID;
-                }
-                else {
-                    Logger.LogInformation("[BeginInsertMatch] Failed to retrieve MatchID.");
-                    return null;
-                }
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex, "[BeginInsertMatch] Error occurred while inserting the match.");
-                return null;
-            }
-        }
-
+        
         public async Task<int?> BeginInsertRound(Match match, ILogger Logger) {
             try {
                 string query = @"

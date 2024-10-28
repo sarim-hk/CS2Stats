@@ -10,7 +10,7 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         // thanks to switz https://discord.com/channels/1160907911501991946/1160925208203493468/1170817201473855619
-        private static int? GetCSTeamScore(int teamNum) {
+        private static int GetCSTeamScore(int teamNum) {
             IEnumerable<CCSTeam> teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
 
             foreach (CCSTeam teamManager in teamManagers) {
@@ -19,7 +19,7 @@ namespace CS2Stats {
                 }
             }
 
-            return null;
+            return 0;
         }
 
         // thanks to bober https://discord.com/channels/1160907911501991946/1160925208203493468/1173658546387292160
@@ -123,6 +123,29 @@ namespace CS2Stats {
 
             catch (Exception ex) {
                 Logger.LogError(ex, $"[BeginInsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
+            }
+        }
+        
+        private async Task InsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
+                VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@Score", teamInfo.Score);
+                cmd.Parameters.AddWithValue("@Result", teamInfo.Result);
+                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[InsertTeamResult] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, $"[InsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
             }
         }
 
