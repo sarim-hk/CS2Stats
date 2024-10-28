@@ -26,8 +26,11 @@ namespace CS2Stats {
                 return HookResult.Continue;
             }
 
+            this.match.RoundID += 1;
+
             this.match.Round = new Round {
-                StartTick = Server.TickCount
+                StartTick = Server.TickCount,
+                RoundID = this.match.RoundID
             };
 
             this.SwapTeamsIfNeeded();
@@ -36,7 +39,6 @@ namespace CS2Stats {
 
             Task.Run(async () => {
                 await this.database.InsertLive(liveData, Logger);
-                this.match.Round.RoundID = await this.database.BeginInsertRound(this.match, Logger);
             });
 
             return HookResult.Continue;
@@ -170,10 +172,6 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
-        //public HookResult EventFlashbangDetonateHandler(EventFlashbangDetonate @event, GameEventInfo info) {
-        //    return HookResult.Continue;
-        //}
-
         public HookResult EventPlayerBlindHandler(EventPlayerBlind @event, GameEventInfo info) {
             if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
                 Logger.LogInformation("[EventPlayerBlindHandler] Database conn/transaction or match is null. Returning.");
@@ -190,7 +188,7 @@ namespace CS2Stats {
                     Server.TickCount - this.match.Round.StartTick
                 ));
             }
-            
+
             return HookResult.Continue;
         }
 
@@ -222,35 +220,11 @@ namespace CS2Stats {
                 .Select(playerController => playerController.SteamID)
                 .ToHashSet();
 
+            foreach (ulong playerID in alivePlayerIDs) {
+                this.match.Round.KASTEvents.Add(playerID);
+            }
 
-            Task.Run(async () => {
-
-                foreach (ulong playerID in alivePlayerIDs) {
-                    this.match.Round.KASTEvents.Add(playerID);
-                }
-
-                await this.database.IncrementMultiplePlayerRoundsKAST(this.match.Round.KASTEvents, Logger);
-                await this.database.IncrementMultiplePlayerRoundsPlayed(playerIDs, Logger);
-
-                if (this.match.MatchID != null && this.match.Round.RoundID != null) {
-                    await this.database.InsertBatchedHurtEvents(this.match, Logger);
-                    await this.database.InsertBatchedDeathEvents(this.match, Logger);
-                    await this.database.InsertBatchedKAST(this.match, Logger);
-                    await this.database.InsertBatchedBlindEvents(this.match, Logger);
-                }
-
-                else {
-                    Logger.LogInformation($"[EventRoundEndHandler] Round ID is null. Could not insert hurt and death events.");
-                }
-
-                if (this.match.Round.WinningTeamID != null && this.match.Round.LosingTeamID != null) {
-                    await this.database.FinishInsertRound(this.match.Round, Logger);
-                }
-                else {
-                    Logger.LogInformation($"[EventRoundEndHandler] Could not find both team IDs. Winning Team ID: {this.match.Round.WinningTeamID}, Losing Team ID: {this.match.Round.LosingTeamID}");
-                }
-
-            });
+            this.match.Rounds.Enqueue(this.match.Round);
 
             return HookResult.Continue;
         }
