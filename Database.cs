@@ -188,8 +188,8 @@ namespace CS2Stats {
         public async Task InsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
-                VALUES (@TeamID, @MatchID, @Score, @Result, @DeltaELO)
+                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, Side, DeltaELO)
+                VALUES (@TeamID, @MatchID, @Score, @Result, @Side, @DeltaELO)
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -197,6 +197,7 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                 cmd.Parameters.AddWithValue("@Score", teamInfo.Score);
                 cmd.Parameters.AddWithValue("@Result", teamInfo.Result);
+                cmd.Parameters.AddWithValue("@Side", teamInfo.Side);
                 cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
 
                 await cmd.ExecuteNonQueryAsync();
