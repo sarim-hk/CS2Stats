@@ -124,6 +124,10 @@ namespace CS2Stats {
                 }
 
                 finally {
+                    if (this.Config.DemoRecordingEnabled == "1") {
+                        Server.NextFrame(() => this.StopDemo(Logger));
+                    }
+
                     this.Match = null;
                 }
 

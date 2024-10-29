@@ -54,6 +54,10 @@ namespace CS2Stats {
 
             });
 
+            if (this.Config.DemoRecordingEnabled == "1") {
+                Server.NextFrame(() => this.StartDemo(Logger));
+            }
+
             Logger.LogInformation("[StartMatch] Match started.");
 
         }

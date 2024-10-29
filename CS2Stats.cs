@@ -49,7 +49,5 @@ namespace CS2Stats {
             Logger.LogInformation("[Unload] Plugin unloaded.");
         }
 
-
-
     }
 }

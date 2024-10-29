@@ -9,6 +9,9 @@ namespace CS2Stats {
         [JsonPropertyName("MySQLUsername")] public string MySQLUsername { get; set; } = "";
         [JsonPropertyName("MySQLPassword")] public string MySQLPassword { get; set; } = "";
         [JsonPropertyName("SteamAPIKey")] public string SteamAPIKey { get; set; } = "";
+
+        [JsonPropertyName("DemoRecordingEnabled")] public string DemoRecordingEnabled { get; set; } = "1";
+
     }
 
 }

@@ -479,7 +479,6 @@ namespace CS2Stats {
             }
         }
 
-
         public async Task InsertBatchedKAST(Match match, Round round, ILogger Logger) {
             if (round.PlayersKAST == null || round.PlayersKAST.Count == 0) {
                 Logger.LogInformation("[InsertBatchedKAST] KAST events is null.");
