@@ -28,4 +28,10 @@
         public int RoundTick;
     }
 
+    public struct GrenadeEvent {
+        public ulong ThrowerID;
+        public string Weapon;
+        public int RoundTick;
+    }
+
 }
