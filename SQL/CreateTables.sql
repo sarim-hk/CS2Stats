@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS CS2S_TeamResult (
 	MatchID int NOT NULL,
 	Score int NULL,
     Result ENUM("Win", "Loss", "Tie") NULL,
+    Side int NOT NULL,
     DeltaELO int DEFAULT 0 NOT NULL,
     PRIMARY KEY (TeamID, MatchID),
     FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
