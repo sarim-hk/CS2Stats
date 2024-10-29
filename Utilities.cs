@@ -27,8 +27,7 @@ namespace CS2Stats {
             HashSet<LivePlayer> tPlayers = [];
             HashSet<LivePlayer> ctPlayers = [];
 
-            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-            foreach (CCSPlayerController playerController in playerControllers) {
+            foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
                 if (playerController.ActionTrackingServices != null) {
                     LivePlayer livePlayer = new() {
                         Kills = playerController.ActionTrackingServices.MatchStats.Kills,

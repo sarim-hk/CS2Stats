@@ -22,8 +22,7 @@ namespace CS2Stats {
             HashSet<ulong> teamNum2 = [];
             HashSet<ulong> teamNum3 = [];
 
-            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-            foreach (CCSPlayerController playerController in playerControllers) {
+            foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
                 if (playerController.IsValid && !playerController.IsBot) {
                     if (playerController.TeamNum == (int)CsTeam.Terrorist) {
                         teamNum2.Add(playerController.SteamID);
