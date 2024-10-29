@@ -9,8 +9,8 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Database or match is null. Returning.");
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -22,16 +22,16 @@ namespace CS2Stats {
 
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
             if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundStartHandler] Database or match is null. Returning.");
+                Logger.LogInformation("[EventRoundStartHandler] Match or database is null. Returning.");
                 return HookResult.Continue;
             }
 
             this.Match.RoundID += 1;
 
-            this.Match.Round = new Round {
-                StartTick = Server.TickCount,
-                RoundID = this.Match.RoundID
-            };
+            this.Match.Round = new Round(
+                roundID: this.Match.RoundID,
+                startTick: Server.TickCount
+            );
 
             this.SwapTeamsIfNeeded();
 
@@ -45,8 +45,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventCsWinPanelMatchHandler] Database or match is null. Returning.");
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventCsWinPanelMatchHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -133,8 +133,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventPlayerHurtHandler(EventPlayerHurt @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerHurtHandler] Database or match is null. Returning.");
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventPlayerHurtHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -153,8 +153,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventPlayerDeathHandler(EventPlayerDeath @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] Database or match is null. Returning.");
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventPlayerDeathHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -197,8 +197,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventPlayerBlindHandler(EventPlayerBlind @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerBlindHandler] Database or match is null. Returning.");
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventPlayerBlindHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -216,8 +216,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] Database or match is null. Returning.");
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventPlayerDeathHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -261,13 +261,12 @@ namespace CS2Stats {
             Task.Run(async () => {
                 PlayerInfo? playerInfo = await this.SteamAPIClient.GetSteamSummaryAsync(playerID.SteamId64);
 
-                if (playerInfo == null) {
-                    Logger.LogInformation("[OnClientAuthorizedHandler] Steam API PlayerInfo is null.");
-                    return;
+                if (playerInfo != null) {
+                    await this.Database.InsertPlayerInfo(playerInfo.Value, Logger);
                 }
 
                 else {
-                    await this.Database.InsertPlayerInfo(playerInfo, Logger);
+                    Logger.LogError("[OnClientAuthorizedHandler] Steam API PlayerInfo is null.");
                 }
 
             });

@@ -22,16 +22,20 @@ namespace CS2Stats {
                     JToken? playersData = data["response"]?["players"];
                     if (playersData != null) {
                         foreach (JToken playerData in playersData) {
-                            string? steamIDStr = playerData["steamid"]?.ToString();
-                            if (steamIDStr != null) {
-                                string? personaname = playerData["personaname"]?.ToString();
-                                string? avatar = playerData["avatar"]?.ToString();
-                                string? avatarM = playerData["avatarmedium"]?.ToString();
-                                string? avatarL = playerData["avatarfull"]?.ToString();
+                            string? personaname = playerData["personaname"]?.ToString();
+                            string? avatar = playerData["avatar"]?.ToString();
+                            string? avatarM = playerData["avatarmedium"]?.ToString();
+                            string? avatarL = playerData["avatarfull"]?.ToString();
 
-                                PlayerInfo player = new(steamID, personaname, avatar, avatarM, avatarL);
-                                return player;
-                            }
+                            PlayerInfo player = new() {
+                                PlayerID = steamID,
+                                Username = personaname,
+                                AvatarS = avatar,
+                                AvatarM = avatarM,
+                                AvatarL = avatarL
+                            };
+
+                            return player;
                         }
                     }
 
@@ -46,20 +50,12 @@ namespace CS2Stats {
         }
     }
 
-    public class PlayerInfo {
+    public struct PlayerInfo {
         public ulong PlayerID;
         public string? Username;
         public string? AvatarS;
         public string? AvatarM;
         public string? AvatarL;
-
-        public PlayerInfo(ulong playerID, string? username, string? avatarS, string? avatarM, string? avatarL) {
-            this.PlayerID = playerID;
-            this.Username = username;
-            this.AvatarS = avatarS;
-            this.AvatarM = avatarM;
-            this.AvatarL = avatarL;
-        }
 
     }
 
