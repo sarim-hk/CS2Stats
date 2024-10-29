@@ -9,18 +9,18 @@ namespace CS2Stats {
         public override string ModuleVersion => "2.0.0";
 
         public Config Config { get; set; }
-        public Database? database;
-        public SteamAPIClient? steamAPIClient;
-        public Match? match;
+        public Database? Database;
+        public SteamAPIClient? SteamAPIClient;
+        public Match? Match;
 
         public void OnConfigParsed(Config config) {
-            Config = config;
-            database = new Database(Config.MySQLServer, Config.MySQLDatabase, Config.MySQLUsername, Config.MySQLPassword);
-            steamAPIClient = new SteamAPIClient(Config.SteamAPIKey);
+            this.Config = config;
+            this.Database = new Database(Config.MySQLServer, Config.MySQLDatabase, Config.MySQLUsername, Config.MySQLPassword);
+            this.SteamAPIClient = new SteamAPIClient(Config.SteamAPIKey);
         }
 
         public override void Load(bool hotReload) {
-            if (this.database == null) {
+            if (this.Database == null) {
                 Logger.LogInformation("[Load] Database is null. Unloading...");
                 base.Unload(false);
             }

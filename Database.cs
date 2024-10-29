@@ -497,55 +497,6 @@ namespace CS2Stats {
             }
         }
 
-        public async Task IncrementPlayerValues(HashSet<ulong> playerIDs, string field, ILogger Logger) {
-            if (playerIDs == null || playerIDs.Count == 0) {
-                Logger.LogInformation("[IncrementPlayerValues] Player IDs list is null or empty.");
-                return;
-            }
-
-            try {
-                string query = @$"
-                UPDATE CS2S_Player
-                SET {field} = {field} + 1
-                WHERE PlayerID = @PlayerID;
-                ";
-
-                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
-                    foreach (ulong playerID in playerIDs) {
-                        cmd.Parameters.Clear();
-
-                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-                }
-
-                Logger.LogInformation($"[IncrementPlayerValues] Successfully incremented {field} for {playerIDs.Count} players.");
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[IncrementPlayerValues] Error occurred while incrementing {field} for batch of players.");
-            }
-        }
-
-        public async Task IncrementPlayerValue(ulong playerID, string field, ILogger Logger) {
-            try {
-                string query = @$"
-                UPDATE CS2S_Player
-                SET {field} = {field} + 1
-                WHERE PlayerID = @PlayerID;
-                ";
-
-                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                    await cmd.ExecuteNonQueryAsync();
-                }
-
-                Logger.LogInformation($"[IncrementPlayerValue] Successfully incremented {field} for {playerID}.");
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[IncrementPlayerValue] Error occurred while incrementing {field} for {playerID}.");
-            }
-        }
-
         public async Task UpdateELO(TeamInfo teamInfo, ILogger Logger) {
             if (string.IsNullOrWhiteSpace(teamInfo.TeamID)) {
                 Logger.LogInformation("[IncrementTeamELO] Team ID is null or empty.");

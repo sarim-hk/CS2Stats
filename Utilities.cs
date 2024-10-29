@@ -10,9 +10,9 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         private TeamInfo? GetTeamInfoByTeamNum(int? teamNum) {
-            if (this.match != null && teamNum != null) {
-                foreach (string teamID in this.match.StartingPlayers.Keys) {
-                    TeamInfo teamInfo = this.match.StartingPlayers[teamID];
+            if (this.Match != null && teamNum != null) {
+                foreach (string teamID in this.Match.StartingPlayers.Keys) {
+                    TeamInfo teamInfo = this.Match.StartingPlayers[teamID];
 
                     if (teamInfo.Side == teamNum) {
                         return teamInfo;
@@ -104,12 +104,12 @@ namespace CS2Stats {
         }
 
         private void SwapTeamsIfNeeded() {
-            if (this.match != null && this.match.TeamsNeedSwapping) {
-                foreach (string teamID in this.match.StartingPlayers.Keys) {
+            if (this.Match != null && this.Match.TeamsNeedSwapping) {
+                foreach (string teamID in this.Match.StartingPlayers.Keys) {
                     Logger.LogInformation($"[SwapTeamsIfNeeded] Swapping team for teamID {teamID}.");
-                    this.match.StartingPlayers[teamID].SwapSides();
+                    this.Match.StartingPlayers[teamID].SwapSides();
                 }
-                this.match.TeamsNeedSwapping = false;
+                this.Match.TeamsNeedSwapping = false;
                 Logger.LogInformation("[SwapTeamsIfNeeded] Setting teamsNeedSwapping to false.");
             }
         }
@@ -205,6 +205,55 @@ namespace CS2Stats {
             }
             catch (Exception ex) {
                 Logger.LogError(ex, $"[IncrementPlayerDamage] Error occurred while incrementing damage for player {playerID} with weapon {weapon}.");
+            }
+        }
+
+        public async Task IncrementPlayerValues(HashSet<ulong> playerIDs, string field, ILogger Logger) {
+            if (playerIDs == null || playerIDs.Count == 0) {
+                Logger.LogInformation("[IncrementPlayerValues] Player IDs list is null or empty.");
+                return;
+            }
+
+            try {
+                string query = @$"
+                UPDATE CS2S_Player
+                SET {field} = {field} + 1
+                WHERE PlayerID = @PlayerID;
+                ";
+
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    foreach (ulong playerID in playerIDs) {
+                        cmd.Parameters.Clear();
+
+                        cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+
+                Logger.LogInformation($"[IncrementPlayerValues] Successfully incremented {field} for {playerIDs.Count} players.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, $"[IncrementPlayerValues] Error occurred while incrementing {field} for batch of players.");
+            }
+        }
+
+        public async Task IncrementPlayerValue(ulong playerID, string field, ILogger Logger) {
+            try {
+                string query = @$"
+                UPDATE CS2S_Player
+                SET {field} = {field} + 1
+                WHERE PlayerID = @PlayerID;
+                ";
+
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                Logger.LogInformation($"[IncrementPlayerValue] Successfully incremented {field} for {playerID}.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, $"[IncrementPlayerValue] Error occurred while incrementing {field} for {playerID}.");
             }
         }
 

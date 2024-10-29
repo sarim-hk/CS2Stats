@@ -14,12 +14,12 @@ namespace CS2Stats {
                 return;
             }
 
-            if (this.database == null) {
+            if (this.Database == null) {
                 Logger.LogInformation("[StartMatch] Database is null. Returning.");
                 return;
             }
 
-            this.match = new Match() {
+            this.Match = new Match() {
                 MapName = Server.MapName,
                 StartTick = Server.TickCount
             };
@@ -40,14 +40,14 @@ namespace CS2Stats {
             }
             
             Task.Run(async () => {
-                this.match.MatchID = await this.database.GetLastMatchID(Logger) + 1;
-                this.match.RoundID = await this.database.GetLastRoundID(Logger);
+                this.Match.MatchID = await this.Database.GetLastMatchID(Logger) + 1;
+                this.Match.RoundID = await this.Database.GetLastRoundID(Logger);
             });
 
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
-            this.match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2);
-            this.match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3);
+            this.Match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2);
+            this.Match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3);
 
 
 
