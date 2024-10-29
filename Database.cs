@@ -189,7 +189,7 @@ namespace CS2Stats {
             try {
                 string query = @"
                 INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
-                VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
+                VALUES (@TeamID, @MatchID, @Score, @Result, @DeltaELO)
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -233,7 +233,7 @@ namespace CS2Stats {
             try {
                 string query = @"
                 INSERT INTO CS2S_Match (MatchID, MapID, StartTick, EndTick)
-                VALUES (@MatchID, @MapID, @StartTick, EndTick);
+                VALUES (@MatchID, @MapID, @StartTick, @EndTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
