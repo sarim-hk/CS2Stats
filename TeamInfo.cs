@@ -3,14 +3,14 @@
 namespace CS2Stats {
 
     public class TeamInfo {
-        public string TeamID;
-        public int Side;
-        public HashSet<ulong> PlayerIDs;
-        public int Score;
+        public string TeamID { get; }
+        public int Side { get; set; }
+        public HashSet<ulong> PlayerIDs { get; }
+        public int Score { get; set; }
 
-        public string? Result;
-        public int? AverageELO;
-        public int? DeltaELO;
+        public string? Result { get; set; }
+        public int? AverageELO { get; set; }
+        public int? DeltaELO { get; set; }
 
         public TeamInfo(string teamID, int side, HashSet<ulong> playerIDs) {
             this.TeamID = teamID;

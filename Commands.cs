@@ -19,11 +19,6 @@ namespace CS2Stats {
                 return;
             }
 
-            this.Match = new Match() {
-                MapName = Server.MapName,
-                StartTick = Server.TickCount
-            };
-
             HashSet<ulong> teamNum2 = [];
             HashSet<ulong> teamNum3 = [];
 
@@ -39,21 +34,40 @@ namespace CS2Stats {
                 }
             }
             
-            Task.Run(async () => {
-                this.Match.MatchID = await this.Database.GetLastMatchID(Logger) + 1;
-                this.Match.RoundID = await this.Database.GetLastRoundID(Logger);
-            });
-
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
-            this.Match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2);
-            this.Match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3);
 
+            Dictionary<string, TeamInfo> startingPlayers = [];
+            startingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2);
+            startingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3);
 
+            string mapName = Server.MapName;
+            int startTick = Server.TickCount;
+
+            Task.Run(async () => {
+                this.Match = new Match(
+                    matchID: await this.Database.GetLastMatchID(Logger) + 1,
+                    roundID: await this.Database.GetLastRoundID(Logger),
+                    mapName: mapName,
+                    startTick: startTick,
+                    startingPlayers: startingPlayers
+                );
+
+            });
 
             Logger.LogInformation("[StartMatch] Match started.");
 
         }
+
+        [ConsoleCommand("cs2s_cancel_match", "Cancel a match without saving.")]
+        public void CancelMatch(CCSPlayerController? player, CommandInfo info) {
+            if (player != null) {
+                return;
+            }
+
+            this.Match = null;
+        }
+
     }
 }
 
