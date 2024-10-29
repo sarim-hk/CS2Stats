@@ -66,7 +66,7 @@ namespace CS2Stats {
                     await this.Database.InsertMap(this.Match, Logger);
                     await this.Database.InsertMatch(this.Match, Logger);
 
-                    await this.Database.InsertMultiplePlayers(startingPlayerIDs, Logger);
+                    await this.Database.InsertBatchedPlayers(startingPlayerIDs, Logger);
                     await this.Database.InsertTeamsAndTeamPlayers(this.Match, Logger);
 
                     while (this.Match.Rounds.Count > 0) {

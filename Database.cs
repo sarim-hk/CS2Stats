@@ -405,36 +405,6 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertBatchedKAST(Match match, Round round, ILogger Logger) {
-            if (round.PlayersKAST == null || round.PlayersKAST.Count == 0) {
-                Logger.LogInformation("[InsertBatchedKAST] KAST events is null.");
-                return;
-            }
-
-            try {
-                string query = @"
-                INSERT INTO CS2S_KAST (RoundID, MatchID, PlayerID)
-                VALUES (@RoundID, @MatchID, @PlayerID);
-                ";
-
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (ulong playerID in round.PlayersKAST) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
-
-                Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of KAST events inserted successfully.");
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of KAST events.");
-            }
-
-        }
-
         public async Task InsertBatchedBlindEvents(Match match, Round round, ILogger Logger) {
             if (round.BlindEvents == null || round.BlindEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedBlindEvents] Blind events are null.");
@@ -474,7 +444,37 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertMultiplePlayers(HashSet<ulong> playerIDs, ILogger Logger) {
+        public async Task InsertBatchedKAST(Match match, Round round, ILogger Logger) {
+            if (round.PlayersKAST == null || round.PlayersKAST.Count == 0) {
+                Logger.LogInformation("[InsertBatchedKAST] KAST events is null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_KAST (RoundID, MatchID, PlayerID)
+                VALUES (@RoundID, @MatchID, @PlayerID);
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                foreach (ulong playerID in round.PlayersKAST) {
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of KAST events inserted successfully.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of KAST events.");
+            }
+
+        }
+
+        public async Task InsertBatchedPlayers(HashSet<ulong> playerIDs, ILogger Logger) {
             try {
                 string query = @"
                 INSERT INTO CS2S_Player (PlayerID)
@@ -493,7 +493,7 @@ namespace CS2Stats {
             }
 
             catch (Exception ex) {
-                Logger.LogError(ex, "[InsertMultiplePlayers] Error occurred while inserting player.");
+                Logger.LogError(ex, "[InsertBatchedPlayers] Error occurred while inserting player.");
             }
         }
 
