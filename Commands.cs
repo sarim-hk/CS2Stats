@@ -1,6 +1,7 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,7 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         [ConsoleCommand("cs2s_start_match", "Start a match.")]
-        public void StartMatch(CCSPlayerController? player) {
+        public void StartMatch(CCSPlayerController? player, CommandInfo info) {
             if (player != null) {
                 return;
             }
@@ -37,16 +38,18 @@ namespace CS2Stats {
                     }
                 }
             }
+            
+            Task.Run(async () => {
+                this.match.MatchID = await this.database.GetLastMatchID(Logger) + 1;
+                this.match.RoundID = await this.database.GetLastRoundID(Logger);
+            });
 
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
             this.match.StartingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2);
             this.match.StartingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3);
 
-            Task.Run(async () => {
-                this.match.MatchID = await this.database.GetLastMatchID(Logger) + 1;
-                this.match.RoundID = await this.database.GetLastRoundID(Logger);
-            });
+
 
             Logger.LogInformation("[StartMatch] Match started.");
 

@@ -9,21 +9,71 @@ namespace CS2Stats {
 
     public partial class CS2Stats {
 
-        // thanks to switz https://discord.com/channels/1160907911501991946/1160925208203493468/1170817201473855619
-        private static int GetCSTeamScore(int teamNum) {
-            IEnumerable<CCSTeam> teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
+        private TeamInfo? GetTeamInfoByTeamNum(int? teamNum) {
+            if (this.match != null && teamNum != null) {
+                foreach (string teamID in this.match.StartingPlayers.Keys) {
+                    TeamInfo teamInfo = this.match.StartingPlayers[teamID];
 
-            foreach (CCSTeam teamManager in teamManagers) {
-                if (teamNum == teamManager.TeamNum) {
-                    return teamManager.Score;
+                    if (teamInfo.Side == teamNum) {
+                        return teamInfo;
+                    }
                 }
             }
 
-            return 0;
+            return null;
         }
 
-        // thanks to bober https://discord.com/channels/1160907911501991946/1160925208203493468/1173658546387292160
+        private static LiveData GetLiveMatchData(Round round) {
+            HashSet<LivePlayer> tPlayers = [];
+            HashSet<LivePlayer> ctPlayers = [];
+
+            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
+            foreach (CCSPlayerController playerController in playerControllers) {
+                if (playerController.ActionTrackingServices != null) {
+                    LivePlayer livePlayer = new() {
+                        Kills = playerController.ActionTrackingServices.MatchStats.Kills,
+                        Assists = playerController.ActionTrackingServices.MatchStats.Assists,
+                        Deaths = playerController.ActionTrackingServices.MatchStats.Deaths,
+                        Damage = playerController.ActionTrackingServices.MatchStats.Damage,
+                        Health = playerController.Health,
+                        MoneySaved = playerController.ActionTrackingServices.MatchStats.MoneySaved
+                    };
+
+                    if (playerController.TeamNum == 2) {
+                        tPlayers.Add(livePlayer);
+                    }
+                    else {
+                        ctPlayers.Add(livePlayer);
+                    }
+
+                }
+            }
+
+            int? tScore = GetCSTeamScore(2);
+            int? ctScore = GetCSTeamScore(3);
+            int roundTick = Server.TickCount - round.StartTick;
+
+            int bombStatus = GetGameRules().BombPlanted switch {
+                true => 1,
+                false => GetGameRules().BombDefused ? 2 : 0
+            };
+
+            LiveData liveData = new() {
+                TPlayers = tPlayers,
+                CTPlayers = ctPlayers,
+                TScore = tScore,
+                CTScore = ctScore,
+                RoundTick = roundTick,
+                BombStatus = bombStatus
+            };
+                
+            return liveData;
+
+        }
+
         private static CCSGameRules GetGameRules() {
+            // thanks to bober https://discord.com/channels/1160907911501991946/1160925208203493468/1173658546387292160
+
             return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
         }
 
@@ -39,18 +89,18 @@ namespace CS2Stats {
             return teamID;
         }
 
-        private TeamInfo? GetTeamInfoByTeamNum(int? teamNum) {
-            if (this.match != null && teamNum != null) {
-                foreach (string teamID in this.match.StartingPlayers.Keys) {
-                    TeamInfo teamInfo = this.match.StartingPlayers[teamID];
+        private static int GetCSTeamScore(int teamNum) {
+            // thanks to switz https://discord.com/channels/1160907911501991946/1160925208203493468/1170817201473855619
 
-                    if (teamInfo.Side == teamNum) {
-                        return teamInfo;
-                    }
+            IEnumerable<CCSTeam> teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
+
+            foreach (CCSTeam teamManager in teamManagers) {
+                if (teamNum == teamManager.TeamNum) {
+                    return teamManager.Score;
                 }
             }
 
-            return null;
+            return 0;
         }
 
         private void SwapTeamsIfNeeded() {
@@ -64,91 +114,10 @@ namespace CS2Stats {
             }
         }
 
-        private static LiveData GetLiveMatchData(Round round) {
-            HashSet<LivePlayer> tPlayers = [];
-            HashSet<LivePlayer> ctPlayers = [];
-
-            List<CCSPlayerController> playerControllers = Utilities.GetPlayers();
-            foreach (var playerController in playerControllers) {
-                if (playerController.ActionTrackingServices != null) {
-                    var livePlayer = new LivePlayer(playerController.ActionTrackingServices.MatchStats.Kills,
-                        playerController.ActionTrackingServices.MatchStats.Assists,
-                        playerController.ActionTrackingServices.MatchStats.Deaths,
-                        playerController.ActionTrackingServices.MatchStats.Damage,
-                        playerController.Health,
-                        playerController.ActionTrackingServices.MatchStats.MoneySaved);
-
-                    if (playerController.TeamNum == 2) {
-                        tPlayers.Add(livePlayer);
-                    }
-                    else {
-                        ctPlayers.Add(livePlayer);
-                    }
-                }
-            }
-
-            int? tScore = GetCSTeamScore(2);
-            int? ctScore = GetCSTeamScore(3);
-            int roundTick = Server.TickCount - round.StartTick;
-
-            int bombStatus = GetGameRules().BombPlanted switch {
-                true => 1,
-                false => GetGameRules().BombDefused ? 2 : 0
-            };
-
-            LiveData liveData = new(tPlayers, ctPlayers, tScore, ctScore, roundTick, bombStatus);
-            return liveData;
-
-        }
-
     }
 
     public partial class Database {
-
-        private async Task BeginInsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
-                VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
-                ";
-
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
-
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[BeginInsertTeamResult] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
-            }
-
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[BeginInsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
-            }
-        }
         
-        private async Task InsertTeamResult(Match match, TeamInfo teamInfo, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_TeamResult (TeamID, MatchID, Score, Result, DeltaELO)
-                VALUES (@TeamID, @MatchID, NULL, NULL, @DeltaELO)
-                ";
-
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@Score", teamInfo.Score);
-                cmd.Parameters.AddWithValue("@Result", teamInfo.Result);
-                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
-
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[InsertTeamResult] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
-            }
-
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[InsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
-            }
-        }
-
         private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team (TeamID, Size)
