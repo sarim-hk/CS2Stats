@@ -78,8 +78,9 @@ namespace CS2Stats {
 
                         await this.Database.InsertBatchedHurtEvents(this.Match, round, Logger);
                         await this.Database.InsertBatchedDeathEvents(this.Match, round, Logger);
-                        await this.Database.InsertBatchedKAST(this.Match, round, Logger);
                         await this.Database.InsertBatchedBlindEvents(this.Match, round, Logger);
+                        await this.Database.InsertBatchedGrenadeEvents(this.Match, round, Logger);
+                        await this.Database.InsertBatchedKAST(this.Match, round, Logger);
                     }
 
                     TeamInfo? teamNumInfo2 = GetTeamInfoByTeamNum((int)CsTeam.Terrorist);
@@ -208,6 +209,23 @@ namespace CS2Stats {
                     BlindedID = @event.Userid.SteamID,
                     Duration = @event.BlindDuration,
                     TeamFlash = (@event.Attacker.TeamNum == @event.Userid.TeamNum),
+                    RoundTick = Server.TickCount - this.Match.Round.StartTick
+                });
+            }
+
+            return HookResult.Continue;
+        }
+
+        public HookResult EventGrenadeThrownHandler(EventGrenadeThrown @event, GameEventInfo info) {
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventPlayerBlindHandler] Match, round, or database is null. Returning.");
+                return HookResult.Continue;
+            }
+
+            if (@event.Userid != null) {
+                this.Match.Round.GrenadeEvents.Add(new GrenadeEvent() {
+                    ThrowerID = @event.Userid.SteamID,
+                    Weapon = @event.Weapon,
                     RoundTick = Server.TickCount - this.Match.Round.StartTick
                 });
             }

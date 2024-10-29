@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
 	Damage int DEFAULT 0 NOT NULL,
     UtilityDamage int DEFAULT 0 NOT NULL,
     EnemiesFlashed int DEFAULT 0 NOT NULL,
+    GrenadesThrown int DEFAULT 0 NOT NULL,
     RoundsKAST int DEFAULT 0 NOT NULL,
     RoundsPlayed int DEFAULT 0 NOT NULL,
     MatchesPlayed int DEFAULT 0 NOT NULL
@@ -101,15 +102,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     FOREIGN KEY (VictimID) REFERENCES CS2S_Player(PlayerID)
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_KAST (
-    KASTID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    RoundID int NOT NULL,
-    MatchID int NOT NULL,
-    PlayerID varchar(17) NOT NULL,
-	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
-);
-
 CREATE TABLE IF NOT EXISTS CS2S_Blind (
     BlindID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
@@ -122,6 +114,26 @@ CREATE TABLE IF NOT EXISTS CS2S_Blind (
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (ThrowerID) REFERENCES CS2S_Player(PlayerID),
 	FOREIGN KEY (BlindedID) REFERENCES CS2S_Player(PlayerID)
+);
+
+CREATE TABLE IF NOT EXISTS CS2S_Grenade (
+    GrenadeID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    RoundID int NOT NULL,
+    MatchID int NOT NULL,
+    ThrowerID varchar(17) NOT NULL,
+    Weapon varchar(32) NOT NULL,
+    RoundTick int NOT NULL,
+	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+    FOREIGN KEY (ThrowerID) REFERENCES CS2S_Player(PlayerID)
+);
+
+CREATE TABLE IF NOT EXISTS CS2S_KAST (
+    KASTID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    RoundID int NOT NULL,
+    MatchID int NOT NULL,
+    PlayerID varchar(17) NOT NULL,
+	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
 );
 
 /*

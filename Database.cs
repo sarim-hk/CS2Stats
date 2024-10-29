@@ -437,13 +437,48 @@ namespace CS2Stats {
                     }
                 }
 
-                Logger.LogInformation($"[InsertBatchedBlindEvents] Batch of death events inserted successfully.");
+                Logger.LogInformation($"[InsertBatchedBlindEvents] Batch of blind events inserted successfully.");
             }
 
             catch (Exception ex) {
-                Logger.LogError(ex, "[InsertBatchedBlindEvents] Error occurred while inserting batch of death events.");
+                Logger.LogError(ex, "[InsertBatchedBlindEvents] Error occurred while inserting batch of blind events.");
             }
         }
+
+        public async Task InsertBatchedGrenadeEvents(Match match, Round round, ILogger Logger) {
+            if (round.GrenadeEvents == null || round.GrenadeEvents.Count == 0) {
+                Logger.LogInformation("[InsertBatchedGrenadeEvents] Grenade events are null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Grenade (RoundID, MatchID, ThrowerID, Weapon, RoundTick)
+                VALUES (@RoundID, @MatchID, @ThrowerID, @Weapon, @RoundTick);
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                foreach (GrenadeEvent grenadeEvent in round.GrenadeEvents) {
+                    cmd.Parameters.Clear();
+
+                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@ThrowerID", grenadeEvent.ThrowerID);
+                    cmd.Parameters.AddWithValue("@Weapon", grenadeEvent.Weapon);
+                    cmd.Parameters.AddWithValue("@RoundTick", grenadeEvent.RoundTick);
+
+                    await cmd.ExecuteNonQueryAsync();
+                    await IncrementPlayerValue(grenadeEvent.ThrowerID, "GrenadesThrown", Logger);
+                }
+
+                Logger.LogInformation($"[InsertBatchedGrenadeEvents] Batch of grenade events inserted successfully.");
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertBatchedGrenadeEvents] Error occurred while inserting batch of grenade events.");
+            }
+        }
+
 
         public async Task InsertBatchedKAST(Match match, Round round, ILogger Logger) {
             if (round.PlayersKAST == null || round.PlayersKAST.Count == 0) {
