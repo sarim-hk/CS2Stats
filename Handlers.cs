@@ -9,8 +9,8 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Database conn/transaction or match is null. Returning.");
+            if (this.match == null || this.database == null) {
+                Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Database or match is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -21,8 +21,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventRoundStartHandler] Database conn/transaction or match is null. Returning.");
+            if (this.match == null || this.database == null) {
+                Logger.LogInformation("[EventRoundStartHandler] Database or match is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -45,14 +45,14 @@ namespace CS2Stats {
         }
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventCsWinPanelMatchHandler] Database conn/transaction or match is null. Returning.");
+            if (this.match == null || this.database == null) {
+                Logger.LogInformation("[EventCsWinPanelMatchHandler] Database or match is null. Returning.");
                 return HookResult.Continue;
             }
 
             this.match.EndTick = Server.TickCount;
 
-            LiveData liveData = new(null, null, null, null, null, null);
+            LiveData liveData = new();
             HashSet<ulong> startingPlayerIDs = this.match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
                 .ToHashSet();
@@ -60,6 +60,28 @@ namespace CS2Stats {
             Task.Run(async () => {
 
                 try {
+                    await this.database.CreateConnection();
+                    await this.database.StartTransaction();
+
+                    await this.database.InsertMap(this.match, Logger);
+                    await this.database.InsertMatch(this.match, Logger);
+
+                    await this.database.InsertMultiplePlayers(startingPlayerIDs, Logger);
+                    await this.database.InsertTeamsAndTeamPlayers(this.match, Logger);
+
+                    while (this.match.Rounds.Count > 0) {
+                        Round round = this.match.Rounds.Dequeue();
+
+                        await this.database.InsertRound(this.match, round, Logger);
+                        await this.database.IncrementMultiplePlayerRoundsKAST(round.KASTEvents, Logger);
+                        await this.database.IncrementMultiplePlayerRoundsPlayed(round.PlayersParticipated, Logger);
+
+                        await this.database.InsertBatchedHurtEvents(this.match, round, Logger);
+                        await this.database.InsertBatchedDeathEvents(this.match, round, Logger);
+                        await this.database.InsertBatchedKAST(this.match, round, Logger);
+                        await this.database.InsertBatchedBlindEvents(this.match, round, Logger);
+                    }
+
                     TeamInfo? teamNumInfo2 = GetTeamInfoByTeamNum((int)CsTeam.Terrorist);
                     TeamInfo? teamNumInfo3 = GetTeamInfoByTeamNum((int)CsTeam.CounterTerrorist);
 
@@ -85,13 +107,12 @@ namespace CS2Stats {
                             teamNumInfo2.DeltaELO = -teamNumInfo3.DeltaELO;
                         }
 
-                        await this.database.FinishInsertTeamResult(this.match, teamNumInfo2, Logger);
-                        await this.database.FinishInsertTeamResult(this.match, teamNumInfo3, Logger);
+                        await this.database.InsertTeamResult(this.match, teamNumInfo2, Logger);
+                        await this.database.InsertTeamResult(this.match, teamNumInfo3, Logger);
                         await this.database.UpdateELO(teamNumInfo2, Logger);
                         await this.database.UpdateELO(teamNumInfo3, Logger);
                     }
 
-                    await this.database.FinishInsertMatch(this.match, Logger);
                     await this.database.IncrementMultiplePlayerMatchesPlayed(startingPlayerIDs, Logger);
                     await this.database.InsertLive(liveData, Logger);
                     await this.database.CommitTransaction();
@@ -110,50 +131,51 @@ namespace CS2Stats {
         }
 
         public HookResult EventPlayerHurtHandler(EventPlayerHurt @event, GameEventInfo info) {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventPlayerHurtHandler] Database conn/transaction or match is null. Returning.");
+            if (this.match == null || this.database == null) {
+                Logger.LogInformation("[EventPlayerHurtHandler] Database or match is null. Returning.");
                 return HookResult.Continue;
             }
 
             if (@event.Userid != null) {
-                HurtEvent hurtEvent = new(
-                    @event.Attacker?.SteamID,
-                    @event.Userid.SteamID,
-                    Math.Clamp(@event.DmgHealth, 1, 100),
-                    @event.Weapon,
-                    @event.Hitgroup,
-                    Server.TickCount - this.match.Round.StartTick
-                );
-
-                this.match.Round.HurtEvents.Add(hurtEvent);
+                this.match.Round.HurtEvents.Add(new HurtEvent() {
+                    AttackerID = @event.Attacker?.SteamID,
+                    VictimID = @event.Userid.SteamID,
+                    DamageAmount = Math.Clamp(@event.DmgHealth, 1, 100),
+                    Weapon = @event.Weapon,
+                    Hitgroup = @event.Hitgroup,
+                    RoundTick = Server.TickCount - this.match.Round.StartTick
+                });
             }
 
             return HookResult.Continue;
         }
 
         public HookResult EventPlayerDeathHandler(EventPlayerDeath @event, GameEventInfo info) {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] Database conn/transaction or match is null. Returning.");
+            if (this.match == null || this.database == null) {
+                Logger.LogInformation("[EventPlayerDeathHandler] Database or match is null. Returning.");
                 return HookResult.Continue;
             }
 
             if (@event.Userid != null) {
 
-                var matchingDeathEvent = this.match.Round.DeathEvents.FirstOrDefault(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
+                if (this.match.Round.DeathEvents.Any(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID)) {
+                    DeathEvent matchingDeathEvent = this.match.Round.DeathEvents
+                        .First(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
 
-                if (matchingDeathEvent != null && (Server.TickCount - this.match.Round.StartTick) < matchingDeathEvent.RoundTick + (5 * Server.TickInterval)) {
-                    this.match.Round.KASTEvents.Add(matchingDeathEvent.VictimID);
+                    if ((Server.TickCount - this.match.Round.StartTick) < matchingDeathEvent.RoundTick + (5 * Server.TickInterval)) {
+                        this.match.Round.KASTEvents.Add(matchingDeathEvent.VictimID);
+                    }
                 }
 
-                this.match.Round.DeathEvents.Add(new DeathEvent(
-                    @event.Attacker?.SteamID,
-                    @event.Assister?.SteamID,
-                    @event.Userid.SteamID,
-                    @event.Weapon,
-                    @event.Hitgroup,
-                    !this.match.Round.OpeningDeathOccurred,
-                    Server.TickCount - this.match.Round.StartTick
-                ));
+                this.match.Round.DeathEvents.Add(new DeathEvent() {
+                    AttackerID = @event.Attacker?.SteamID,
+                    AssisterID = @event.Assister?.SteamID,
+                    VictimID = @event.Userid.SteamID,
+                    Weapon = @event.Weapon,
+                    Hitgroup = @event.Hitgroup,
+                    OpeningDeath = !this.match.Round.OpeningDeathOccurred,
+                    RoundTick = Server.TickCount - this.match.Round.StartTick
+                });
 
                 if (@event.Attacker != null) {
                     this.match.Round.KASTEvents.Add(@event.Attacker.SteamID);
@@ -173,28 +195,27 @@ namespace CS2Stats {
         }
 
         public HookResult EventPlayerBlindHandler(EventPlayerBlind @event, GameEventInfo info) {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventPlayerBlindHandler] Database conn/transaction or match is null. Returning.");
+            if (this.match == null || this.database == null) {
+                Logger.LogInformation("[EventPlayerBlindHandler] Database or match is null. Returning.");
                 return HookResult.Continue;
             }
 
             if (@event.Userid != null && @event.Attacker != null) {
-
-                this.match.Round.BlindEvents.Add(new BlindEvent(
-                    @event.Attacker.SteamID,
-                    @event.Userid.SteamID,
-                    @event.BlindDuration,
-                    (@event.Attacker.TeamNum == @event.Userid.TeamNum),
-                    Server.TickCount - this.match.Round.StartTick
-                ));
+                this.match.Round.BlindEvents.Add(new BlindEvent() {
+                    ThrowerID = @event.Attacker.SteamID,
+                    BlindedID = @event.Userid.SteamID,
+                    Duration = @event.BlindDuration,
+                    TeamFlash = (@event.Attacker.TeamNum == @event.Userid.TeamNum),
+                    RoundTick = Server.TickCount - this.match.Round.StartTick
+                });
             }
 
             return HookResult.Continue;
         }
 
         public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
-            if (this.database == null || this.database.conn == null || this.database.transaction == null || this.match == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] Database conn/transaction or match is null. Returning.");
+            if (this.match == null || this.database == null) {
+                Logger.LogInformation("[EventPlayerDeathHandler] Database or match is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -205,7 +226,7 @@ namespace CS2Stats {
             this.match.Round.LosingTeamID = GetTeamInfoByTeamNum(this.match.Round.LosingTeamNum)?.TeamID;
             this.match.Round.EndTick = Server.TickCount;
 
-            HashSet<ulong> playerIDs = Utilities.GetPlayers()
+            this.match.Round.PlayersParticipated = Utilities.GetPlayers()
                 .Where(playerController =>
                     playerController.Team == CsTeam.Terrorist ||
                     playerController.Team == CsTeam.CounterTerrorist)
