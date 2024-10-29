@@ -113,9 +113,22 @@ namespace CS2Stats {
             }
         }
 
+        public void StartDemo(ILogger Logger) {
+            string demoFileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + "_" + Server.MapName + ".dem";
+            string demoPath = Path.Combine("CS2Stats", demoFileName);
+            Server.ExecuteCommand($"tv_record \"{demoPath}\"");
+
+            Logger.LogInformation($"[StartDemo] Started recording demo: {demoPath}");
+        }
+
+        public void StopDemo(ILogger Logger) {
+            Server.ExecuteCommand("tv_stoprecord");
+            Logger.LogInformation("[StartDemo] Stopped recording demo.");
+        }
+
     }
 
-    public partial class Database {
+        public partial class Database {
         
         private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
