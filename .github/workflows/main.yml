@@ -118,14 +118,14 @@ jobs:
       run: find . -type f -name '*.cs' -exec sed -i 's/public override string ModuleVersion =>.*/public override string ModuleVersion => ${{ needs.version.outputs.new_tag }};/g' {} \;
     
     - name: Build
-      run: dotnet build -c Release
+      run: dotnet publish
     
     - name: Create plugin directory
       run: |
         mkdir -p plugin/${{ env.PATH_PLUGIN }}${{ env.PLUGIN_NAME }}
-        rm -rf ./bin/Release/net8.0/*.pdb
-        rm -rf ./bin/Release/net8.0/*.deps.json
-        cp -r ./bin/Release/net8.0/* plugin/${{ env.PATH_PLUGIN }}${{ env.PLUGIN_NAME }}
+        rm -rf ./bin/Release/net8.0/publish/*.pdb
+        rm -rf ./bin/Release/net8.0/publish/*.deps.json
+        cp -r ./bin/Release/net8.0/publish/* plugin/${{ env.PATH_PLUGIN }}${{ env.PLUGIN_NAME }}
 
     - name: Zip plugin
       run: |
