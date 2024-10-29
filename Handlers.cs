@@ -73,8 +73,8 @@ namespace CS2Stats {
                         Round round = this.match.Rounds.Dequeue();
 
                         await this.database.InsertRound(this.match, round, Logger);
-                        await this.database.IncrementMultiplePlayerRoundsKAST(round.KASTEvents, Logger);
-                        await this.database.IncrementMultiplePlayerRoundsPlayed(round.PlayersParticipated, Logger);
+                        await this.database.IncrementPlayerValues(round.PlayersKAST, "RoundsKAST", Logger);
+                        await this.database.IncrementPlayerValues(round.PlayersParticipated, "RoundsPlayed", Logger);
 
                         await this.database.InsertBatchedHurtEvents(this.match, round, Logger);
                         await this.database.InsertBatchedDeathEvents(this.match, round, Logger);
@@ -113,7 +113,7 @@ namespace CS2Stats {
                         await this.database.UpdateELO(teamNumInfo3, Logger);
                     }
 
-                    await this.database.IncrementMultiplePlayerMatchesPlayed(startingPlayerIDs, Logger);
+                    await this.database.IncrementPlayerValues(startingPlayerIDs, "MatchesPlayed", Logger);
                     await this.database.InsertLive(liveData, Logger);
                     await this.database.CommitTransaction();
 
@@ -163,7 +163,7 @@ namespace CS2Stats {
                         .First(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
 
                     if ((Server.TickCount - this.match.Round.StartTick) < matchingDeathEvent.RoundTick + (5 * Server.TickInterval)) {
-                        this.match.Round.KASTEvents.Add(matchingDeathEvent.VictimID);
+                        this.match.Round.PlayersKAST.Add(matchingDeathEvent.VictimID);
                     }
                 }
 
@@ -178,11 +178,11 @@ namespace CS2Stats {
                 });
 
                 if (@event.Attacker != null) {
-                    this.match.Round.KASTEvents.Add(@event.Attacker.SteamID);
+                    this.match.Round.PlayersKAST.Add(@event.Attacker.SteamID);
                 }
 
                 else if (@event.Assister != null) {
-                    this.match.Round.KASTEvents.Add(@event.Assister.SteamID);
+                    this.match.Round.PlayersKAST.Add(@event.Assister.SteamID);
                 }
             }
 
@@ -242,7 +242,7 @@ namespace CS2Stats {
                 .ToHashSet();
 
             foreach (ulong playerID in alivePlayerIDs) {
-                this.match.Round.KASTEvents.Add(playerID);
+                this.match.Round.PlayersKAST.Add(playerID);
             }
 
             this.match.Rounds.Enqueue(this.match.Round);
