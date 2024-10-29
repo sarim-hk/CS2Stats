@@ -125,6 +125,7 @@ jobs:
         mkdir -p plugin/${{ env.PATH_PLUGIN }}${{ env.PLUGIN_NAME }}
         rm -rf ./bin/Release/net8.0/publish/*.pdb
         rm -rf ./bin/Release/net8.0/publish/*.deps.json
+        rm -rf ./bin/Release/net8.0/publish/runtimes
         cp -r ./bin/Release/net8.0/publish/* plugin/${{ env.PATH_PLUGIN }}${{ env.PLUGIN_NAME }}
 
     - name: Zip plugin
