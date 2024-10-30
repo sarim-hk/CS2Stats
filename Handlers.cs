@@ -217,7 +217,7 @@ namespace CS2Stats {
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = tsAlive.First().SteamID,
                             ClutcherTeamNum = (int)CsTeam.Terrorist,
-                            EnemyCount = ctsAlive.Count + 1
+                            EnemyCount = ctsAlive.Count
                         };
                     }
 
@@ -225,7 +225,7 @@ namespace CS2Stats {
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = ctsAlive.First().SteamID,
                             ClutcherTeamNum = (int)CsTeam.Terrorist,
-                            EnemyCount = tsAlive.Count + 1
+                            EnemyCount = tsAlive.Count
                         };
                     }
                 }
@@ -315,6 +315,7 @@ namespace CS2Stats {
 
                 else {
                     int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherTeamNum == 2) ? 3 : 2;
+                    Logger.LogInformation($"Clutcher team num was: {this.Match.Round.ClutchEvent.ClutcherTeamNum}, Enemy team num is: {enemyTeamNum}");
 
                     HashSet<CCSPlayerController> enemiesAlive = [];
                     foreach (CCSPlayerController playerController in playerControllersParticipated) {
@@ -325,13 +326,17 @@ namespace CS2Stats {
                         }
                     }
 
+                    Logger.LogInformation($"Clutcher enemies alive: {string.Join(",", enemiesAlive)}");
                     if (enemiesAlive.Count == 1) {
+                        Logger.LogInformation($"One enemy of the clutcher alive ");
                         this.Match.Round.DuelEvent = new() {
                             WinnerID = enemiesAlive.First().SteamID,
                             LoserID = this.Match.Round.ClutchEvent.ClutcherID
                         };
+                        Logger.LogInformation($"Duel winner {enemiesAlive.First().SteamID}, duel loser {this.Match.Round.ClutchEvent.ClutcherID}");
+
                     }
-                    
+
                     this.Match.Round.ClutchEvent.Result = "Loss";
                 }
             }
