@@ -7,7 +7,6 @@
         public string Weapon;
         public int Hitgroup;
         public int RoundTick;
-
     }
 
     public struct DeathEvent {
@@ -32,6 +31,13 @@
         public ulong ThrowerID;
         public string Weapon;
         public int RoundTick;
+    }
+
+    public class ClutchEvent {
+        public ulong ClutcherID;
+        public int ClutcherTeamNum;
+        public int EnemyCount;
+        public string? Result; // Win, Loss
     }
 
 }

@@ -139,6 +139,31 @@ namespace CS2Stats {
             }
         }
 
+        public async Task InsertPlayer(ulong playerID, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_Player (PlayerID)
+                VALUES (@PlayerID)
+                ON DUPLICATE KEY UPDATE
+                    PlayerID = PlayerID
+                ";
+
+                MySqlConnection tempConn = new(this.connString);
+                await tempConn.OpenAsync();
+
+                using MySqlCommand cmd = new(query, tempConn);
+                cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                await cmd.ExecuteNonQueryAsync();
+
+                Logger.LogInformation($"[InsertPlayer] Player {playerID} inserted successfully.");
+
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertPlayer] Error occurred while inserting player.");
+            }
+        }
+
         public async Task InsertPlayerInfo(PlayerInfo player, ILogger Logger) {
             try {
                 string query = @"
@@ -314,6 +339,40 @@ namespace CS2Stats {
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertLive] Error occurred while inserting live data.");
             }
+        }
+
+        public async Task InsertClutchEvent(Match match, Round round, ILogger Logger) {
+            if (round.ClutchEvent == null) {
+                Logger.LogInformation("[InsertClutchEvent] Clutch event is null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Clutch (RoundID, MatchID, PlayerID, EnemyCount, Result)
+                VALUES (@RoundID, @MatchID, @PlayerID, @EnemyCount, @Result);
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@PlayerID", round.ClutchEvent.ClutcherID);
+                cmd.Parameters.AddWithValue("@EnemyCount", round.ClutchEvent.EnemyCount);
+                cmd.Parameters.AddWithValue("@Result", round.ClutchEvent.Result);
+                await cmd.ExecuteNonQueryAsync();
+
+                await IncrementPlayerValue(round.ClutchEvent.ClutcherID, "ClutchAttempts", Logger);
+
+                if (round.ClutchEvent.Result == "Win") {
+                    await IncrementPlayerValue(round.ClutchEvent.ClutcherID, "ClutchWins", Logger);
+                }
+
+                Logger.LogInformation($"[InsertClutchEvent] Clutch event inserted successfully.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertClutchEvent] Error occurred while inserting clutch event.");
+            }
+
         }
 
         public async Task InsertBatchedHurtEvents(Match match, Round round, ILogger Logger) {
@@ -507,29 +566,6 @@ namespace CS2Stats {
                 Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of KAST events.");
             }
 
-        }
-
-        public async Task InsertBatchedPlayers(HashSet<ulong> playerIDs, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_Player (PlayerID)
-                VALUES (@PlayerID)
-                ON DUPLICATE KEY UPDATE
-                    PlayerID = PlayerID
-                ";
-
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (ulong playerID in playerIDs) {
-                    cmd.Parameters.Clear();
-
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                    await cmd.ExecuteNonQueryAsync();
-                }
-            }
-
-            catch (Exception ex) {
-                Logger.LogError(ex, "[InsertBatchedPlayers] Error occurred while inserting player.");
-            }
         }
 
         public async Task UpdateELO(TeamInfo teamInfo, ILogger Logger) {

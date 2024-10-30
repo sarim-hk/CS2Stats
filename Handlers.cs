@@ -3,6 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace CS2Stats {
 
@@ -66,7 +67,6 @@ namespace CS2Stats {
                     await this.Database.InsertMap(this.Match, Logger);
                     await this.Database.InsertMatch(this.Match, Logger);
 
-                    await this.Database.InsertBatchedPlayers(startingPlayerIDs, Logger);
                     await this.Database.InsertTeamsAndTeamPlayers(this.Match, Logger);
 
                     while (this.Match.Rounds.Count > 0) {
@@ -76,6 +76,7 @@ namespace CS2Stats {
                         await this.Database.IncrementPlayerValues(round.PlayersKAST, "RoundsKAST", Logger);
                         await this.Database.IncrementPlayerValues(round.PlayersParticipated, "RoundsPlayed", Logger);
 
+                        await this.Database.InsertClutchEvent(this.Match, round, Logger);
                         await this.Database.InsertBatchedHurtEvents(this.Match, round, Logger);
                         await this.Database.InsertBatchedDeathEvents(this.Match, round, Logger);
                         await this.Database.InsertBatchedBlindEvents(this.Match, round, Logger);
@@ -193,6 +194,41 @@ namespace CS2Stats {
                 }
             }
 
+            if (this.Match.Round.ClutchEvent == null) {
+                HashSet<CCSPlayerController> tsAlive = [];
+                HashSet<CCSPlayerController> ctsAlive = [];
+
+                foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
+                    if (playerController.IsValid && !playerController.IsBot) {
+                        if (playerController.TeamNum == (int)CsTeam.Terrorist && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
+                            tsAlive.Add(playerController);
+                        }
+                        else if (playerController.TeamNum == (int)CsTeam.CounterTerrorist && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
+                            ctsAlive.Add(playerController);
+                        }
+                    }
+                }
+
+                if (tsAlive.Count != 0 && ctsAlive.Count != 0) {
+                    ClutchEvent clutchEvent = new();
+
+                    if (tsAlive.Count == 1) {
+                        clutchEvent.ClutcherID = tsAlive.First().SteamID;
+                        clutchEvent.ClutcherTeamNum = (int)CsTeam.Terrorist;
+                        clutchEvent.EnemyCount = ctsAlive.Count + 1;
+                        this.Match.Round.ClutchEvent = clutchEvent;
+                    }
+
+                    else if (ctsAlive.Count == 1) {
+                        clutchEvent.ClutcherID = ctsAlive.First().SteamID;
+                        clutchEvent.ClutcherTeamNum = (int)CsTeam.CounterTerrorist;
+                        clutchEvent.EnemyCount = tsAlive.Count + 1;
+                        this.Match.Round.ClutchEvent = clutchEvent;
+                    }
+                }
+
+            }
+
             this.Match.Round.OpeningDeathOccurred = true;
 
             LiveData liveData = GetLiveMatchData(this.Match.Round);
@@ -250,23 +286,33 @@ namespace CS2Stats {
             this.Match.Round.LosingTeamID = GetTeamInfoByTeamNum(this.Match.Round.LosingTeamNum)?.TeamID;
             this.Match.Round.EndTick = Server.TickCount;
 
-            this.Match.Round.PlayersParticipated = Utilities.GetPlayers()
+            HashSet<CCSPlayerController> playerControllersParticipated = Utilities.GetPlayers()
                 .Where(playerController =>
                     playerController.Team == CsTeam.Terrorist ||
-                    playerController.Team == CsTeam.CounterTerrorist)
-                .Select(playerController => playerController.SteamID)
-                .ToHashSet();
+                    playerController.Team == CsTeam.CounterTerrorist).ToHashSet();
 
-            HashSet<ulong> alivePlayerIDs = Utilities.GetPlayers()
+            HashSet<ulong> alivePlayerIDs = playerControllersParticipated
                 .Where(playerController =>
-                    (playerController.Team == CsTeam.Terrorist ||
-                    playerController.Team == CsTeam.CounterTerrorist) &&
                     playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
                 .Select(playerController => playerController.SteamID)
                 .ToHashSet();
 
             foreach (ulong playerID in alivePlayerIDs) {
                 this.Match.Round.PlayersKAST.Add(playerID);
+            }
+
+            this.Match.Round.PlayersParticipated = playerControllersParticipated
+                .Select(playerController => playerController.SteamID)
+                .ToHashSet();
+
+            if (this.Match.Round.ClutchEvent != null) {
+                if (this.Match.Round.ClutchEvent.ClutcherTeamNum == @event.Winner) {
+                    this.Match.Round.ClutchEvent.Result = "Win";
+                }
+
+                else {
+                    this.Match.Round.ClutchEvent.Result = "Loss";
+                }
             }
 
             this.Match.Rounds.Enqueue(this.Match.Round);
@@ -290,6 +336,8 @@ namespace CS2Stats {
                 else {
                     Logger.LogError("[OnClientAuthorizedHandler] Steam API PlayerInfo is null.");
                 }
+
+                await this.Database.InsertPlayer(playerID.SteamId64, Logger);
 
             });
         }

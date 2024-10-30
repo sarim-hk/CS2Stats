@@ -19,8 +19,8 @@
             this.MapName = mapName;
             this.StartTick = startTick;
             this.StartingPlayers = startingPlayers;
-
             this.TeamsNeedSwapping = false;
+
             this.Rounds = new Queue<Round>();
         }
 

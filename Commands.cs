@@ -68,7 +68,12 @@ namespace CS2Stats {
                 return;
             }
 
+            if (this.Config.DemoRecordingEnabled == "1") {
+                this.StopDemo(Logger);
+            }
+
             this.Match = null;
+            Logger.LogInformation("[CancelMatch] Match cancelled.");
         }
 
     }

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
     AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg" NOT NULL,
     AvatarM varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg" NOT NULL,
     AvatarL varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg" NOT NULL
-) ENGINE=MyISAM;
+);
 
 CREATE TABLE IF NOT EXISTS CS2S_Player (
     PlayerID varchar(17) PRIMARY KEY NOT NULL,
@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
     UtilityDamage int DEFAULT 0 NOT NULL,
     EnemiesFlashed int DEFAULT 0 NOT NULL,
     GrenadesThrown int DEFAULT 0 NOT NULL,
+	ClutchAttempts int DEFAULT 0 NOT NULL,
+    ClutchWins int DEFAULT 0 NOT NULL,
     RoundsKAST int DEFAULT 0 NOT NULL,
     RoundsPlayed int DEFAULT 0 NOT NULL,
     MatchesPlayed int DEFAULT 0 NOT NULL
@@ -136,6 +138,17 @@ CREATE TABLE IF NOT EXISTS CS2S_KAST (
     FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
 );
 
+CREATE TABLE IF NOT EXISTS CS2S_Clutch (
+    ClutchID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    RoundID int NOT NULL,
+    MatchID int NOT NULL,
+    PlayerID varchar(17) NOT NULL,
+    EnemyCount int NOT NULL,
+    Result ENUM("Win", "Loss") NOT NULL,
+	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+);
+
 /*
 CREATE TABLE IF NOT EXISTS CS2S_PlayerRoundStat (
    PlayerRoundStatID int PRIMARY KEY AUTO_INCREMENT,
@@ -161,7 +174,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Live (
     CTScore int NULL,
     BombStatus int NULL,
     RoundTick int NULL
-) ENGINE=MyISAM;
+);
 
 CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
     TeamID varchar(32) NOT NULL,
