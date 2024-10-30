@@ -13,6 +13,7 @@
         public HashSet<BlindEvent> BlindEvents { get; set; }
         public HashSet<GrenadeEvent> GrenadeEvents { get; set; }
         public ClutchEvent? ClutchEvent { get; set; }
+        public DuelEvent? DuelEvent { get; set; }
 
         public string? WinningTeamID { get; set; }
         public string? LosingTeamID { get; set; }

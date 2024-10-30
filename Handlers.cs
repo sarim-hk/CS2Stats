@@ -77,6 +77,7 @@ namespace CS2Stats {
                         await this.Database.IncrementPlayerValues(round.PlayersParticipated, "RoundsPlayed", Logger);
 
                         await this.Database.InsertClutchEvent(this.Match, round, Logger);
+                        await this.Database.InsertDuelEvent(this.Match, round, Logger);
                         await this.Database.InsertBatchedHurtEvents(this.Match, round, Logger);
                         await this.Database.InsertBatchedDeathEvents(this.Match, round, Logger);
                         await this.Database.InsertBatchedBlindEvents(this.Match, round, Logger);
@@ -213,17 +214,19 @@ namespace CS2Stats {
                     ClutchEvent clutchEvent = new();
 
                     if (tsAlive.Count == 1) {
-                        clutchEvent.ClutcherID = tsAlive.First().SteamID;
-                        clutchEvent.ClutcherTeamNum = (int)CsTeam.Terrorist;
-                        clutchEvent.EnemyCount = ctsAlive.Count + 1;
-                        this.Match.Round.ClutchEvent = clutchEvent;
+                        this.Match.Round.ClutchEvent = new() {
+                            ClutcherID = tsAlive.First().SteamID,
+                            ClutcherTeamNum = (int)CsTeam.Terrorist,
+                            EnemyCount = ctsAlive.Count + 1
+                        };
                     }
 
                     else if (ctsAlive.Count == 1) {
-                        clutchEvent.ClutcherID = ctsAlive.First().SteamID;
-                        clutchEvent.ClutcherTeamNum = (int)CsTeam.CounterTerrorist;
-                        clutchEvent.EnemyCount = tsAlive.Count + 1;
-                        this.Match.Round.ClutchEvent = clutchEvent;
+                        this.Match.Round.ClutchEvent = new() {
+                            ClutcherID = ctsAlive.First().SteamID,
+                            ClutcherTeamNum = (int)CsTeam.Terrorist,
+                            EnemyCount = tsAlive.Count + 1
+                        };
                     }
                 }
 
@@ -297,13 +300,13 @@ namespace CS2Stats {
                 .Select(playerController => playerController.SteamID)
                 .ToHashSet();
 
-            foreach (ulong playerID in alivePlayerIDs) {
-                this.Match.Round.PlayersKAST.Add(playerID);
-            }
-
             this.Match.Round.PlayersParticipated = playerControllersParticipated
                 .Select(playerController => playerController.SteamID)
                 .ToHashSet();
+
+            foreach (ulong playerID in alivePlayerIDs) {
+                this.Match.Round.PlayersKAST.Add(playerID);
+            }
 
             if (this.Match.Round.ClutchEvent != null) {
                 if (this.Match.Round.ClutchEvent.ClutcherTeamNum == @event.Winner) {
@@ -311,6 +314,24 @@ namespace CS2Stats {
                 }
 
                 else {
+                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherTeamNum == 2) ? 3 : 2;
+
+                    HashSet<CCSPlayerController> enemiesAlive = [];
+                    foreach (CCSPlayerController playerController in playerControllersParticipated) {
+                        if (playerController.IsValid && !playerController.IsBot) {
+                            if (playerController.TeamNum == enemyTeamNum && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
+                                enemiesAlive.Add(playerController);
+                            }
+                        }
+                    }
+
+                    if (enemiesAlive.Count == 1) {
+                        this.Match.Round.DuelEvent = new() {
+                            WinnerID = enemiesAlive.First().SteamID,
+                            LoserID = this.Match.Round.ClutchEvent.ClutcherID
+                        };
+                    }
+                    
                     this.Match.Round.ClutchEvent.Result = "Loss";
                 }
             }

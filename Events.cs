@@ -40,4 +40,9 @@
         public string? Result; // Win, Loss
     }
 
+    public struct DuelEvent {
+        public ulong WinnerID;
+        public ulong LoserID;
+    }
+
 }

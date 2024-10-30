@@ -375,6 +375,38 @@ namespace CS2Stats {
 
         }
 
+        public async Task InsertDuelEvent(Match match, Round round, ILogger Logger) {
+            if (round.DuelEvent == null) {
+                Logger.LogInformation("[InsertDuelEvent] Duel event is null.");
+                return;
+            }
+
+            try {
+                string query = @"
+                INSERT INTO CS2S_Duel (RoundID, MatchID, WinnerID, LoserID)
+                VALUES (@RoundID, @MatchID, @WinnerId, @LoserID);
+                ";
+
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.WinnerID);
+                cmd.Parameters.AddWithValue("@LoserID", round.DuelEvent.Value.LoserID);
+                await cmd.ExecuteNonQueryAsync();
+
+                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, "DuelAttempts", Logger);
+                await IncrementPlayerValue(round.DuelEvent.Value.LoserID, "DuelAttempts", Logger);
+                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, "DuelWins", Logger);
+
+
+                Logger.LogInformation($"[InsertDuelEvent] Duel event inserted successfully.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertDuelEvent] Error occurred while inserting duel event.");
+            }
+
+        }
+
         public async Task InsertBatchedHurtEvents(Match match, Round round, ILogger Logger) {
             if (round.HurtEvents == null || round.HurtEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedHurtEvents] Hurt events are null.");

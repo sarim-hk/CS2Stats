@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
     GrenadesThrown int DEFAULT 0 NOT NULL,
 	ClutchAttempts int DEFAULT 0 NOT NULL,
     ClutchWins int DEFAULT 0 NOT NULL,
+   	DuelAttempts int DEFAULT 0 NOT NULL,
+    DuelWins int DEFAULT 0 NOT NULL, 
     RoundsKAST int DEFAULT 0 NOT NULL,
     RoundsPlayed int DEFAULT 0 NOT NULL,
     MatchesPlayed int DEFAULT 0 NOT NULL
@@ -113,6 +115,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Blind (
     Duration float NOT NULL,
     TeamFlash bool NOT NULL,
     RoundTick int NOT NULL,
+	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (ThrowerID) REFERENCES CS2S_Player(PlayerID),
 	FOREIGN KEY (BlindedID) REFERENCES CS2S_Player(PlayerID)
@@ -125,6 +128,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Grenade (
     ThrowerID varchar(17) NOT NULL,
     Weapon varchar(32) NOT NULL,
     RoundTick int NOT NULL,
+    FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (ThrowerID) REFERENCES CS2S_Player(PlayerID)
 );
@@ -134,6 +138,7 @@ CREATE TABLE IF NOT EXISTS CS2S_KAST (
     RoundID int NOT NULL,
     MatchID int NOT NULL,
     PlayerID varchar(17) NOT NULL,
+    FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
 );
@@ -145,8 +150,21 @@ CREATE TABLE IF NOT EXISTS CS2S_Clutch (
     PlayerID varchar(17) NOT NULL,
     EnemyCount int NOT NULL,
     Result ENUM("Win", "Loss") NOT NULL,
+    FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
     FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+);
+
+CREATE TABLE IF NOT EXISTS CS2S_Duel (
+    DuelID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    RoundID int NOT NULL,
+    MatchID int NOT NULL,
+    WinnerID varchar(17) NOT NULL,
+    LoserID varchar(17) NOT NULL,
+    FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
+    FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
+    FOREIGN KEY (WinnerID) REFERENCES CS2S_Player(PlayerID),
+	FOREIGN KEY (LoserID) REFERENCES CS2S_Player(PlayerID)
 );
 
 /*
