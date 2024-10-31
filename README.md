@@ -1,6 +1,19 @@
-[![CS2Stats](https://i.imgur.com/LUTaSX2.png)](https://mapink.sarim.uk)
+<div align="center">
+  <a href="https://mapink.sarim.uk">
+    <img src="https://i.imgur.com/LUTaSX2.png" alt="CS2Stats" />
+  </a>
+  <a href="https://github.com/sarim-hk/CS2Stats">
+    <img src="https://img.shields.io/badge/CS2Stats-Plugin-red" alt="CS2Stats Plugin" />
+  </a>
+  <a href="https://github.com/sarim-hk/CS2StatsAPI">
+    <img src="https://img.shields.io/badge/CS2Stats-API-green" alt="CS2Stats API" />
+  </a>
+  <a href="https://github.com/sarim-hk/CS2StatsWeb">
+    <img src="https://img.shields.io/badge/CS2Stats-Web-blue" alt="CS2Stats Web" />
+  </a>
+  
+</div>
 
-CS2Stats is a Counter-Strike 2 plugin for running matches with in-depth stat tracking.
 
 ## Feature Highlights:
 * Automatic demo recording
