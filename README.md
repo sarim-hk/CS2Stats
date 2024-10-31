@@ -42,5 +42,6 @@
   * MySQL Server Details
   * Steam API key
   * Demo recording
+* Execute the [SQL script](https://github.com/sarim-hk/CS2Stats/blob/master/SQL/CreateTables.sql) to create the necessary tables in the database  
 * Restart the server, or reload the plugin
 * Done!
