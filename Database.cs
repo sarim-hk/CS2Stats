@@ -321,7 +321,7 @@ namespace CS2Stats {
                     CTPlayers = VALUES(CTPlayers), 
                     TScore = VALUES(TScore), 
                     CTScore = VALUES(CTScore), 
-                    BombStatus = VALUES(BombStatus), 
+                    BombStatus = VALUES(BombStatus)
                 ";
 
                 MySqlConnection tempConn = new(this.connString);
