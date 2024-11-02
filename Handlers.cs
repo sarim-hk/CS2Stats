@@ -235,7 +235,7 @@ namespace CS2Stats {
             this.Match.Round.OpeningDeathOccurred = true;
 
             LiveData liveData = GetLiveMatchData(this.Match.Round);
-            Task.Run(() => this.Database.InsertLive(liveData, Logger));
+            Task.Run(async () => await this.Database.InsertLive(liveData, Logger));
 
             return HookResult.Continue;
         }

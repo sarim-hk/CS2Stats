@@ -30,6 +30,7 @@ namespace CS2Stats {
             foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
                 if (playerController.ActionTrackingServices != null) {
                     LivePlayer livePlayer = new() {
+                        Username = playerController.PlayerName,
                         Kills = playerController.ActionTrackingServices.MatchStats.Kills,
                         Assists = playerController.ActionTrackingServices.MatchStats.Assists,
                         Deaths = playerController.ActionTrackingServices.MatchStats.Deaths,
@@ -41,7 +42,7 @@ namespace CS2Stats {
                     if (playerController.TeamNum == 2) {
                         tPlayers.Add(livePlayer);
                     }
-                    else {
+                    else if (playerController.TeamNum == 3) {
                         ctPlayers.Add(livePlayer);
                     }
 
@@ -63,7 +64,7 @@ namespace CS2Stats {
                 TScore = tScore,
                 CTScore = ctScore,
                 RoundTick = roundTick,
-                BombStatus = bombStatus
+                BombStatus = bombStatus,
             };
                 
             return liveData;

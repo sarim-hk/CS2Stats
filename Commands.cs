@@ -32,7 +32,7 @@ namespace CS2Stats {
                     }
                 }
             }
-            
+
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
 
@@ -68,11 +68,22 @@ namespace CS2Stats {
                 return;
             }
 
+            if (this.Database == null) {
+                Logger.LogInformation("[CancelMatch] Database is null. Returning.");
+                return;
+            }
+
             if (this.Config.DemoRecordingEnabled == "1") {
                 this.StopDemo(Logger);
             }
 
+            Task.Run(async () => {
+                LiveData liveData = new();
+                await this.Database.InsertLive(liveData, Logger);
+            });
+
             this.Match = null;
+
             Logger.LogInformation("[CancelMatch] Match cancelled.");
         }
 

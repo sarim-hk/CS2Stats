@@ -1,6 +1,7 @@
 ﻿namespace CS2Stats {
 
     public struct LivePlayer {
+        public string Username;
         public int Kills;
         public int Assists;
         public int Deaths;

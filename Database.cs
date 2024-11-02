@@ -305,8 +305,13 @@ namespace CS2Stats {
 
         public async Task InsertLive(LiveData liveData, ILogger Logger) {
             try {
-                string tPlayersJson = JsonConvert.SerializeObject(liveData.TPlayers);
-                string ctPlayersJson = JsonConvert.SerializeObject(liveData.CTPlayers);
+                string? tPlayersJson = liveData.TPlayers != null
+                    ? JsonConvert.SerializeObject(liveData.TPlayers)
+                    : null;
+
+                string? ctPlayersJson = liveData.CTPlayers != null
+                    ? JsonConvert.SerializeObject(liveData.CTPlayers)
+                    : null;
 
                 string query = @"
                 INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus, RoundTick)
