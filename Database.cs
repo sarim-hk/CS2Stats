@@ -62,6 +62,7 @@ namespace CS2Stats {
 
                 using MySqlCommand cmd = new(query, tempConn);
                 object? result = await cmd.ExecuteScalarAsync();
+                await tempConn.CloseAsync();
 
                 if (result != null && int.TryParse(result.ToString(), out int matchID)) {
                     Logger.LogInformation($"[GetNextMatchID] Last MatchID is {matchID}.");
@@ -92,6 +93,7 @@ namespace CS2Stats {
 
                 using MySqlCommand cmd = new(query, tempConn);
                 object? result = await cmd.ExecuteScalarAsync();
+                await tempConn.CloseAsync();
 
                 if (result != null && int.TryParse(result.ToString(), out int roundID)) {
                     Logger.LogInformation($"[GetLastRoundID] Last RoundID is {roundID}.");
@@ -155,6 +157,8 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
                 await cmd.ExecuteNonQueryAsync();
+                await tempConn.CloseAsync();
+
                 Logger.LogInformation($"[InsertPlayer] Player {playerID} inserted successfully.");
             }
 
@@ -186,6 +190,8 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
 
                 await cmd.ExecuteNonQueryAsync();
+                await tempConn.CloseAsync();
+
                 Logger.LogInformation($"[InsertPlayerInfo] PlayerInfo {player.Username} inserted successfully.");
             }
 
@@ -320,7 +326,8 @@ namespace CS2Stats {
                     CTPlayers = VALUES(CTPlayers), 
                     TScore = VALUES(TScore), 
                     CTScore = VALUES(CTScore), 
-                    BombStatus = VALUES(BombStatus)
+                    BombStatus = VALUES(BombStatus),
+                    InsertDate = CURRENT_TIMESTAMP
                 ";
 
                 MySqlConnection tempConn = new(this.connString);
@@ -334,6 +341,8 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@BombStatus", liveData.BombStatus);
 
                 await cmd.ExecuteNonQueryAsync();
+                await tempConn.CloseAsync();
+
                 Logger.LogInformation("[InsertLive] Live data inserted successfully.");
             }
 
