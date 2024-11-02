@@ -18,6 +18,7 @@
 ## Feature Highlights:
 * Automatic demo recording
 * Built in ELO system to rank players
+* Live match display
 * In-depth stat tracking, per match, per round:
   *  ELO
   *  Kills, Assists, Deaths
