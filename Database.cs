@@ -333,7 +333,6 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@TScore", liveData.TScore);
                 cmd.Parameters.AddWithValue("@CTScore", liveData.CTScore);
                 cmd.Parameters.AddWithValue("@BombStatus", liveData.BombStatus);
-                cmd.Parameters.AddWithValue("@RoundTick", liveData.RoundTick);
 
                 await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation("[InsertLive] Live data inserted successfully.");
