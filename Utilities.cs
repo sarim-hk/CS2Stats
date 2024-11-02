@@ -23,7 +23,7 @@ namespace CS2Stats {
             return null;
         }
 
-        private static LiveData GetLiveMatchData(Round round) {
+        private static LiveData GetLiveMatchData() {
             HashSet<LivePlayer> tPlayers = [];
             HashSet<LivePlayer> ctPlayers = [];
 
@@ -35,8 +35,8 @@ namespace CS2Stats {
                         Assists = playerController.ActionTrackingServices.MatchStats.Assists,
                         Deaths = playerController.ActionTrackingServices.MatchStats.Deaths,
                         Damage = playerController.ActionTrackingServices.MatchStats.Damage,
-                        Health = playerController.Health,
-                        MoneySaved = playerController.ActionTrackingServices.MatchStats.MoneySaved
+                        Health = playerController.Pawn.Value?.Health,
+                        MoneySaved = playerController.InGameMoneyServices?.Account
                     };
 
                     if (playerController.TeamNum == 2) {
@@ -51,7 +51,6 @@ namespace CS2Stats {
 
             int? tScore = GetCSTeamScore(2);
             int? ctScore = GetCSTeamScore(3);
-            int roundTick = Server.TickCount - round.StartTick;
 
             int bombStatus = GetGameRules().BombPlanted switch {
                 true => 1,
@@ -63,7 +62,6 @@ namespace CS2Stats {
                 CTPlayers = ctPlayers,
                 TScore = tScore,
                 CTScore = ctScore,
-                RoundTick = roundTick,
                 BombStatus = bombStatus,
             };
                 
@@ -138,7 +136,7 @@ namespace CS2Stats {
 
         public void StopDemo(ILogger Logger) {
             Server.ExecuteCommand("tv_stoprecord");
-            Logger.LogInformation("[StartDemo] Stopped recording demo.");
+            Logger.LogInformation("[StopDemo] Stopped recording demo.");
         }
 
     }

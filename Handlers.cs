@@ -36,7 +36,7 @@ namespace CS2Stats {
 
             this.SwapTeamsIfNeeded();
 
-            LiveData liveData = GetLiveMatchData(this.Match.Round);
+            LiveData liveData = GetLiveMatchData();
 
             Task.Run(async () => {
                 await this.Database.InsertLive(liveData, Logger);
@@ -234,7 +234,7 @@ namespace CS2Stats {
 
             this.Match.Round.OpeningDeathOccurred = true;
 
-            LiveData liveData = GetLiveMatchData(this.Match.Round);
+            LiveData liveData = GetLiveMatchData();
             Task.Run(async () => await this.Database.InsertLive(liveData, Logger));
 
             return HookResult.Continue;
@@ -342,6 +342,34 @@ namespace CS2Stats {
             }
 
             this.Match.Rounds.Enqueue(this.Match.Round);
+
+            return HookResult.Continue;
+        }
+
+        public HookResult EventBombPlantedHandler(EventBombPlanted @event, GameEventInfo info) {
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventBombPlantedHandler] Match, round, or database is null. Returning.");
+                return HookResult.Continue;
+            }
+
+            LiveData liveData = GetLiveMatchData();
+            Task.Run(async () => {
+                await this.Database.InsertLive(liveData, Logger);
+            });
+
+            return HookResult.Continue;
+        }
+
+        public HookResult EventBombDefusedHandler(EventBombDefused @event, GameEventInfo info) {
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventBombDefusedHandler] Match, round, or database is null. Returning.");
+                return HookResult.Continue;
+            }
+
+            LiveData liveData = GetLiveMatchData();
+            Task.Run(async () => {
+                await this.Database.InsertLive(liveData, Logger);
+            });
 
             return HookResult.Continue;
         }

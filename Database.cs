@@ -314,15 +314,14 @@ namespace CS2Stats {
                     : null;
 
                 string query = @"
-                INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus, RoundTick)
-                VALUES (1, @TPlayers, @CTPlayers, @TScore, @CTScore, @BombStatus, @RoundTick)
+                INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus)
+                VALUES (1, @TPlayers, @CTPlayers, @TScore, @CTScore, @BombStatus)
                 ON DUPLICATE KEY UPDATE 
                     TPlayers = VALUES(TPlayers), 
                     CTPlayers = VALUES(CTPlayers), 
                     TScore = VALUES(TScore), 
                     CTScore = VALUES(CTScore), 
                     BombStatus = VALUES(BombStatus), 
-                    RoundTick = VALUES(RoundTick)
                 ";
 
                 MySqlConnection tempConn = new(this.connString);

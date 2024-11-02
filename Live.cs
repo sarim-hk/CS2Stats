@@ -6,8 +6,8 @@
         public int Assists;
         public int Deaths;
         public int Damage;
-        public int Health;
-        public int MoneySaved;
+        public int? Health;
+        public int? MoneySaved;
 
     }
 
@@ -16,7 +16,6 @@
         public HashSet<LivePlayer>? CTPlayers;
         public int? TScore;
         public int? CTScore;
-        public int? RoundTick;
         public int? BombStatus;
     }
 

@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Live (
     TScore int NULL,
     CTScore int NULL,
     BombStatus int NULL,
-    RoundTick int NULL
+    InsertDate datetime DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Team_Players (

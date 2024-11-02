@@ -33,6 +33,8 @@ namespace CS2Stats {
             RegisterEventHandler<EventPlayerBlind>(EventPlayerBlindHandler);
             RegisterEventHandler<EventGrenadeThrown>(EventGrenadeThrownHandler);
             RegisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
+            RegisterEventHandler<EventBombPlanted>(EventBombPlantedHandler);
+            RegisterEventHandler<EventBombDefused>(EventBombDefusedHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
             Logger.LogInformation("[Load] Plugin loaded.");
         }
@@ -45,6 +47,8 @@ namespace CS2Stats {
             DeregisterEventHandler<EventPlayerBlind>(EventPlayerBlindHandler);
             DeregisterEventHandler<EventGrenadeThrown>(EventGrenadeThrownHandler);
             DeregisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
+            DeregisterEventHandler<EventBombPlanted>(EventBombPlantedHandler);
+            DeregisterEventHandler<EventBombDefused>(EventBombDefusedHandler);
             DeregisterEventHandler<EventRoundAnnounceLastRoundHalf>(EventRoundAnnounceLastRoundHalfHandler);
             Logger.LogInformation("[Unload] Plugin unloaded.");
         }
