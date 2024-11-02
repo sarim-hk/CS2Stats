@@ -153,10 +153,9 @@ namespace CS2Stats {
 
                 using MySqlCommand cmd = new(query, tempConn);
                 cmd.Parameters.AddWithValue("@PlayerID", playerID);
+
                 await cmd.ExecuteNonQueryAsync();
-
                 Logger.LogInformation($"[InsertPlayer] Player {playerID} inserted successfully.");
-
             }
 
             catch (Exception ex) {
@@ -336,7 +335,6 @@ namespace CS2Stats {
 
                 await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation("[InsertLive] Live data inserted successfully.");
-
             }
 
             catch (Exception ex) {
