@@ -309,34 +309,46 @@ namespace CS2Stats {
             }
 
             if (this.Match.Round.ClutchEvent != null) {
+                // If the clutcher's team won, mark it as a win
                 if (this.Match.Round.ClutchEvent.ClutcherTeamNum == @event.Winner) {
                     this.Match.Round.ClutchEvent.Result = "Win";
                 }
-
                 else {
-                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherTeamNum == 2) ? 3 : 2;
-                    Logger.LogInformation($"Clutcher team num was: {this.Match.Round.ClutchEvent.ClutcherTeamNum}, Enemy team num is: {enemyTeamNum}");
+                    // Only if the clutcher lost, check for duel
+                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
 
-                    HashSet<CCSPlayerController> enemiesAlive = [];
-                    foreach (CCSPlayerController playerController in playerControllersParticipated) {
-                        if (playerController.IsValid && !playerController.IsBot) {
-                            if (playerController.TeamNum == enemyTeamNum && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
-                                enemiesAlive.Add(playerController);
-                            }
+                    // Check alive enemies
+                    HashSet<CCSPlayerController> enemiesAlive = playerControllersParticipated
+                        .Where(playerController => playerController.IsValid && !playerController.IsBot &&
+                                                   playerController.TeamNum == enemyTeamNum &&
+                                                   playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
+                        .ToHashSet();
+
+                    // Check if the situation is now a duel (1v1)
+                    if (enemiesAlive.Count == 1) {
+                        CCSPlayerController enemyPlayer = enemiesAlive.First();
+                        Logger.LogInformation($"Duel situation detected: Clutcher {this.Match.Round.ClutchEvent.ClutcherID} vs {enemyPlayer.SteamID}");
+
+                        // Record the duel outcome based on the current event
+                        if (@event.Winner == enemyPlayer.TeamNum) {
+                            // If the enemy won the duel
+                            this.Match.Round.DuelEvent = new() {
+                                WinnerID = enemyPlayer.SteamID,
+                                LoserID = this.Match.Round.ClutchEvent.ClutcherID
+                            };
+                            Logger.LogInformation($"Duel winner: {enemyPlayer.SteamID}, duel loser: {this.Match.Round.ClutchEvent.ClutcherID}");
+                        }
+                        else {
+                            // If the clutcher won the duel
+                            this.Match.Round.DuelEvent = new() {
+                                WinnerID = this.Match.Round.ClutchEvent.ClutcherID,
+                                LoserID = enemyPlayer.SteamID
+                            };
+                            Logger.LogInformation($"Duel winner: {this.Match.Round.ClutchEvent.ClutcherID}, duel loser: {enemyPlayer.SteamID}");
                         }
                     }
 
-                    Logger.LogInformation($"Clutcher enemies alive: {string.Join(",", enemiesAlive)}");
-                    if (enemiesAlive.Count == 1) {
-                        Logger.LogInformation($"One enemy of the clutcher alive ");
-                        this.Match.Round.DuelEvent = new() {
-                            WinnerID = enemiesAlive.First().SteamID,
-                            LoserID = this.Match.Round.ClutchEvent.ClutcherID
-                        };
-                        Logger.LogInformation($"Duel winner {enemiesAlive.First().SteamID}, duel loser {this.Match.Round.ClutchEvent.ClutcherID}");
-
-                    }
-
+                    // Set the result for the clutch event as Loss
                     this.Match.Round.ClutchEvent.Result = "Loss";
                 }
             }
