@@ -196,7 +196,6 @@ namespace CS2Stats {
             }
 
             if (this.Match.Round.ClutchEvent == null) {
-                Server.ExecuteCommand($"say No previous clutch event. Checking to see if we should make one.");
                 HashSet<CCSPlayerController> tsAlive = [];
                 HashSet<CCSPlayerController> ctsAlive = [];
 
@@ -215,7 +214,6 @@ namespace CS2Stats {
                     ClutchEvent clutchEvent = new();
 
                     if (tsAlive.Count == 1) {
-                        Server.ExecuteCommand("say Lets make one.");
                         Server.ExecuteCommand($"say New clutch event. Clutcher: {tsAlive.First().PlayerName}, Team: T, Vs: {ctsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = tsAlive.First().SteamID,
@@ -225,7 +223,6 @@ namespace CS2Stats {
                     }
 
                     else if (ctsAlive.Count == 1) {
-                        Server.ExecuteCommand("say Lets make one.");
                         Server.ExecuteCommand($"say New clutch event. Clutcher: {ctsAlive.First().PlayerName}, Team: CT, Vs: {tsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = ctsAlive.First().SteamID,
