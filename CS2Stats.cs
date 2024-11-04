@@ -26,7 +26,7 @@ namespace CS2Stats {
             }
 
             RegisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
-            RegisterEventHandler<EventRoundStart>(EventRoundStartHandler);
+            RegisterEventHandler<EventRoundFreezeEnd>(EventRoundFreezeEndHandler);
             RegisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
             RegisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
             RegisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
@@ -41,7 +41,7 @@ namespace CS2Stats {
 
         public override void Unload(bool hotReload) {
             DeregisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
-            DeregisterEventHandler<EventRoundStart>(EventRoundStartHandler);
+            DeregisterEventHandler<EventRoundFreezeEnd>(EventRoundFreezeEndHandler);
             DeregisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
             DeregisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
             DeregisterEventHandler<EventPlayerBlind>(EventPlayerBlindHandler);

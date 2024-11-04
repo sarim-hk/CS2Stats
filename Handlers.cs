@@ -21,22 +21,20 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
-        public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundStartHandler] Match or database is null. Returning.");
+        public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventRoundFreezeEndHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
-            this.Match.RoundID += 1;
+            this.SwapTeamsIfNeeded();
+            LiveData liveData = GetLiveMatchData();
 
+            this.Match.RoundID += 1;
             this.Match.Round = new Round(
                 roundID: this.Match.RoundID,
                 startTick: Server.TickCount
             );
-
-            this.SwapTeamsIfNeeded();
-
-            LiveData liveData = GetLiveMatchData();
 
             Task.Run(async () => {
                 await this.Database.InsertLive(liveData, Logger);
