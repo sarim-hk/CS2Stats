@@ -196,6 +196,7 @@ namespace CS2Stats {
             }
 
             if (this.Match.Round.ClutchEvent == null) {
+                Server.ExecuteCommand($"say No previous clutch event. Checking to see if we should make one.");
                 HashSet<CCSPlayerController> tsAlive = [];
                 HashSet<CCSPlayerController> ctsAlive = [];
 
@@ -214,6 +215,8 @@ namespace CS2Stats {
                     ClutchEvent clutchEvent = new();
 
                     if (tsAlive.Count == 1) {
+                        Server.ExecuteCommand("say Lets make one.");
+                        Server.ExecuteCommand($"say New clutch event. Clutcher: {tsAlive.First().PlayerName}, Team: T, Vs: {ctsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = tsAlive.First().SteamID,
                             ClutcherTeamNum = (int)CsTeam.Terrorist,
@@ -222,9 +225,11 @@ namespace CS2Stats {
                     }
 
                     else if (ctsAlive.Count == 1) {
+                        Server.ExecuteCommand("say Lets make one.");
+                        Server.ExecuteCommand($"say New clutch event. Clutcher: {ctsAlive.First().PlayerName}, Team: CT, Vs: {tsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = ctsAlive.First().SteamID,
-                            ClutcherTeamNum = (int)CsTeam.Terrorist,
+                            ClutcherTeamNum = (int)CsTeam.CounterTerrorist,
                             EnemyCount = tsAlive.Count
                         };
                     }
@@ -291,8 +296,9 @@ namespace CS2Stats {
 
             HashSet<CCSPlayerController> playerControllersParticipated = Utilities.GetPlayers()
                 .Where(playerController =>
-                    playerController.Team == CsTeam.Terrorist ||
-                    playerController.Team == CsTeam.CounterTerrorist).ToHashSet();
+                    !playerController.IsBot &&
+                    (playerController.Team == CsTeam.Terrorist ||
+                    playerController.Team == CsTeam.CounterTerrorist)).ToHashSet();
 
             HashSet<ulong> alivePlayerIDs = playerControllersParticipated
                 .Where(playerController =>
@@ -309,50 +315,43 @@ namespace CS2Stats {
             }
 
             if (this.Match.Round.ClutchEvent != null) {
-                // If the clutcher's team won, mark it as a win
-                if (this.Match.Round.ClutchEvent.ClutcherTeamNum == @event.Winner) {
+                Server.ExecuteCommand($"say There was a clutch event.");
+                if (@event.Winner == this.Match.Round.ClutchEvent.ClutcherTeamNum) {
+                    Server.ExecuteCommand($"say They won the clutch :)");
                     this.Match.Round.ClutchEvent.Result = "Win";
                 }
+
                 else {
-                    // Only if the clutcher lost, check for duel
-                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
+                    Server.ExecuteCommand($"say They lost the clutch :(");
+                    this.Match.Round.ClutchEvent.Result = "Loss";
 
-                    // Check alive enemies
-                    HashSet<CCSPlayerController> enemiesAlive = playerControllersParticipated
-                        .Where(playerController => playerController.IsValid && !playerController.IsBot &&
-                                                   playerController.TeamNum == enemyTeamNum &&
-                                                   playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
-                        .ToHashSet();
+                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherTeamNum == 2) ? 3 : 2;
 
-                    // Check if the situation is now a duel (1v1)
-                    if (enemiesAlive.Count == 1) {
-                        CCSPlayerController enemyPlayer = enemiesAlive.First();
-                        Logger.LogInformation($"Duel situation detected: Clutcher {this.Match.Round.ClutchEvent.ClutcherID} vs {enemyPlayer.SteamID}");
-
-                        // Record the duel outcome based on the current event
-                        if (@event.Winner == enemyPlayer.TeamNum) {
-                            // If the enemy won the duel
-                            this.Match.Round.DuelEvent = new() {
-                                WinnerID = enemyPlayer.SteamID,
-                                LoserID = this.Match.Round.ClutchEvent.ClutcherID
-                            };
-                            Logger.LogInformation($"Duel winner: {enemyPlayer.SteamID}, duel loser: {this.Match.Round.ClutchEvent.ClutcherID}");
-                        }
-                        else {
-                            // If the clutcher won the duel
-                            this.Match.Round.DuelEvent = new() {
-                                WinnerID = this.Match.Round.ClutchEvent.ClutcherID,
-                                LoserID = enemyPlayer.SteamID
-                            };
-                            Logger.LogInformation($"Duel winner: {this.Match.Round.ClutchEvent.ClutcherID}, duel loser: {enemyPlayer.SteamID}");
+                    HashSet<CCSPlayerController> enemiesAlive = [];
+                    foreach (CCSPlayerController playerController in playerControllersParticipated) {
+                        if (playerController.IsValid) {
+                            if (playerController.TeamNum == enemyTeamNum && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
+                                enemiesAlive.Add(playerController);
+                            }
                         }
                     }
 
-                    // Set the result for the clutch event as Loss
-                    this.Match.Round.ClutchEvent.Result = "Loss";
+                    if (enemiesAlive.Count == 1) {
+
+                        Server.ExecuteCommand($"say There is only one enemy of the clutcher alive, so round ended in a 1v1.");
+                        Server.ExecuteCommand($"say 1v1 winner: {enemiesAlive.First().PlayerName}");
+                        if (@event.Winner == enemyTeamNum) {
+                            this.Match.Round.DuelEvent = new() {
+                                WinnerID = enemiesAlive.First().SteamID,
+                                LoserID = this.Match.Round.ClutchEvent.ClutcherID
+                            };
+                        }
+
+                    }
                 }
             }
 
+            Server.NextFrame(() => Server.ExecuteCommand($"say Round: {(this.Match.Round.RoundID - this.Match.Rounds.Peek().RoundID) + 1}"));
             this.Match.Rounds.Enqueue(this.Match.Round);
 
             return HookResult.Continue;
