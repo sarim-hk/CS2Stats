@@ -293,8 +293,8 @@ namespace CS2Stats {
         public async Task InsertRound(Match match, Round round, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_Round (RoundID, MatchID, WinningTeamID, LosingTeamID, WinningSide, RoundEndReason, StartTick, EndTick)
-                VALUES (@RoundID, @MatchID, @WinningTeamID, @LosingTeamID, @WinningSide, @RoundEndReason, @StartTick, @EndTick);
+                INSERT INTO CS2S_Round (RoundID, MatchID, WinnerTeamID, LoserTeamID, WinnerSide, LoserSide, RoundEndReason, StartTick, EndTick)
+                VALUES (@RoundID, @MatchID, @WinnerTeamID, @LoserTeamID, @WinnerSide, @LoserSide, @RoundEndReason, @StartTick, @EndTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -303,6 +303,7 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@WinningTeamID", round.WinningTeamID);
                 cmd.Parameters.AddWithValue("@LosingTeamID", round.LosingTeamID);
                 cmd.Parameters.AddWithValue("@WinningSide", round.WinningTeamNum);
+                cmd.Parameters.AddWithValue("@WinningSide", round.LosingTeamNum);
                 cmd.Parameters.AddWithValue("@RoundEndReason", round.WinningReason);
                 cmd.Parameters.AddWithValue("@StartTick", round.StartTick);
                 cmd.Parameters.AddWithValue("@EndTick", round.EndTick);

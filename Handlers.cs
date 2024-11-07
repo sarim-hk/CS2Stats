@@ -307,6 +307,7 @@ namespace CS2Stats {
 
             this.Match.Round.WinningReason = @event.Reason;
             this.Match.Round.WinningTeamNum = @event.Winner;
+            this.Match.Round.LosingTeamNum = @event.Winner == 2 ? 3 : 2;
             this.Match.Round.LosingTeamNum = (this.Match.Round.WinningTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
             this.Match.Round.WinningTeamID = GetTeamInfoByTeamNum(this.Match.Round.WinningTeamNum)?.TeamID;
             this.Match.Round.LosingTeamID = GetTeamInfoByTeamNum(this.Match.Round.LosingTeamNum)?.TeamID;

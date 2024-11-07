@@ -61,9 +61,10 @@ CREATE TABLE IF NOT EXISTS CS2S_TeamResult (
 CREATE TABLE IF NOT EXISTS CS2S_Round (
     RoundID int PRIMARY KEY NOT NULL,
     MatchID int NOT NULL,
-    WinningTeamID varchar(32) NOT NULL,
-    LosingTeamID varchar(32) NOT NULL,
-    WinningSide int NOT NULL,
+    WinnerTeamID varchar(32) NOT NULL,
+    LoserTeamID varchar(32) NOT NULL,
+    WinnerSide int NOT NULL,
+	LoserSide int NOT NULL,
     RoundEndReason int NOT NULL,
     StartTick int NOT NULL,
     EndTick int NOT NULL,
