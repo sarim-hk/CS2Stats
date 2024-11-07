@@ -68,8 +68,8 @@ namespace CS2Stats {
                 return;
             }
 
-            if (this.Database == null) {
-                Logger.LogInformation("[CancelMatch] Database is null. Returning.");
+            if (this.Match == null || this.Database == null) {
+                Logger.LogInformation("[CancelMatch] Match or database is null. Returning.");
                 return;
             }
 
