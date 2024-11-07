@@ -359,14 +359,15 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Clutch (RoundID, MatchID, PlayerID, EnemyCount, Result)
-                VALUES (@RoundID, @MatchID, @PlayerID, @EnemyCount, @Result);
+                INSERT INTO CS2S_Clutch (RoundID, MatchID, PlayerID, PlayerSide, EnemyCount, Result)
+                VALUES (@RoundID, @MatchID, @PlayerID, PlayerSide, @EnemyCount, @Result);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
                 cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                 cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                 cmd.Parameters.AddWithValue("@PlayerID", round.ClutchEvent.ClutcherID);
+                cmd.Parameters.AddWithValue("@PlayerSide", round.ClutchEvent.ClutcherSide);
                 cmd.Parameters.AddWithValue("@EnemyCount", round.ClutchEvent.EnemyCount);
                 cmd.Parameters.AddWithValue("@Result", round.ClutchEvent.Result);
                 await cmd.ExecuteNonQueryAsync();
@@ -393,15 +394,17 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Duel (RoundID, MatchID, WinnerID, LoserID)
-                VALUES (@RoundID, @MatchID, @WinnerId, @LoserID);
+                INSERT INTO CS2S_Duel (RoundID, MatchID, WinnerID, WinnerSide, LoserID, LoserSide)
+                VALUES (@RoundID, @MatchID, @WinnerID, @WinnerSide, @LoserID, @LoserSide);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
                 cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                 cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                 cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.WinnerID);
+                cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.WinnerSide);
                 cmd.Parameters.AddWithValue("@LoserID", round.DuelEvent.Value.LoserID);
+                cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.LoserSide);
                 await cmd.ExecuteNonQueryAsync();
 
                 await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, "DuelAttempts", Logger);
@@ -425,8 +428,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Hurt (RoundID, MatchID, AttackerID, VictimID, DamageAmount, Weapon, Hitgroup, RoundTick)
-                VALUES (@RoundID, @MatchID, @AttackerID, @VictimID, @DamageAmount, @Weapon, @Hitgroup, @RoundTick);
+                INSERT INTO CS2S_Hurt (RoundID, MatchID, AttackerID, AttackerSide, VictimID, VictimSide, DamageAmount, Weapon, Hitgroup, RoundTick)
+                VALUES (@RoundID, @MatchID, @AttackerID, @AttackerSide, @VictimID, @VictimSide, @DamageAmount, @Weapon, @Hitgroup, @RoundTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -436,7 +439,9 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                     cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                     cmd.Parameters.AddWithValue("@AttackerID", hurtEvent.AttackerID);
+                    cmd.Parameters.AddWithValue("@AttackerSide", hurtEvent.AttackerSide);
                     cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
+                    cmd.Parameters.AddWithValue("@VictimSide", hurtEvent.VictimSide);
                     cmd.Parameters.AddWithValue("@DamageAmount", hurtEvent.DamageAmount);
                     cmd.Parameters.AddWithValue("@Weapon", hurtEvent.Weapon);
                     cmd.Parameters.AddWithValue("@Hitgroup", hurtEvent.Hitgroup);
@@ -465,8 +470,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Death (RoundID, MatchID, AttackerID, AssisterID, VictimID, Weapon, Hitgroup, OpeningDeath, RoundTick)
-                VALUES (@RoundID, @MatchID, @AttackerID, @AssisterID, @VictimID, @Weapon, @Hitgroup, @OpeningDeath, @RoundTick);
+                INSERT INTO CS2S_Death (RoundID, MatchID, AttackerID, AttackerSide, AssisterID, AssisterSide, VictimID, VictimSide, Weapon, Hitgroup, OpeningDeath, RoundTick)
+                VALUES (@RoundID, @MatchID, @AttackerID, @AttackerSide, @AssisterID, @AssisterSide, @VictimID, @VictimSide, @Weapon, @Hitgroup, @OpeningDeath, @RoundTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -476,8 +481,11 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                     cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                     cmd.Parameters.AddWithValue("@AttackerID", deathEvent.AttackerID);
+                    cmd.Parameters.AddWithValue("@AttackerSide", deathEvent.AttackerSide);
                     cmd.Parameters.AddWithValue("@AssisterID", deathEvent.AssisterID);
+                    cmd.Parameters.AddWithValue("@AssisterSide", deathEvent.AssisterSide);
                     cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
+                    cmd.Parameters.AddWithValue("@VictimSide", deathEvent.VictimSide);
                     cmd.Parameters.AddWithValue("@Weapon", deathEvent.Weapon);
                     cmd.Parameters.AddWithValue("@Hitgroup", deathEvent.Hitgroup);
                     cmd.Parameters.AddWithValue("@OpeningDeath", deathEvent.OpeningDeath);
@@ -515,8 +523,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Blind (RoundID, MatchID, ThrowerID, BlindedID, Duration, TeamFlash, RoundTick)
-                VALUES (@RoundID, @MatchID, @ThrowerID, @BlindedID, @Duration, @TeamFlash, @RoundTick);
+                INSERT INTO CS2S_Blind (RoundID, MatchID, ThrowerID, ThrowerSide, BlindedID, BlindedSide, Duration, TeamFlash, RoundTick)
+                VALUES (@RoundID, @MatchID, @ThrowerID, @ThrowerSide, @BlindedID, @BlindedSide, @Duration, @TeamFlash, @RoundTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -526,7 +534,9 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                     cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                     cmd.Parameters.AddWithValue("@ThrowerID", blindEvent.ThrowerID);
+                    cmd.Parameters.AddWithValue("@ThrowerSide", blindEvent.ThrowerID);
                     cmd.Parameters.AddWithValue("@BlindedID", blindEvent.BlindedID);
+                    cmd.Parameters.AddWithValue("@BlindedSide", blindEvent.BlindedID);
                     cmd.Parameters.AddWithValue("@Duration", blindEvent.Duration);
                     cmd.Parameters.AddWithValue("@TeamFlash", blindEvent.TeamFlash);
                     cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
@@ -554,8 +564,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Grenade (RoundID, MatchID, ThrowerID, Weapon, RoundTick)
-                VALUES (@RoundID, @MatchID, @ThrowerID, @Weapon, @RoundTick);
+                INSERT INTO CS2S_Grenade (RoundID, MatchID, ThrowerID, ThrowerSide, Weapon, RoundTick)
+                VALUES (@RoundID, @MatchID, @ThrowerID, @ThrowerSide, @Weapon, @RoundTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -565,6 +575,7 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                     cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                     cmd.Parameters.AddWithValue("@ThrowerID", grenadeEvent.ThrowerID);
+                    cmd.Parameters.AddWithValue("@ThrowerSide", grenadeEvent.ThrowerSide);
                     cmd.Parameters.AddWithValue("@Weapon", grenadeEvent.Weapon);
                     cmd.Parameters.AddWithValue("@RoundTick", grenadeEvent.RoundTick);
 
@@ -581,23 +592,24 @@ namespace CS2Stats {
         }
 
         public async Task InsertBatchedKAST(Match match, Round round, ILogger Logger) {
-            if (round.PlayersKAST == null || round.PlayersKAST.Count == 0) {
+            if (round.KASTEvents == null || round.KASTEvents.Count == 0) {
                 Logger.LogInformation("[InsertBatchedKAST] KAST events is null.");
                 return;
             }
 
             try {
                 string query = @"
-                INSERT INTO CS2S_KAST (RoundID, MatchID, PlayerID)
-                VALUES (@RoundID, @MatchID, @PlayerID);
+                INSERT INTO CS2S_KAST (RoundID, MatchID, PlayerID, PlayerSide)
+                VALUES (@RoundID, @MatchID, @PlayerID, @PlayerSide);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (ulong playerID in round.PlayersKAST) {
+                foreach (KASTEvent kastEvent in round.KASTEvents) {
                     cmd.Parameters.Clear();
                     cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                     cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                    cmd.Parameters.AddWithValue("@PlayerID", kastEvent.PlayerID);
+                    cmd.Parameters.AddWithValue("@PlayerSide", kastEvent.PlayerSide);
 
                     await cmd.ExecuteNonQueryAsync();
                 }

@@ -6,12 +6,12 @@
         public int StartTick { get; }
         public int? EndTick { get; set; }
         public bool OpeningDeathOccurred { get; set; }
-        public HashSet<ulong> PlayersParticipated { get; set; }
-        public HashSet<ulong> PlayersKAST { get; set; }
-        public HashSet<HurtEvent> HurtEvents { get; set; }
-        public HashSet<DeathEvent> DeathEvents { get; set; }
-        public HashSet<BlindEvent> BlindEvents { get; set; }
-        public HashSet<GrenadeEvent> GrenadeEvents { get; set; }
+        public List<ulong> PlayersParticipated { get; set; }
+        public List<HurtEvent> HurtEvents { get; set; }
+        public List<DeathEvent> DeathEvents { get; set; }
+        public List<BlindEvent> BlindEvents { get; set; }
+        public List<GrenadeEvent> GrenadeEvents { get; set; }
+        public HashSet<KASTEvent> KASTEvents { get; set; }
         public ClutchEvent? ClutchEvent { get; set; }
         public DuelEvent? DuelEvent { get; set; }
 
@@ -27,7 +27,7 @@
 
             this.OpeningDeathOccurred = false;
             this.PlayersParticipated = [];
-            this.PlayersKAST = [];
+            this.KASTEvents = [];
             this.HurtEvents = [];
             this.DeathEvents = [];
             this.BlindEvents = [];

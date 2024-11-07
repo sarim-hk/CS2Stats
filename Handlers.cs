@@ -22,8 +22,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundFreezeEndHandler] Match, round, or database is null. Returning.");
+            if (this.Match == null || this.Database == null) {
+                Logger.LogInformation("[EventRoundFreezeEndHandler] Match or database is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -52,9 +52,9 @@ namespace CS2Stats {
             this.Match.EndTick = Server.TickCount;
 
             LiveData liveData = new();
-            HashSet<ulong> startingPlayerIDs = this.Match.StartingPlayers.Values
+            List<ulong> startingPlayerIDs = this.Match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
-                .ToHashSet();
+                .ToList();
 
             Task.Run(async () => {
 
@@ -71,7 +71,7 @@ namespace CS2Stats {
                         Round round = this.Match.Rounds.Dequeue();
 
                         await this.Database.InsertRound(this.Match, round, Logger);
-                        await this.Database.IncrementPlayerValues(round.PlayersKAST, "RoundsKAST", Logger);
+                        await this.Database.IncrementPlayerValues(round.KASTEvents.Select(kastEvent => kastEvent.PlayerID).ToList(), "RoundsKAST", Logger);
                         await this.Database.IncrementPlayerValues(round.PlayersParticipated, "RoundsPlayed", Logger);
 
                         await this.Database.InsertClutchEvent(this.Match, round, Logger);
@@ -146,7 +146,9 @@ namespace CS2Stats {
             if (@event.Userid != null) {
                 this.Match.Round.HurtEvents.Add(new HurtEvent() {
                     AttackerID = @event.Attacker?.SteamID,
+                    AttackerSide = @event.Attacker?.TeamNum,
                     VictimID = @event.Userid.SteamID,
+                    VictimSide = @event.Userid.TeamNum,
                     DamageAmount = Math.Clamp(@event.DmgHealth, 1, 100),
                     Weapon = @event.Weapon,
                     Hitgroup = @event.Hitgroup,
@@ -170,14 +172,22 @@ namespace CS2Stats {
                         .First(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
 
                     if ((Server.TickCount - this.Match.Round.StartTick) < matchingDeathEvent.RoundTick + (5 * Server.TickInterval)) {
-                        this.Match.Round.PlayersKAST.Add(matchingDeathEvent.VictimID);
+                        KASTEvent kASTEvent = new KASTEvent() {
+                            PlayerID = matchingDeathEvent.VictimID,
+                            PlayerSide = matchingDeathEvent.VictimSide
+                        };
+
+                        this.Match.Round.KASTEvents.Add(kASTEvent);
                     }
                 }
 
                 this.Match.Round.DeathEvents.Add(new DeathEvent() {
                     AttackerID = @event.Attacker?.SteamID,
+                    AttackerSide = @event.Attacker?.TeamNum,
                     AssisterID = @event.Assister?.SteamID,
+                    AssisterSide = @event.Assister?.TeamNum,
                     VictimID = @event.Userid.SteamID,
+                    VictimSide = @event.Userid.TeamNum,
                     Weapon = @event.Weapon,
                     Hitgroup = @event.Hitgroup,
                     OpeningDeath = !this.Match.Round.OpeningDeathOccurred,
@@ -185,11 +195,20 @@ namespace CS2Stats {
                 });
 
                 if (@event.Attacker != null) {
-                    this.Match.Round.PlayersKAST.Add(@event.Attacker.SteamID);
+                    KASTEvent kastEvent = new KASTEvent() {
+                        PlayerID = @event.Attacker.SteamID,
+                        PlayerSide = @event.Attacker.TeamNum
+                    };
+
+                    this.Match.Round.KASTEvents.Add(kastEvent);
                 }
 
                 else if (@event.Assister != null) {
-                    this.Match.Round.PlayersKAST.Add(@event.Assister.SteamID);
+                    KASTEvent kastEvent = new KASTEvent() {
+                        PlayerID = @event.Assister.SteamID,
+                        PlayerSide = @event.Assister.TeamNum
+                    };
+                    this.Match.Round.KASTEvents.Add(kastEvent);
                 }
             }
 
@@ -215,7 +234,7 @@ namespace CS2Stats {
                         Server.ExecuteCommand($"say New clutch event. Clutcher: {tsAlive.First().PlayerName}, Team: T, Vs: {ctsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = tsAlive.First().SteamID,
-                            ClutcherTeamNum = (int)CsTeam.Terrorist,
+                            ClutcherSide = (int)CsTeam.Terrorist,
                             EnemyCount = ctsAlive.Count
                         };
                     }
@@ -224,7 +243,7 @@ namespace CS2Stats {
                         Server.ExecuteCommand($"say New clutch event. Clutcher: {ctsAlive.First().PlayerName}, Team: CT, Vs: {tsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = ctsAlive.First().SteamID,
-                            ClutcherTeamNum = (int)CsTeam.CounterTerrorist,
+                            ClutcherSide = (int)CsTeam.CounterTerrorist,
                             EnemyCount = tsAlive.Count
                         };
                     }
@@ -249,7 +268,9 @@ namespace CS2Stats {
             if (@event.Userid != null && @event.Attacker != null) {
                 this.Match.Round.BlindEvents.Add(new BlindEvent() {
                     ThrowerID = @event.Attacker.SteamID,
+                    ThrowerSide = @event.Attacker.TeamNum,
                     BlindedID = @event.Userid.SteamID,
+                    BlindedSide = @event.Userid.TeamNum,
                     Duration = @event.BlindDuration,
                     TeamFlash = (@event.Attacker.TeamNum == @event.Userid.TeamNum),
                     RoundTick = Server.TickCount - this.Match.Round.StartTick
@@ -268,6 +289,7 @@ namespace CS2Stats {
             if (@event.Userid != null) {
                 this.Match.Round.GrenadeEvents.Add(new GrenadeEvent() {
                     ThrowerID = @event.Userid.SteamID,
+                    ThrowerSide = @event.Userid.TeamNum,
                     Weapon = @event.Weapon,
                     RoundTick = Server.TickCount - this.Match.Round.StartTick
                 });
@@ -289,29 +311,29 @@ namespace CS2Stats {
             this.Match.Round.LosingTeamID = GetTeamInfoByTeamNum(this.Match.Round.LosingTeamNum)?.TeamID;
             this.Match.Round.EndTick = Server.TickCount;
 
-            HashSet<CCSPlayerController> playerControllersParticipated = Utilities.GetPlayers()
+            List<CCSPlayerController> playerControllersParticipated = Utilities.GetPlayers()
                 .Where(playerController =>
                     !playerController.IsBot &&
                     (playerController.Team == CsTeam.Terrorist ||
-                    playerController.Team == CsTeam.CounterTerrorist)).ToHashSet();
+                    playerController.Team == CsTeam.CounterTerrorist)).ToList();
 
-            HashSet<ulong> alivePlayerIDs = playerControllersParticipated
+            IEnumerable<KASTEvent> survivedKASTEvents = playerControllersParticipated
                 .Where(playerController =>
                     playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
-                .Select(playerController => playerController.SteamID)
-                .ToHashSet();
+                .Select(playerController => new KASTEvent {
+                    PlayerID = playerController.SteamID,
+                    PlayerSide = playerController.TeamNum
+                });
+
+            this.Match.Round.KASTEvents.UnionWith(survivedKASTEvents);
 
             this.Match.Round.PlayersParticipated = playerControllersParticipated
                 .Select(playerController => playerController.SteamID)
-                .ToHashSet();
-
-            foreach (ulong playerID in alivePlayerIDs) {
-                this.Match.Round.PlayersKAST.Add(playerID);
-            }
+                .ToList();
 
             if (this.Match.Round.ClutchEvent != null) {
                 Server.ExecuteCommand($"say There was a clutch event.");
-                if (@event.Winner == this.Match.Round.ClutchEvent.ClutcherTeamNum) {
+                if (@event.Winner == this.Match.Round.ClutchEvent.ClutcherSide) {
                     Server.ExecuteCommand($"say They won the clutch :)");
                     this.Match.Round.ClutchEvent.Result = "Win";
                 }
@@ -320,7 +342,7 @@ namespace CS2Stats {
                     Server.ExecuteCommand($"say They lost the clutch :(");
                     this.Match.Round.ClutchEvent.Result = "Loss";
 
-                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherTeamNum == 2) ? 3 : 2;
+                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherSide == 2) ? 3 : 2;
 
                     HashSet<CCSPlayerController> enemiesAlive = [];
                     foreach (CCSPlayerController playerController in playerControllersParticipated) {

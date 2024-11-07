@@ -240,7 +240,7 @@ namespace CS2Stats {
             }
         }
 
-        public async Task IncrementPlayerValues(HashSet<ulong> playerIDs, string field, ILogger Logger) {
+        public async Task IncrementPlayerValues(List<ulong> playerIDs, string field, ILogger Logger) {
             if (playerIDs == null || playerIDs.Count == 0) {
                 Logger.LogInformation("[IncrementPlayerValues] Player IDs list is null or empty.");
                 return;
