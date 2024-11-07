@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
+using System.Transactions;
 
 namespace CS2Stats {
 
@@ -46,6 +47,13 @@ namespace CS2Stats {
             if (this.transaction != null) {
                 await this.transaction.CommitAsync();
                 await this.transaction.DisposeAsync();
+                this.transaction = null;
+            }
+        }
+
+        public async Task RollbackTransaction() {
+            if (this.transaction != null) {
+                await this.transaction.RollbackAsync();
                 this.transaction = null;
             }
         }

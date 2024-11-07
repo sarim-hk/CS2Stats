@@ -120,6 +120,7 @@ namespace CS2Stats {
                 }
 
                 catch (Exception ex) {
+                    await this.Database.RollbackTransaction();
                     Logger.LogError(ex, "[EventCsWinPanelMatchHandler] Error occurred while finishing up the match.");
                 }
 
