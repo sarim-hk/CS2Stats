@@ -550,10 +550,7 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
 
                     await cmd.ExecuteNonQueryAsync();
-
-                    if (blindEvent.TeamFlash == false) {
-                        await IncrementPlayerValue(blindEvent.ThrowerID, blindEvent.ThrowerSide, "EnemiesFlashed", Logger);
-                    }
+                    await IncrementPlayerValue(blindEvent.ThrowerID, blindEvent.ThrowerSide, "EnemiesFlashed", Logger);
                 }
 
                 Logger.LogInformation($"[InsertBatchedBlindEvents] Batch of blind events inserted successfully.");
