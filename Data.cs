@@ -30,7 +30,6 @@
         public ulong BlindedID;
         public int BlindedSide;
         public float Duration;
-        public bool TeamFlash;
         public int RoundTick;
     }
 

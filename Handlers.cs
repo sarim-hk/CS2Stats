@@ -43,6 +43,78 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
+        public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventPlayerDeathHandler] Match, round, or database is null. Returning.");
+                return HookResult.Continue;
+            }
+
+            this.Match.Round.WinningReason = @event.Reason;
+            this.Match.Round.WinningTeamNum = @event.Winner;
+            this.Match.Round.LosingTeamNum = @event.Winner == 2 ? 3 : 2;
+            this.Match.Round.LosingTeamNum = (this.Match.Round.WinningTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
+            this.Match.Round.WinningTeamID = GetTeamInfoByTeamNum(this.Match.Round.WinningTeamNum)?.TeamID;
+            this.Match.Round.LosingTeamID = GetTeamInfoByTeamNum(this.Match.Round.LosingTeamNum)?.TeamID;
+            this.Match.Round.EndTick = Server.TickCount;
+
+            List<CCSPlayerController> playerControllersParticipated = Utilities.GetPlayers()
+                .Where(playerController =>
+                    !playerController.IsBot &&
+                    (playerController.Team == CsTeam.Terrorist ||
+                    playerController.Team == CsTeam.CounterTerrorist)).ToList();
+
+            IEnumerable<KASTEvent> survivedKASTEvents = playerControllersParticipated
+                .Where(playerController =>
+                    playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
+                .Select(playerController => new KASTEvent {
+                    PlayerID = playerController.SteamID,
+                    PlayerSide = playerController.TeamNum
+                });
+
+            this.Match.Round.KASTEvents.UnionWith(survivedKASTEvents);
+
+            this.Match.Round.PlayersParticipated = playerControllersParticipated
+                .Select(playerController => new PlayerParticipated {
+                    PlayerID = playerController.SteamID,
+                    PlayerSide = playerController.TeamNum
+                }).ToList();
+
+            if (this.Match.Round.ClutchEvent != null) {
+                if (@event.Winner == this.Match.Round.ClutchEvent.ClutcherSide) {
+                    this.Match.Round.ClutchEvent.Result = "Win";
+                }
+
+                else {
+                    this.Match.Round.ClutchEvent.Result = "Loss";
+
+                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherSide == 2) ? 3 : 2;
+
+                    HashSet<CCSPlayerController> enemiesAlive = [];
+                    foreach (CCSPlayerController playerController in playerControllersParticipated) {
+                        if (playerController.IsValid) {
+                            if (playerController.TeamNum == enemyTeamNum && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
+                                enemiesAlive.Add(playerController);
+                            }
+                        }
+                    }
+
+                    if (enemiesAlive.Count == 1) {
+                        if (@event.Winner == enemyTeamNum) {
+                            this.Match.Round.DuelEvent = new() {
+                                WinnerID = enemiesAlive.First().SteamID,
+                                LoserID = this.Match.Round.ClutchEvent.ClutcherID
+                            };
+                        }
+
+                    }
+                }
+            }
+
+            this.Match.Rounds.Enqueue(this.Match.Round);
+
+            return HookResult.Continue;
+        }
+
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
                 Logger.LogInformation("[EventCsWinPanelMatchHandler] Match, round, or database is null. Returning.");
@@ -146,6 +218,11 @@ namespace CS2Stats {
             }
 
             if (@event.Userid != null) {
+
+                if (@event.Attacker != null && @event.Attacker.TeamNum == @event.Userid.TeamNum) {
+                    Logger.LogInformation("[EventPlayerHurtHandler] PlayerHurt is team damage. Returning.");
+                }
+
                 this.Match.Round.HurtEvents.Add(new HurtEvent() {
                     AttackerID = @event.Attacker?.SteamID,
                     AttackerSide = @event.Attacker?.TeamNum,
@@ -168,6 +245,10 @@ namespace CS2Stats {
             }
 
             if (@event.Userid != null) {
+
+                if (@event.Attacker != null && @event.Attacker.TeamNum == @event.Userid.TeamNum) {
+                    Logger.LogInformation("[EventPlayerDeathHandler] PlayerDeath is team kill. Returning.");
+                }
 
                 if (this.Match.Round.DeathEvents.Any(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID)) {
                     DeathEvent matchingDeathEvent = this.Match.Round.DeathEvents
@@ -265,14 +346,18 @@ namespace CS2Stats {
                 return HookResult.Continue;
             }
 
-            if (@event.Userid != null && @event.Attacker != null) {
+            if (@event.Attacker != null && @event.Userid != null) {
+
+                if (@event.Attacker.TeamNum == @event.Userid.TeamNum) {
+                    Logger.LogInformation("[EventPlayerBlindHandler] PlayerBlind is team flash. Returning.");
+                }
+
                 this.Match.Round.BlindEvents.Add(new BlindEvent() {
                     ThrowerID = @event.Attacker.SteamID,
                     ThrowerSide = @event.Attacker.TeamNum,
                     BlindedID = @event.Userid.SteamID,
                     BlindedSide = @event.Userid.TeamNum,
                     Duration = @event.BlindDuration,
-                    TeamFlash = (@event.Attacker.TeamNum == @event.Userid.TeamNum),
                     RoundTick = Server.TickCount - this.Match.Round.StartTick
                 });
             }
@@ -294,78 +379,6 @@ namespace CS2Stats {
                     RoundTick = Server.TickCount - this.Match.Round.StartTick
                 });
             }
-
-            return HookResult.Continue;
-        }
-
-        public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] Match, round, or database is null. Returning.");
-                return HookResult.Continue;
-            }
-
-            this.Match.Round.WinningReason = @event.Reason;
-            this.Match.Round.WinningTeamNum = @event.Winner;
-            this.Match.Round.LosingTeamNum = @event.Winner == 2 ? 3 : 2;
-            this.Match.Round.LosingTeamNum = (this.Match.Round.WinningTeamNum == (int)CsTeam.Terrorist) ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
-            this.Match.Round.WinningTeamID = GetTeamInfoByTeamNum(this.Match.Round.WinningTeamNum)?.TeamID;
-            this.Match.Round.LosingTeamID = GetTeamInfoByTeamNum(this.Match.Round.LosingTeamNum)?.TeamID;
-            this.Match.Round.EndTick = Server.TickCount;
-
-            List<CCSPlayerController> playerControllersParticipated = Utilities.GetPlayers()
-                .Where(playerController =>
-                    !playerController.IsBot &&
-                    (playerController.Team == CsTeam.Terrorist ||
-                    playerController.Team == CsTeam.CounterTerrorist)).ToList();
-
-            IEnumerable<KASTEvent> survivedKASTEvents = playerControllersParticipated
-                .Where(playerController =>
-                    playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE)
-                .Select(playerController => new KASTEvent {
-                    PlayerID = playerController.SteamID,
-                    PlayerSide = playerController.TeamNum
-                });
-
-            this.Match.Round.KASTEvents.UnionWith(survivedKASTEvents);
-
-            this.Match.Round.PlayersParticipated = playerControllersParticipated
-                .Select(playerController => new PlayerParticipated {
-                    PlayerID = playerController.SteamID,
-                    PlayerSide = playerController.TeamNum
-                }).ToList();
-
-            if (this.Match.Round.ClutchEvent != null) {
-                if (@event.Winner == this.Match.Round.ClutchEvent.ClutcherSide) {
-                    this.Match.Round.ClutchEvent.Result = "Win";
-                }
-
-                else {
-                    this.Match.Round.ClutchEvent.Result = "Loss";
-
-                    int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherSide == 2) ? 3 : 2;
-
-                    HashSet<CCSPlayerController> enemiesAlive = [];
-                    foreach (CCSPlayerController playerController in playerControllersParticipated) {
-                        if (playerController.IsValid) {
-                            if (playerController.TeamNum == enemyTeamNum && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
-                                enemiesAlive.Add(playerController);
-                            }
-                        }
-                    }
-
-                    if (enemiesAlive.Count == 1) {
-                        if (@event.Winner == enemyTeamNum) {
-                            this.Match.Round.DuelEvent = new() {
-                                WinnerID = enemiesAlive.First().SteamID,
-                                LoserID = this.Match.Round.ClutchEvent.ClutcherID
-                            };
-                        }
-
-                    }
-                }
-            }
-
-            this.Match.Rounds.Enqueue(this.Match.Round);
 
             return HookResult.Continue;
         }

@@ -532,8 +532,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Blind (RoundID, MatchID, ThrowerID, ThrowerSide, BlindedID, BlindedSide, Duration, TeamFlash, RoundTick)
-                VALUES (@RoundID, @MatchID, @ThrowerID, @ThrowerSide, @BlindedID, @BlindedSide, @Duration, @TeamFlash, @RoundTick);
+                INSERT INTO CS2S_Blind (RoundID, MatchID, ThrowerID, ThrowerSide, BlindedID, BlindedSide, Duration, RoundTick)
+                VALUES (@RoundID, @MatchID, @ThrowerID, @ThrowerSide, @BlindedID, @BlindedSide, @Duration, @RoundTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -547,7 +547,6 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@BlindedID", blindEvent.BlindedID);
                     cmd.Parameters.AddWithValue("@BlindedSide", blindEvent.BlindedSide);
                     cmd.Parameters.AddWithValue("@Duration", blindEvent.Duration);
-                    cmd.Parameters.AddWithValue("@TeamFlash", blindEvent.TeamFlash);
                     cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
 
                     await cmd.ExecuteNonQueryAsync();

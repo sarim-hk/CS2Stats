@@ -123,7 +123,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Blind (
 	BlindedID varchar(17) NOT NULL,
 	BlindedSide int NOT NULL,
     Duration float NOT NULL,
-    TeamFlash bool NOT NULL,
     RoundTick int NOT NULL,
 	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
