@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS CS2S_PlayerStats (
     RoundsKAST int DEFAULT 0 NOT NULL,
     RoundsPlayed int DEFAULT 0 NOT NULL,
     PRIMARY KEY (PlayerID, Side),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerSide(PlayerID)
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Match (
@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
     FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_PlayerStats_Matches (
+CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
     PlayerID varchar(17) NOT NULL,
 	MatchID int NOT NULL,
     PRIMARY KEY (PlayerID, MatchID),

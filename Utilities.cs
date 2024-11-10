@@ -210,7 +210,7 @@ namespace CS2Stats {
                                : "Damage";
 
                 string query = @$"
-                UPDATE CS2S_Player
+                UPDATE CS2S_PlayerStats
                 SET {field} = {field} + @DamageAmount
                 WHERE PlayerID = @PlayerID AND Side = @Side;
                 ";
@@ -237,7 +237,7 @@ namespace CS2Stats {
         public async Task IncrementPlayerValue(ulong playerID, int side, string field, ILogger Logger) {
             try {
                 string query = @$"
-                UPDATE CS2S_Player
+                UPDATE CS2S_PlayerStats
                 SET {field} = {field} + 1
                 WHERE PlayerID = @PlayerID AND Side = @Side;
                 ";
