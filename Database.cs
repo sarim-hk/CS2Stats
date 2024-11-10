@@ -412,9 +412,9 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                 cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                 cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.WinnerID);
-                cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.WinnerSide);
+                cmd.Parameters.AddWithValue("@WinnerSide", round.DuelEvent.Value.WinnerSide);
                 cmd.Parameters.AddWithValue("@LoserID", round.DuelEvent.Value.LoserID);
-                cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.LoserSide);
+                cmd.Parameters.AddWithValue("@LoserSide", round.DuelEvent.Value.LoserSide);
                 await cmd.ExecuteNonQueryAsync();
 
                 await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, round.DuelEvent.Value.WinnerSide, "DuelAttempts", Logger);
