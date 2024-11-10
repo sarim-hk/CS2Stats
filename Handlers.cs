@@ -102,7 +102,9 @@ namespace CS2Stats {
                         if (@event.Winner == enemyTeamNum) {
                             this.Match.Round.DuelEvent = new() {
                                 WinnerID = enemiesAlive.First().SteamID,
-                                LoserID = this.Match.Round.ClutchEvent.ClutcherID
+                                WinnerSide = enemiesAlive.First().TeamNum,
+                                LoserID = this.Match.Round.ClutchEvent.ClutcherID,
+                                LoserSide = this.Match.Round.ClutchEvent.ClutcherSide
                             };
                         }
 
