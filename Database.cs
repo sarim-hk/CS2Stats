@@ -124,7 +124,7 @@ namespace CS2Stats {
             try {
                 string query = @"
                 SELECT AVG(p.ELO) 
-                FROM CS2S_Player p
+                FROM CS2S_PlayerInfo p
                 INNER JOIN CS2S_Team_Players tp ON p.PlayerID = tp.PlayerID
                 WHERE tp.TeamID = @TeamID;
                 ";
@@ -149,11 +149,11 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertPlayer(ulong playerID, ILogger Logger) {
+        public async Task InsertPlayer(ulong playerID, int side, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_Player (PlayerID)
-                VALUES (@PlayerID)
+                INSERT INTO CS2S_PlayerStats (PlayerID, Side)
+                VALUES (@PlayerID, @Side)
                 ON DUPLICATE KEY UPDATE
                     PlayerID = PlayerID
                 ";
@@ -163,15 +163,16 @@ namespace CS2Stats {
 
                 using MySqlCommand cmd = new(query, tempConn);
                 cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                cmd.Parameters.AddWithValue("@Side", side);
 
                 await cmd.ExecuteNonQueryAsync();
                 await tempConn.CloseAsync();
 
-                Logger.LogInformation($"[InsertPlayer] Player {playerID} inserted successfully.");
+                Logger.LogInformation($"[InsertPlayer] Player {playerID} on side {side} inserted successfully.");
             }
 
             catch (Exception ex) {
-                Logger.LogError(ex, "[InsertPlayer] Error occurred while inserting player.");
+                Logger.LogError(ex, $"[InsertPlayer] Error occurred while inserting player on side {side}.");
             }
         }
 
@@ -300,10 +301,10 @@ namespace CS2Stats {
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
                 cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                 cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@WinningTeamID", round.WinningTeamID);
-                cmd.Parameters.AddWithValue("@LosingTeamID", round.LosingTeamID);
-                cmd.Parameters.AddWithValue("@WinningSide", round.WinningTeamNum);
-                cmd.Parameters.AddWithValue("@WinningSide", round.LosingTeamNum);
+                cmd.Parameters.AddWithValue("@WinnerTeamID", round.WinningTeamID);
+                cmd.Parameters.AddWithValue("@LoserTeamID", round.LosingTeamID);
+                cmd.Parameters.AddWithValue("@WinnerSide", round.WinningTeamNum);
+                cmd.Parameters.AddWithValue("@LoserSide", round.LosingTeamNum);
                 cmd.Parameters.AddWithValue("@RoundEndReason", round.WinningReason);
                 cmd.Parameters.AddWithValue("@StartTick", round.StartTick);
                 cmd.Parameters.AddWithValue("@EndTick", round.EndTick);
@@ -369,7 +370,7 @@ namespace CS2Stats {
             try {
                 string query = @"
                 INSERT INTO CS2S_Clutch (RoundID, MatchID, PlayerID, PlayerSide, EnemyCount, Result)
-                VALUES (@RoundID, @MatchID, @PlayerID, PlayerSide, @EnemyCount, @Result);
+                VALUES (@RoundID, @MatchID, @PlayerID, @PlayerSide, @EnemyCount, @Result);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -381,10 +382,10 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@Result", round.ClutchEvent.Result);
                 await cmd.ExecuteNonQueryAsync();
 
-                await IncrementPlayerValue(round.ClutchEvent.ClutcherID, "ClutchAttempts", Logger);
+                await IncrementPlayerValue(round.ClutchEvent.ClutcherID, round.ClutchEvent.ClutcherSide, "ClutchAttempts", Logger);
 
                 if (round.ClutchEvent.Result == "Win") {
-                    await IncrementPlayerValue(round.ClutchEvent.ClutcherID, "ClutchWins", Logger);
+                    await IncrementPlayerValue(round.ClutchEvent.ClutcherID, round.ClutchEvent.ClutcherSide, "ClutchWins", Logger);
                 }
 
                 Logger.LogInformation($"[InsertClutchEvent] Clutch event inserted successfully.");
@@ -416,10 +417,9 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.LoserSide);
                 await cmd.ExecuteNonQueryAsync();
 
-                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, "DuelAttempts", Logger);
-                await IncrementPlayerValue(round.DuelEvent.Value.LoserID, "DuelAttempts", Logger);
-                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, "DuelWins", Logger);
-
+                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, round.DuelEvent.Value.WinnerSide, "DuelAttempts", Logger);
+                await IncrementPlayerValue(round.DuelEvent.Value.LoserID, round.DuelEvent.Value.LoserSide, "DuelAttempts", Logger);
+                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, round.DuelEvent.Value.WinnerSide, "DuelWins", Logger);
 
                 Logger.LogInformation($"[InsertDuelEvent] Duel event inserted successfully.");
             }
@@ -458,8 +458,8 @@ namespace CS2Stats {
 
                     await cmd.ExecuteNonQueryAsync();
 
-                    if (hurtEvent.AttackerID != null) {
-                        await IncrementPlayerDamage(hurtEvent.AttackerID, hurtEvent.Weapon, hurtEvent.DamageAmount, Logger);
+                    if (hurtEvent.AttackerID != null && hurtEvent.AttackerSide != null) {
+                        await IncrementPlayerDamage(hurtEvent.AttackerID.Value, hurtEvent.AttackerSide.Value, hurtEvent.Weapon, hurtEvent.DamageAmount, Logger);
                     }
                 }
 
@@ -501,19 +501,19 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundTick", deathEvent.RoundTick);
                     await cmd.ExecuteNonQueryAsync();
 
-                    if (deathEvent.AttackerID != null) {
-                        await IncrementPlayerValue(deathEvent.AttackerID.Value, "Kills", Logger);
+                    if (deathEvent.AttackerID != null && deathEvent.AttackerSide != null) {
+                        await IncrementPlayerValue(deathEvent.AttackerID.Value, deathEvent.AttackerSide.Value, "Kills", Logger);
 
                         if (deathEvent.Hitgroup == 1) {
-                            await IncrementPlayerValue(deathEvent.AttackerID.Value, "Headshots", Logger);
+                            await IncrementPlayerValue(deathEvent.AttackerID.Value, deathEvent.AttackerSide.Value, "Headshots", Logger);
                         }
                     }
 
-                    if (deathEvent.AssisterID != null) {
-                        await IncrementPlayerValue(deathEvent.AssisterID.Value, "Assists", Logger);
+                    if (deathEvent.AssisterID != null && deathEvent.AssisterSide != null) {
+                        await IncrementPlayerValue(deathEvent.AssisterID.Value, deathEvent.AssisterSide.Value, "Assists", Logger);
                     }
 
-                    await IncrementPlayerValue(deathEvent.VictimID, "Deaths", Logger);
+                    await IncrementPlayerValue(deathEvent.VictimID, deathEvent.VictimSide, "Deaths", Logger);
 
                 }
 
@@ -543,9 +543,9 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
                     cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
                     cmd.Parameters.AddWithValue("@ThrowerID", blindEvent.ThrowerID);
-                    cmd.Parameters.AddWithValue("@ThrowerSide", blindEvent.ThrowerID);
+                    cmd.Parameters.AddWithValue("@ThrowerSide", blindEvent.ThrowerSide);
                     cmd.Parameters.AddWithValue("@BlindedID", blindEvent.BlindedID);
-                    cmd.Parameters.AddWithValue("@BlindedSide", blindEvent.BlindedID);
+                    cmd.Parameters.AddWithValue("@BlindedSide", blindEvent.BlindedSide);
                     cmd.Parameters.AddWithValue("@Duration", blindEvent.Duration);
                     cmd.Parameters.AddWithValue("@TeamFlash", blindEvent.TeamFlash);
                     cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
@@ -553,7 +553,7 @@ namespace CS2Stats {
                     await cmd.ExecuteNonQueryAsync();
 
                     if (blindEvent.TeamFlash == false) {
-                        await IncrementPlayerValue(blindEvent.ThrowerID, "EnemiesFlashed", Logger);
+                        await IncrementPlayerValue(blindEvent.ThrowerID, blindEvent.ThrowerSide, "EnemiesFlashed", Logger);
                     }
                 }
 
@@ -589,7 +589,7 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundTick", grenadeEvent.RoundTick);
 
                     await cmd.ExecuteNonQueryAsync();
-                    await IncrementPlayerValue(grenadeEvent.ThrowerID, "GrenadesThrown", Logger);
+                    await IncrementPlayerValue(grenadeEvent.ThrowerID, grenadeEvent.ThrowerSide, "GrenadesThrown", Logger);
                 }
 
                 Logger.LogInformation($"[InsertBatchedGrenadeEvents] Batch of grenade events inserted successfully.");
@@ -621,6 +621,7 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@PlayerSide", kastEvent.PlayerSide);
 
                     await cmd.ExecuteNonQueryAsync();
+                    await IncrementPlayerValue(kastEvent.PlayerID, kastEvent.PlayerSide, "RoundsKAST", Logger);
                 }
 
                 Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of KAST events inserted successfully.");
@@ -653,7 +654,7 @@ namespace CS2Stats {
                 }
 
                 string updatePlayerELOQuery = @"
-                UPDATE CS2S_Player p
+                UPDATE CS2S_PlayerInfo p
                 JOIN CS2S_Team_Players tp ON p.PlayerID = tp.PlayerID
                 SET p.ELO = p.ELO + @DeltaELO
                 WHERE tp.TeamID = @TeamID;

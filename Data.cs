@@ -58,7 +58,6 @@
 
     }
 
-
     public class ClutchEvent {
         public ulong ClutcherID;
         public int ClutcherSide;
@@ -71,6 +70,11 @@
         public int WinnerSide;
         public ulong LoserID;
         public int LoserSide;
+    }
+
+    public struct PlayerParticipated {
+        public ulong PlayerID;
+        public int PlayerSide;
     }
 
 }

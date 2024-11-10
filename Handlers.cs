@@ -71,8 +71,10 @@ namespace CS2Stats {
                         Round round = this.Match.Rounds.Dequeue();
 
                         await this.Database.InsertRound(this.Match, round, Logger);
-                        await this.Database.IncrementPlayerValues(round.KASTEvents.Select(kastEvent => kastEvent.PlayerID).ToList(), "RoundsKAST", Logger);
-                        await this.Database.IncrementPlayerValues(round.PlayersParticipated, "RoundsPlayed", Logger);
+
+                        foreach (PlayerParticipated playerParticipated in round.PlayersParticipated) {
+                            await this.Database.IncrementPlayerValue(playerParticipated.PlayerID, playerParticipated.PlayerSide, "RoundsPlayed", Logger);
+                        }
 
                         await this.Database.InsertClutchEvent(this.Match, round, Logger);
                         await this.Database.InsertDuelEvent(this.Match, round, Logger);
@@ -114,7 +116,6 @@ namespace CS2Stats {
                         await this.Database.UpdateELO(teamNumInfo3, Logger);
                     }
 
-                    await this.Database.IncrementPlayerValues(startingPlayerIDs, "MatchesPlayed", Logger);
                     await this.Database.InsertLive(liveData, Logger);
                     await this.Database.CommitTransaction();
                 }
@@ -232,7 +233,6 @@ namespace CS2Stats {
                     ClutchEvent clutchEvent = new();
 
                     if (tsAlive.Count == 1) {
-                        Server.ExecuteCommand($"say New clutch event. Clutcher: {tsAlive.First().PlayerName}, Team: T, Vs: {ctsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = tsAlive.First().SteamID,
                             ClutcherSide = (int)CsTeam.Terrorist,
@@ -241,7 +241,6 @@ namespace CS2Stats {
                     }
 
                     else if (ctsAlive.Count == 1) {
-                        Server.ExecuteCommand($"say New clutch event. Clutcher: {ctsAlive.First().PlayerName}, Team: CT, Vs: {tsAlive.Count}");
                         this.Match.Round.ClutchEvent = new() {
                             ClutcherID = ctsAlive.First().SteamID,
                             ClutcherSide = (int)CsTeam.CounterTerrorist,
@@ -330,18 +329,17 @@ namespace CS2Stats {
             this.Match.Round.KASTEvents.UnionWith(survivedKASTEvents);
 
             this.Match.Round.PlayersParticipated = playerControllersParticipated
-                .Select(playerController => playerController.SteamID)
-                .ToList();
+                .Select(playerController => new PlayerParticipated {
+                    PlayerID = playerController.SteamID,
+                    PlayerSide = playerController.TeamNum
+                }).ToList();
 
             if (this.Match.Round.ClutchEvent != null) {
-                Server.ExecuteCommand($"say There was a clutch event.");
                 if (@event.Winner == this.Match.Round.ClutchEvent.ClutcherSide) {
-                    Server.ExecuteCommand($"say They won the clutch :)");
                     this.Match.Round.ClutchEvent.Result = "Win";
                 }
 
                 else {
-                    Server.ExecuteCommand($"say They lost the clutch :(");
                     this.Match.Round.ClutchEvent.Result = "Loss";
 
                     int enemyTeamNum = (this.Match.Round.ClutchEvent.ClutcherSide == 2) ? 3 : 2;
@@ -356,9 +354,6 @@ namespace CS2Stats {
                     }
 
                     if (enemiesAlive.Count == 1) {
-
-                        Server.ExecuteCommand($"say There is only one enemy of the clutcher alive, so round ended in a 1v1.");
-                        Server.ExecuteCommand($"say 1v1 winner: {enemiesAlive.First().PlayerName}");
                         if (@event.Winner == enemyTeamNum) {
                             this.Match.Round.DuelEvent = new() {
                                 WinnerID = enemiesAlive.First().SteamID,
@@ -370,7 +365,6 @@ namespace CS2Stats {
                 }
             }
 
-            Server.NextFrame(() => Server.ExecuteCommand($"say Round: {(this.Match.Round.RoundID - this.Match.Rounds.Peek().RoundID) + 1}"));
             this.Match.Rounds.Enqueue(this.Match.Round);
 
             return HookResult.Continue;
@@ -422,7 +416,8 @@ namespace CS2Stats {
                 }
 
                 await this.Database.InsertPlayerInfo(playerInfo.Value, Logger);
-                await this.Database.InsertPlayer(playerID.SteamId64, Logger);
+                await this.Database.InsertPlayer(playerID.SteamId64, 2, Logger);
+                await this.Database.InsertPlayer(playerID.SteamId64, 3, Logger);
 
             });
         }

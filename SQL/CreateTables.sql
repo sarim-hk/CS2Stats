@@ -4,15 +4,16 @@ CREATE TABLE IF NOT EXISTS CS2S_Map (
 
 CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
     PlayerID varchar(17) PRIMARY KEY NOT NULL,
+	ELO int DEFAULT 1000 NOT NULL,
     Username varchar(255) NOT NULL,
     AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg" NOT NULL,
     AvatarM varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_medium.jpg" NOT NULL,
     AvatarL varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg" NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_Player (
-    PlayerID varchar(17) PRIMARY KEY NOT NULL,
-    ELO int DEFAULT 1000 NOT NULL,
+CREATE TABLE IF NOT EXISTS CS2S_PlayerStats (
+    PlayerID varchar(17) NOT NULL,
+    Side int NOT NULL,
     Kills int DEFAULT 0 NOT NULL,
     Headshots int DEFAULT 0 NOT NULL,
     Assists int DEFAULT 0 NOT NULL,
@@ -27,7 +28,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Player (
     DuelWins int DEFAULT 0 NOT NULL, 
     RoundsKAST int DEFAULT 0 NOT NULL,
     RoundsPlayed int DEFAULT 0 NOT NULL,
-    MatchesPlayed int DEFAULT 0 NOT NULL
+    PRIMARY KEY (PlayerID, Side),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerSide(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Match (
@@ -69,8 +71,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Round (
     StartTick int NOT NULL,
     EndTick int NOT NULL,
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (WinningTeamID) REFERENCES CS2S_Team(TeamID),
-    FOREIGN KEY (LosingTeamID) REFERENCES CS2S_Team(TeamID)
+    FOREIGN KEY (WinnerTeamID) REFERENCES CS2S_Team(TeamID),
+    FOREIGN KEY (LoserTeamID) REFERENCES CS2S_Team(TeamID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Death (
@@ -89,9 +91,9 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
     OpeningDeath bool NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (AttackerID) REFERENCES CS2S_Player(PlayerID),
-    FOREIGN KEY (AssisterID) REFERENCES CS2S_Player(PlayerID),
-    FOREIGN KEY (VictimID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (AttackerID) REFERENCES CS2S_PlayerStats(PlayerID),
+    FOREIGN KEY (AssisterID) REFERENCES CS2S_PlayerStats(PlayerID),
+    FOREIGN KEY (VictimID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Hurt (
@@ -108,8 +110,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     RoundTick int NOT NULL,
 	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (AttackerID) REFERENCES CS2S_Player(PlayerID),
-    FOREIGN KEY (VictimID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (AttackerID) REFERENCES CS2S_PlayerStats(PlayerID),
+    FOREIGN KEY (VictimID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Blind (
@@ -125,8 +127,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Blind (
     RoundTick int NOT NULL,
 	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (ThrowerID) REFERENCES CS2S_Player(PlayerID),
-	FOREIGN KEY (BlindedID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (ThrowerID) REFERENCES CS2S_PlayerStats(PlayerID),
+	FOREIGN KEY (BlindedID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Grenade (
@@ -139,7 +141,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Grenade (
     RoundTick int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (ThrowerID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (ThrowerID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_KAST (
@@ -150,7 +152,7 @@ CREATE TABLE IF NOT EXISTS CS2S_KAST (
 	PlayerSide int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Clutch (
@@ -163,7 +165,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Clutch (
     Result ENUM("Win", "Loss") NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Duel (
@@ -176,8 +178,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Duel (
     LoserSide int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (WinnerID) REFERENCES CS2S_Player(PlayerID),
-	FOREIGN KEY (LoserID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (WinnerID) REFERENCES CS2S_PlayerStats(PlayerID),
+	FOREIGN KEY (LoserID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Live (
@@ -195,37 +197,14 @@ CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
     PlayerID varchar(17) NOT NULL,
     PRIMARY KEY (TeamID, PlayerID),
     FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID)
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID)
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
+CREATE TABLE IF NOT EXISTS CS2S_PlayerStats_Matches (
     PlayerID varchar(17) NOT NULL,
 	MatchID int NOT NULL,
     PRIMARY KEY (PlayerID, MatchID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_Player(PlayerID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID),
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID)
 );
 
-CREATE INDEX idx_round_roundid ON CS2S_Round(RoundID);
-CREATE INDEX idx_round_matchid ON CS2S_Round(MatchID);
-
-CREATE INDEX idx_death_roundid ON CS2S_Death(RoundID);
-CREATE INDEX idx_death_matchid ON CS2S_Death(MatchID);
-
-CREATE INDEX idx_hurt_roundid ON CS2S_Hurt(RoundID);
-CREATE INDEX idx_hurt_matchid ON CS2S_Hurt(MatchID);
-
-CREATE INDEX idx_blind_roundid ON CS2S_Blind(RoundID);
-CREATE INDEX idx_blind_matchid ON CS2S_Blind(MatchID);
-
-CREATE INDEX idx_grenade_roundid ON CS2S_Grenade(RoundID);
-CREATE INDEX idx_grenade_matchid ON CS2S_Grenade(MatchID);
-
-CREATE INDEX idx_kast_roundid ON CS2S_KAST(RoundID);
-CREATE INDEX idx_kast_matchid ON CS2S_KAST(MatchID);
-
-CREATE INDEX idx_clutch_roundid ON CS2S_Clutch(RoundID);
-CREATE INDEX idx_clutch_matchid ON CS2S_Clutch(MatchID);
-
-CREATE INDEX idx_duel_roundid ON CS2S_Duel(RoundID);
-CREATE INDEX idx_duel_matchid ON CS2S_Duel(MatchID);

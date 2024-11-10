@@ -6,7 +6,7 @@
         public int StartTick { get; }
         public int? EndTick { get; set; }
         public bool OpeningDeathOccurred { get; set; }
-        public List<ulong> PlayersParticipated { get; set; }
+        public List<PlayerParticipated> PlayersParticipated { get; set; }
         public List<HurtEvent> HurtEvents { get; set; }
         public List<DeathEvent> DeathEvents { get; set; }
         public List<BlindEvent> BlindEvents { get; set; }
