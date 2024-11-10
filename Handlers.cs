@@ -221,6 +221,7 @@ namespace CS2Stats {
 
                 if (@event.Attacker != null && @event.Attacker.TeamNum == @event.Userid.TeamNum) {
                     Logger.LogInformation("[EventPlayerHurtHandler] PlayerHurt is team damage. Returning.");
+                    return HookResult.Continue;
                 }
 
                 this.Match.Round.HurtEvents.Add(new HurtEvent() {
@@ -246,10 +247,6 @@ namespace CS2Stats {
 
             if (@event.Userid != null) {
 
-                if (@event.Attacker != null && @event.Attacker.TeamNum == @event.Userid.TeamNum) {
-                    Logger.LogInformation("[EventPlayerDeathHandler] PlayerDeath is team kill. Returning.");
-                }
-
                 if (this.Match.Round.DeathEvents.Any(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID)) {
                     DeathEvent matchingDeathEvent = this.Match.Round.DeathEvents
                         .First(deathEvent => deathEvent.AttackerID == @event.Userid.SteamID);
@@ -264,18 +261,24 @@ namespace CS2Stats {
                     }
                 }
 
-                this.Match.Round.DeathEvents.Add(new DeathEvent() {
-                    AttackerID = @event.Attacker?.SteamID,
-                    AttackerSide = @event.Attacker?.TeamNum,
-                    AssisterID = @event.Assister?.SteamID,
-                    AssisterSide = @event.Assister?.TeamNum,
-                    VictimID = @event.Userid.SteamID,
-                    VictimSide = @event.Userid.TeamNum,
-                    Weapon = @event.Weapon,
-                    Hitgroup = @event.Hitgroup,
-                    OpeningDeath = !this.Match.Round.OpeningDeathOccurred,
-                    RoundTick = Server.TickCount - this.Match.Round.StartTick
-                });
+                if (@event.Attacker != null && @event.Attacker.TeamNum == @event.Userid.TeamNum) {
+                    Logger.LogInformation("[EventPlayerDeathHandler] PlayerDeath is team kill. Not storing it.");
+                }
+
+                else {
+                    this.Match.Round.DeathEvents.Add(new DeathEvent() {
+                        AttackerID = @event.Attacker?.SteamID,
+                        AttackerSide = @event.Attacker?.TeamNum,
+                        AssisterID = @event.Assister?.SteamID,
+                        AssisterSide = @event.Assister?.TeamNum,
+                        VictimID = @event.Userid.SteamID,
+                        VictimSide = @event.Userid.TeamNum,
+                        Weapon = @event.Weapon,
+                        Hitgroup = @event.Hitgroup,
+                        OpeningDeath = !this.Match.Round.OpeningDeathOccurred,
+                        RoundTick = Server.TickCount - this.Match.Round.StartTick
+                    });
+                }
 
                 if (@event.Attacker != null) {
                     KASTEvent kastEvent = new KASTEvent() {
@@ -350,6 +353,7 @@ namespace CS2Stats {
 
                 if (@event.Attacker.TeamNum == @event.Userid.TeamNum) {
                     Logger.LogInformation("[EventPlayerBlindHandler] PlayerBlind is team flash. Returning.");
+                    return HookResult.Continue;
                 }
 
                 this.Match.Round.BlindEvents.Add(new BlindEvent() {
