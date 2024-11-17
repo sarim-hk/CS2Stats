@@ -223,7 +223,7 @@ namespace CS2Stats {
                 int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                 if (rowsAffected > 0) {
-                    Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented {field} for player {playerID} using {weapon}. Damage: {Damage} on side {side}.");
+                    Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented {field} for player {playerID} using {weapon}. Damage: {damage} on side {side}.");
                 }
                 else {
                     Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
