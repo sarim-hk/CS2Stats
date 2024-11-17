@@ -437,8 +437,8 @@ namespace CS2Stats {
 
             try {
                 string query = @"
-                INSERT INTO CS2S_Hurt (RoundID, MatchID, AttackerID, AttackerSide, VictimID, VictimSide, DamageAmount, Weapon, Hitgroup, RoundTick)
-                VALUES (@RoundID, @MatchID, @AttackerID, @AttackerSide, @VictimID, @VictimSide, @DamageAmount, @Weapon, @Hitgroup, @RoundTick);
+                INSERT INTO CS2S_Hurt (RoundID, MatchID, AttackerID, AttackerSide, VictimID, VictimSide, Damage, Weapon, Hitgroup, RoundTick)
+                VALUES (@RoundID, @MatchID, @AttackerID, @AttackerSide, @VictimID, @VictimSide, @Damage, @Weapon, @Hitgroup, @RoundTick);
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
@@ -451,7 +451,7 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@AttackerSide", hurtEvent.AttackerSide);
                     cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
                     cmd.Parameters.AddWithValue("@VictimSide", hurtEvent.VictimSide);
-                    cmd.Parameters.AddWithValue("@DamageAmount", hurtEvent.DamageAmount);
+                    cmd.Parameters.AddWithValue("@Damage", hurtEvent.Damage);
                     cmd.Parameters.AddWithValue("@Weapon", hurtEvent.Weapon);
                     cmd.Parameters.AddWithValue("@Hitgroup", hurtEvent.Hitgroup);
                     cmd.Parameters.AddWithValue("@RoundTick", hurtEvent.RoundTick);
@@ -459,7 +459,7 @@ namespace CS2Stats {
                     await cmd.ExecuteNonQueryAsync();
 
                     if (hurtEvent.AttackerID != null && hurtEvent.AttackerSide != null) {
-                        await IncrementPlayerDamage(hurtEvent.AttackerID.Value, hurtEvent.AttackerSide.Value, hurtEvent.Weapon, hurtEvent.DamageAmount, Logger);
+                        await IncrementPlayerDamage(hurtEvent.AttackerID.Value, hurtEvent.AttackerSide.Value, hurtEvent.Weapon, hurtEvent.Damage, Logger);
                     }
                 }
 

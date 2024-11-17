@@ -231,7 +231,7 @@ namespace CS2Stats {
                     AttackerSide = @event.Attacker?.TeamNum,
                     VictimID = @event.Userid.SteamID,
                     VictimSide = @event.Userid.TeamNum,
-                    DamageAmount = Math.Clamp(@event.DmgHealth, 1, 100),
+                    Damage = Math.Clamp(@event.DmgHealth, 1, 100),
                     Weapon = @event.Weapon,
                     Hitgroup = @event.Hitgroup,
                     RoundTick = Server.TickCount - this.Match.Round.StartTick

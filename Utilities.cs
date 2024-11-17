@@ -202,7 +202,8 @@ namespace CS2Stats {
             }
         }
         
-        private async Task IncrementPlayerDamage(ulong playerID, int side, string weapon, int damageAmount, ILogger Logger) {
+        private async Task IncrementPlayerDamage(ulong playerID, int side, string weapon, int 
+            , ILogger Logger) {
             try {
                 string field = (weapon == "smokegrenade" || weapon == "hegrenade" || weapon == "flashbang" ||
                                 weapon == "molotov" || weapon == "inferno" || weapon == "decoy")
@@ -211,19 +212,19 @@ namespace CS2Stats {
 
                 string query = @$"
                 UPDATE CS2S_PlayerStats
-                SET {field} = {field} + @DamageAmount
+                SET {field} = {field} + @Damage
                 WHERE PlayerID = @PlayerID AND Side = @Side;
                 ";
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
                 cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                cmd.Parameters.AddWithValue("@DamageAmount", damageAmount);
+                cmd.Parameters.AddWithValue("@Damage", Damage);
                 cmd.Parameters.AddWithValue("@Side", side);
 
                 int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                 if (rowsAffected > 0) {
-                    Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented {field} for player {playerID} using {weapon}. Damage: {damageAmount} on side {side}.");
+                    Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented {field} for player {playerID} using {weapon}. Damage: {Damage} on side {side}.");
                 }
                 else {
                     Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");

@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     AttackerSide int NULL,
     VictimID varchar(17) NOT NULL,
 	VictimSide int NULL,
-    DamageAmount int NOT NULL,
+    Damage int NOT NULL,
     Weapon varchar(32) NOT NULL,
     Hitgroup int NOT NULL,
     RoundTick int NOT NULL,

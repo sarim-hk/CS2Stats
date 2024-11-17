@@ -5,7 +5,7 @@
         public int? AttackerSide;
         public ulong VictimID;
         public int? VictimSide;
-        public int DamageAmount;
+        public int Damage;
         public string Weapon;
         public int Hitgroup;
         public int RoundTick;
