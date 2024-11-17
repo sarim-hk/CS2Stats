@@ -202,8 +202,7 @@ namespace CS2Stats {
             }
         }
         
-        private async Task IncrementPlayerDamage(ulong playerID, int side, string weapon, int 
-            , ILogger Logger) {
+        private async Task IncrementPlayerDamage(ulong playerID, int side, string weapon, int damage, ILogger Logger) {
             try {
                 string field = (weapon == "smokegrenade" || weapon == "hegrenade" || weapon == "flashbang" ||
                                 weapon == "molotov" || weapon == "inferno" || weapon == "decoy")
@@ -218,7 +217,7 @@ namespace CS2Stats {
 
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
                 cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                cmd.Parameters.AddWithValue("@Damage", Damage);
+                cmd.Parameters.AddWithValue("@Damage", damage);
                 cmd.Parameters.AddWithValue("@Side", side);
 
                 int rowsAffected = await cmd.ExecuteNonQueryAsync();
