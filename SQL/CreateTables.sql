@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS CS2S_Map (
 
 CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
     PlayerID varchar(17) PRIMARY KEY NOT NULL,
-    PlayerOfTheWeek TINYINT DEFAULT 0 NOT NULL,
 	ELO int DEFAULT 1000 NOT NULL,
     Username varchar(255) NOT NULL,
     AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg" NOT NULL,
@@ -92,9 +91,9 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
     OpeningDeath bool NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (AttackerID) REFERENCES CS2S_PlayerStats(PlayerID),
-    FOREIGN KEY (AssisterID) REFERENCES CS2S_PlayerStats(PlayerID),
-    FOREIGN KEY (VictimID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (AttackerID) REFERENCES CS2S_PlayerInfo(PlayerID),
+    FOREIGN KEY (AssisterID) REFERENCES CS2S_PlayerInfo(PlayerID),
+    FOREIGN KEY (VictimID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Hurt (
@@ -111,8 +110,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     RoundTick int NOT NULL,
 	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (AttackerID) REFERENCES CS2S_PlayerStats(PlayerID),
-    FOREIGN KEY (VictimID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (AttackerID) REFERENCES CS2S_PlayerInfo(PlayerID),
+    FOREIGN KEY (VictimID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Blind (
@@ -127,8 +126,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Blind (
     RoundTick int NOT NULL,
 	FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (ThrowerID) REFERENCES CS2S_PlayerStats(PlayerID),
-	FOREIGN KEY (BlindedID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (ThrowerID) REFERENCES CS2S_PlayerInfo(PlayerID),
+	FOREIGN KEY (BlindedID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Grenade (
@@ -141,7 +140,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Grenade (
     RoundTick int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (ThrowerID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (ThrowerID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_KAST (
@@ -152,7 +151,7 @@ CREATE TABLE IF NOT EXISTS CS2S_KAST (
 	PlayerSide int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Clutch (
@@ -165,7 +164,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Clutch (
     Result ENUM("Win", "Loss") NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Duel (
@@ -178,8 +177,8 @@ CREATE TABLE IF NOT EXISTS CS2S_Duel (
     LoserSide int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
-    FOREIGN KEY (WinnerID) REFERENCES CS2S_PlayerStats(PlayerID),
-	FOREIGN KEY (LoserID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (WinnerID) REFERENCES CS2S_PlayerInfo(PlayerID),
+	FOREIGN KEY (LoserID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Live (
@@ -197,14 +196,20 @@ CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
     PlayerID varchar(17) NOT NULL,
     PRIMARY KEY (TeamID, PlayerID),
     FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID)
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
     PlayerID varchar(17) NOT NULL,
 	MatchID int NOT NULL,
     PRIMARY KEY (PlayerID, MatchID),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerStats(PlayerID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID),
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID)
 );
 
+CREATE TABLE IF NOT EXISTS CS2S_PlayerOfTheWeek (
+    PlayerID varchar(17) NOT NULL,
+	WeekPosition int DEFAULT 0 NOT NULL,
+    PRIMARY KEY (PlayerID),
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
+);
