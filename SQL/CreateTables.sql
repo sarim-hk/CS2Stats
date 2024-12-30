@@ -210,6 +210,11 @@ CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
 CREATE TABLE IF NOT EXISTS CS2S_PlayerOfTheWeek (
     PlayerID varchar(17) NOT NULL,
 	WeekPosition int DEFAULT 0 NOT NULL,
+    BaseRating float DEFAULT 0 NOT NULL,
+    WeekRating float DEFAULT 0 NOT NULL,
+    RatingDelta float DEFAULT 0 NOT NULL,
     PRIMARY KEY (PlayerID),
     FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
+
+
