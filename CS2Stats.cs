@@ -27,6 +27,7 @@ namespace CS2Stats {
 
             RegisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
             RegisterEventHandler<EventRoundFreezeEnd>(EventRoundFreezeEndHandler);
+            RegisterEventHandler<EventRoundStart>(EventRoundStartHandler);
             RegisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
             RegisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
             RegisterEventHandler<EventPlayerDeath>(EventPlayerDeathHandler);
@@ -43,6 +44,7 @@ namespace CS2Stats {
             DeregisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
             DeregisterEventHandler<EventRoundFreezeEnd>(EventRoundFreezeEndHandler);
             DeregisterEventHandler<EventRoundEnd>(EventRoundEndHandler);
+            DeregisterEventHandler<EventRoundStart>(EventRoundStartHandler);
             DeregisterEventHandler<EventPlayerHurt>(EventPlayerHurtHandler);
             DeregisterEventHandler<EventPlayerBlind>(EventPlayerBlindHandler);
             DeregisterEventHandler<EventGrenadeThrown>(EventGrenadeThrownHandler);

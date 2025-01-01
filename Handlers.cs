@@ -21,6 +21,16 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
+        public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
+            if (this.Match == null || this.Match.Round == null || this.Database == null) {
+                Logger.LogInformation("[EventRoundStartHandler] Match, round, or database is null. Returning.");
+                return HookResult.Continue;
+            }
+
+            this.SwapTeamsIfNeeded();
+            return HookResult.Continue;
+        }
+
         public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
             if (this.Match == null || this.Database == null) {
                 Logger.LogInformation("[EventRoundFreezeEndHandler] Match or database is null. Returning.");
@@ -45,7 +55,7 @@ namespace CS2Stats {
 
         public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation("[EventRoundEndHandler] Match, round, or database is null. Returning.");
                 return HookResult.Continue;
             }
 
