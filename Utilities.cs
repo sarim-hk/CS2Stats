@@ -136,8 +136,9 @@ namespace CS2Stats {
             string demoFileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")+ "_" + Server.MapName + ".dem";
             string demoPath = Path.Combine(demoDirectoryPath, demoFileName);
 
-            Server.ExecuteCommand($"tv_record \"{demoPath}\"");
+            this.StopDemo(Logger);
 
+            Server.ExecuteCommand($"tv_record \"{demoPath}\"");
             Logger.LogInformation($"[StartDemo] Started recording demo: {demoPath}");
         }
 
