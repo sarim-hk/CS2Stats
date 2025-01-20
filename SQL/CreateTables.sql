@@ -11,27 +11,6 @@ CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
     AvatarL varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e_full.jpg" NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_PlayerStats (
-    PlayerID varchar(17) NOT NULL,
-    Side int NOT NULL,
-    Kills int DEFAULT 0 NOT NULL,
-    Headshots int DEFAULT 0 NOT NULL,
-    Assists int DEFAULT 0 NOT NULL,
-    Deaths int DEFAULT 0 NOT NULL,
-	Damage int DEFAULT 0 NOT NULL,
-    UtilityDamage int DEFAULT 0 NOT NULL,
-    EnemiesFlashed int DEFAULT 0 NOT NULL,
-    GrenadesThrown int DEFAULT 0 NOT NULL,
-	ClutchAttempts int DEFAULT 0 NOT NULL,
-    ClutchWins int DEFAULT 0 NOT NULL,
-   	DuelAttempts int DEFAULT 0 NOT NULL,
-    DuelWins int DEFAULT 0 NOT NULL, 
-    RoundsKAST int DEFAULT 0 NOT NULL,
-    RoundsPlayed int DEFAULT 0 NOT NULL,
-    PRIMARY KEY (PlayerID, Side),
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
-);
-
 CREATE TABLE IF NOT EXISTS CS2S_Match (
     MatchID int PRIMARY KEY NOT NULL,
     MapID varchar(128) NOT NULL,

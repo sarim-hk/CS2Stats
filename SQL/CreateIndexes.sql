@@ -4,10 +4,6 @@ CREATE INDEX idx_CS2S_Map_MapID ON CS2S_Map (MapID);
 -- CS2S_PlayerInfo
 CREATE INDEX idx_CS2S_PlayerInfo_PlayerID ON CS2S_PlayerInfo (PlayerID);
 
--- CS2S_PlayerStats
-CREATE INDEX idx_CS2S_PlayerStats_PlayerID ON CS2S_PlayerStats (PlayerID);
-CREATE INDEX idx_CS2S_PlayerStats_Side ON CS2S_PlayerStats (Side);
-
 -- CS2S_Match
 CREATE INDEX idx_CS2S_Match_MatchID ON CS2S_Match (MatchID);
 CREATE INDEX idx_CS2S_Match_MapID ON CS2S_Match (MapID);

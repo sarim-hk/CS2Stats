@@ -155,11 +155,6 @@ namespace CS2Stats {
                         Round round = this.Match.Rounds.Dequeue();
 
                         await this.Database.InsertRound(this.Match, round, Logger);
-
-                        foreach (PlayerParticipated playerParticipated in round.PlayersParticipated) {
-                            await this.Database.IncrementPlayerValue(playerParticipated.PlayerID, playerParticipated.PlayerSide, "RoundsPlayed", Logger);
-                        }
-
                         await this.Database.InsertClutchEvent(this.Match, round, Logger);
                         await this.Database.InsertDuelEvent(this.Match, round, Logger);
                         await this.Database.InsertBatchedHurtEvents(this.Match, round, Logger);
@@ -192,6 +187,12 @@ namespace CS2Stats {
                             double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo2.AverageELO - teamNumInfo3.AverageELO) / 400));
                             teamNumInfo3.DeltaELO = (int)Math.Round(50 * (1 - expectedWin));
                             teamNumInfo2.DeltaELO = -teamNumInfo3.DeltaELO;
+                        }
+
+                        else if (teamNumInfo2.Result == "Tie" && teamNumInfo3.Result == "Tie") {
+                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo3.AverageELO - teamNumInfo2.AverageELO) / 400));
+                            teamNumInfo2.DeltaELO = (int)Math.Round(50 * (0.5 - expectedWin));
+                            teamNumInfo3.DeltaELO = -teamNumInfo2.DeltaELO;
                         }
 
                         await this.Database.InsertTeamResult(this.Match, teamNumInfo2, Logger);

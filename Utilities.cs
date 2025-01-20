@@ -149,7 +149,7 @@ namespace CS2Stats {
 
     }
 
-        public partial class Database {
+    public partial class Database {
         
         private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
@@ -203,61 +203,6 @@ namespace CS2Stats {
             }
         }
         
-        private async Task IncrementPlayerDamage(ulong playerID, int side, string weapon, int damage, ILogger Logger) {
-            try {
-                string field = (weapon == "smokegrenade" || weapon == "hegrenade" || weapon == "flashbang" ||
-                                weapon == "molotov" || weapon == "inferno" || weapon == "decoy")
-                               ? "UtilityDamage"
-                               : "Damage";
-
-                string query = @$"
-                UPDATE CS2S_PlayerStats
-                SET {field} = {field} + @Damage
-                WHERE PlayerID = @PlayerID AND Side = @Side;
-                ";
-
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                cmd.Parameters.AddWithValue("@Damage", damage);
-                cmd.Parameters.AddWithValue("@Side", side);
-
-                int rowsAffected = await cmd.ExecuteNonQueryAsync();
-
-                if (rowsAffected > 0) {
-                    Logger.LogInformation($"[IncrementPlayerDamage] Successfully incremented {field} for player {playerID} using {weapon}. Damage: {damage} on side {side}.");
-                }
-                else {
-                    Logger.LogInformation($"[IncrementPlayerDamage] No rows were updated. Player {playerID} might not exist.");
-                }
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[IncrementPlayerDamage] Error occurred while incrementing damage for player {playerID} with weapon {weapon}.");
-            }
-        }
-
-        public async Task IncrementPlayerValue(ulong playerID, int side, string field, ILogger Logger) {
-            try {
-                string query = @$"
-                UPDATE CS2S_PlayerStats
-                SET {field} = {field} + 1
-                WHERE PlayerID = @PlayerID AND Side = @Side;
-                ";
-
-                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                    cmd.Parameters.AddWithValue("@Side", side);
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
-
-                Logger.LogInformation($"[IncrementPlayerValue] Successfully incremented {field} for player {playerID} on side {side}.");
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[IncrementPlayerValue] Error occurred while incrementing {field} for player {playerID}.");
-            }
-        }
-
-
     }
 
 }

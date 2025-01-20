@@ -382,12 +382,6 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@Result", round.ClutchEvent.Result);
                 await cmd.ExecuteNonQueryAsync();
 
-                await IncrementPlayerValue(round.ClutchEvent.ClutcherID, round.ClutchEvent.ClutcherSide, "ClutchAttempts", Logger);
-
-                if (round.ClutchEvent.Result == "Win") {
-                    await IncrementPlayerValue(round.ClutchEvent.ClutcherID, round.ClutchEvent.ClutcherSide, "ClutchWins", Logger);
-                }
-
                 Logger.LogInformation($"[InsertClutchEvent] Clutch event inserted successfully.");
             }
             catch (Exception ex) {
@@ -416,10 +410,6 @@ namespace CS2Stats {
                 cmd.Parameters.AddWithValue("@LoserID", round.DuelEvent.Value.LoserID);
                 cmd.Parameters.AddWithValue("@LoserSide", round.DuelEvent.Value.LoserSide);
                 await cmd.ExecuteNonQueryAsync();
-
-                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, round.DuelEvent.Value.WinnerSide, "DuelAttempts", Logger);
-                await IncrementPlayerValue(round.DuelEvent.Value.LoserID, round.DuelEvent.Value.LoserSide, "DuelAttempts", Logger);
-                await IncrementPlayerValue(round.DuelEvent.Value.WinnerID, round.DuelEvent.Value.WinnerSide, "DuelWins", Logger);
 
                 Logger.LogInformation($"[InsertDuelEvent] Duel event inserted successfully.");
             }
@@ -457,10 +447,6 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundTick", hurtEvent.RoundTick);
 
                     await cmd.ExecuteNonQueryAsync();
-
-                    if (hurtEvent.AttackerID != null && hurtEvent.AttackerSide != null) {
-                        await IncrementPlayerDamage(hurtEvent.AttackerID.Value, hurtEvent.AttackerSide.Value, hurtEvent.Weapon, hurtEvent.Damage, Logger);
-                    }
                 }
 
                 Logger.LogInformation($"[InsertBatchedHurtEvents] Batch of hurt events inserted successfully.");
@@ -501,20 +487,6 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundTick", deathEvent.RoundTick);
                     await cmd.ExecuteNonQueryAsync();
 
-                    if (deathEvent.AttackerID != null && deathEvent.AttackerSide != null) {
-                        await IncrementPlayerValue(deathEvent.AttackerID.Value, deathEvent.AttackerSide.Value, "Kills", Logger);
-
-                        if (deathEvent.Hitgroup == 1) {
-                            await IncrementPlayerValue(deathEvent.AttackerID.Value, deathEvent.AttackerSide.Value, "Headshots", Logger);
-                        }
-                    }
-
-                    if (deathEvent.AssisterID != null && deathEvent.AssisterSide != null) {
-                        await IncrementPlayerValue(deathEvent.AssisterID.Value, deathEvent.AssisterSide.Value, "Assists", Logger);
-                    }
-
-                    await IncrementPlayerValue(deathEvent.VictimID, deathEvent.VictimSide, "Deaths", Logger);
-
                 }
 
                 Logger.LogInformation($"[InsertBatchedDeathEvents] Batch of death events inserted successfully.");
@@ -550,7 +522,6 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
 
                     await cmd.ExecuteNonQueryAsync();
-                    await IncrementPlayerValue(blindEvent.ThrowerID, blindEvent.ThrowerSide, "EnemiesFlashed", Logger);
                 }
 
                 Logger.LogInformation($"[InsertBatchedBlindEvents] Batch of blind events inserted successfully.");
@@ -585,7 +556,6 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@RoundTick", grenadeEvent.RoundTick);
 
                     await cmd.ExecuteNonQueryAsync();
-                    await IncrementPlayerValue(grenadeEvent.ThrowerID, grenadeEvent.ThrowerSide, "GrenadesThrown", Logger);
                 }
 
                 Logger.LogInformation($"[InsertBatchedGrenadeEvents] Batch of grenade events inserted successfully.");
@@ -617,11 +587,11 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@PlayerSide", kastEvent.PlayerSide);
 
                     await cmd.ExecuteNonQueryAsync();
-                    await IncrementPlayerValue(kastEvent.PlayerID, kastEvent.PlayerSide, "RoundsKAST", Logger);
                 }
 
                 Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of KAST events inserted successfully.");
             }
+
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of KAST events.");
             }
@@ -630,7 +600,7 @@ namespace CS2Stats {
 
         public async Task UpdateELO(TeamInfo teamInfo, ILogger Logger) {
             if (string.IsNullOrWhiteSpace(teamInfo.TeamID)) {
-                Logger.LogInformation("[IncrementTeamELO] Team ID is null or empty.");
+                Logger.LogInformation("[UpdateELO] Team ID is null or empty.");
                 return;
             }
 
