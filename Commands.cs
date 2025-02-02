@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 
 namespace CS2Stats {
     public partial class CS2Stats {
@@ -36,9 +37,25 @@ namespace CS2Stats {
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
 
+            string teamNum2Name, teamNum3Name;
+
+            try {
+                teamNum2Name = teamNum2.Any()
+                    ? "team_" + Regex.Replace(Utilities.GetPlayerFromSteamId(teamNum2.First())?.PlayerName ?? "", "[^a-zA-Z0-9]", "")
+                    : "";
+
+                teamNum3Name = teamNum3.Any()
+                    ? "team_" + Regex.Replace(Utilities.GetPlayerFromSteamId(teamNum3.First())?.PlayerName ?? "", "[^a-zA-Z0-9]", "")
+                    : "";
+            }
+            catch {
+                teamNum2Name = "";
+                teamNum3Name = "";
+            }
+
             Dictionary<string, TeamInfo> startingPlayers = [];
-            startingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2);
-            startingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3);
+            startingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2, teamNum2Name);
+            startingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3, teamNum3Name);
 
             string mapName = Server.MapName;
             int startTick = Server.TickCount;

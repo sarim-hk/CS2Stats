@@ -162,6 +162,7 @@ namespace CS2Stats {
             using MySqlCommand cmd = new(query, this.conn, this.transaction);
             cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
             cmd.Parameters.AddWithValue("@Size", teamInfo.PlayerIDs.Count);
+            cmd.Parameters.AddWithValue("@Name", teamInfo.FirstPlayerName);
 
             await cmd.ExecuteNonQueryAsync();
             Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
