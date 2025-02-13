@@ -23,35 +23,28 @@ namespace CS2Stats {
             HashSet<ulong> teamNum2 = [];
             HashSet<ulong> teamNum3 = [];
 
+            string teamNum2Name = "Unknown";
+            string teamNum3Name = "Unknown";
+
             foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
                 if (playerController.IsValid && !playerController.IsBot) {
                     if (playerController.TeamNum == (int)CsTeam.Terrorist) {
                         teamNum2.Add(playerController.SteamID);
+                        teamNum2Name = playerController.PlayerName;
                     }
+
                     else if (playerController.TeamNum == (int)CsTeam.CounterTerrorist) {
                         teamNum3.Add(playerController.SteamID);
+                        teamNum3Name = playerController.PlayerName;
                     }
                 }
             }
 
+            teamNum2Name = "team_" + Regex.Replace(teamNum2Name, "[^a-zA-Z0-9]", "team_Unknown");
+            teamNum3Name = "team_" + Regex.Replace(teamNum3Name, "[^a-zA-Z0-9]", "team_Unknown");
+
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
-
-            string teamNum2Name, teamNum3Name;
-
-            try {
-                teamNum2Name = teamNum2.Any()
-                    ? "team_" + Regex.Replace(Utilities.GetPlayerFromSteamId(teamNum2.First())?.PlayerName ?? "", "[^a-zA-Z0-9]", "")
-                    : "";
-
-                teamNum3Name = teamNum3.Any()
-                    ? "team_" + Regex.Replace(Utilities.GetPlayerFromSteamId(teamNum3.First())?.PlayerName ?? "", "[^a-zA-Z0-9]", "")
-                    : "";
-            }
-            catch {
-                teamNum2Name = "";
-                teamNum3Name = "";
-            }
 
             Dictionary<string, TeamInfo> startingPlayers = [];
             startingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2, teamNum2Name);
