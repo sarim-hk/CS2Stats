@@ -37,7 +37,6 @@ namespace CS2Stats {
                 return HookResult.Continue;
             }
 
-            this.SwapTeamsIfNeeded();
             LiveData liveData = GetLiveMatchData();
 
             this.Match.RoundID += 1;
