@@ -153,8 +153,8 @@ namespace CS2Stats {
         
         private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
-            INSERT INTO CS2S_Team (TeamID, Size)
-            VALUES (@TeamID, @Size)
+            INSERT INTO CS2S_Team (TeamID, Size, Name)
+            VALUES (@TeamID, @Size, @Name)
             ON DUPLICATE KEY UPDATE
                 TeamID = TeamID
             ";
