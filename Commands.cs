@@ -40,8 +40,8 @@ namespace CS2Stats {
                 }
             }
 
-            teamNum2Name = "team_" + Regex.Replace(teamNum2Name, "[^a-zA-Z0-9]", "team_Unknown");
-            teamNum3Name = "team_" + Regex.Replace(teamNum3Name, "[^a-zA-Z0-9]", "team_Unknown");
+            teamNum2Name = "team_" + Regex.Replace(teamNum2Name, "[^a-zA-Z0-9]", "");
+            teamNum3Name = "team_" + Regex.Replace(teamNum3Name, "[^a-zA-Z0-9]", "");
 
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
