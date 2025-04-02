@@ -53,6 +53,7 @@ namespace CS2Stats {
 
             LiveStatus status = new() {
                 BombStatus = GetGameRules().BombPlanted switch { true => 1, false => GetGameRules().BombDefused ? 2 : 0 },
+                Map = Server.MapName,
                 TScore = GetCSTeamScore(2),
                 CTScore = GetCSTeamScore(3)
             };
