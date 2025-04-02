@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 using System.Transactions;
 
 namespace CS2Stats {
@@ -319,46 +320,8 @@ namespace CS2Stats {
         }
 
         public async Task InsertLive(LiveData liveData, ILogger Logger) {
-            try {
-                string? tPlayersJson = liveData.TPlayers != null
-                    ? JsonConvert.SerializeObject(liveData.TPlayers)
-                    : null;
-
-                string? ctPlayersJson = liveData.CTPlayers != null
-                    ? JsonConvert.SerializeObject(liveData.CTPlayers)
-                    : null;
-
-                string query = @"
-                INSERT INTO CS2S_Live (StaticID, TPlayers, CTPlayers, TScore, CTScore, BombStatus)
-                VALUES (1, @TPlayers, @CTPlayers, @TScore, @CTScore, @BombStatus)
-                ON DUPLICATE KEY UPDATE 
-                    TPlayers = VALUES(TPlayers), 
-                    CTPlayers = VALUES(CTPlayers), 
-                    TScore = VALUES(TScore), 
-                    CTScore = VALUES(CTScore), 
-                    BombStatus = VALUES(BombStatus),
-                    InsertDate = CURRENT_TIMESTAMP
-                ";
-
-                MySqlConnection tempConn = new(this.connString);
-                await tempConn.OpenAsync();
-
-                using MySqlCommand cmd = new(query, tempConn);
-                cmd.Parameters.AddWithValue("@TPlayers", tPlayersJson);
-                cmd.Parameters.AddWithValue("@CTPlayers", ctPlayersJson);
-                cmd.Parameters.AddWithValue("@TScore", liveData.TScore);
-                cmd.Parameters.AddWithValue("@CTScore", liveData.CTScore);
-                cmd.Parameters.AddWithValue("@BombStatus", liveData.BombStatus);
-
-                await cmd.ExecuteNonQueryAsync();
-                await tempConn.CloseAsync();
-
-                Logger.LogInformation("[InsertLive] Live data inserted successfully.");
-            }
-
-            catch (Exception ex) {
-                Logger.LogError(ex, "[InsertLive] Error occurred while inserting live data.");
-            }
+            await this.InsertLiveStatus(liveData, Logger);
+            await this.InsertLivePlayers(liveData, Logger);
         }
 
         public async Task InsertClutchEvent(Match match, Round round, ILogger Logger) {
@@ -635,6 +598,24 @@ namespace CS2Stats {
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[UpdateELO] Error occurred while updating team and players ELO.");
+            }
+        }
+
+        public async Task ClearLive(ILogger Logger) {
+            try {
+                string query = "TRUNCATE TABLE CS2S_LivePlayers";
+                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                await cmd.ExecuteNonQueryAsync();
+
+                string query2 = "TRUNCATE TABLE CS2S_Status";
+                using MySqlCommand cmd2 = new(query2, this.conn, this.transaction);
+                await cmd.ExecuteNonQueryAsync();
+
+                Logger.LogInformation($"[ClearLive] Live data tables cleared.");
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[ClearLive] Error occurred while clearing live data tables.");
             }
         }
 

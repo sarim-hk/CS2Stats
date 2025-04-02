@@ -1,7 +1,9 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -24,45 +26,40 @@ namespace CS2Stats {
         }
 
         private static LiveData GetLiveMatchData() {
-            HashSet<LivePlayer> tPlayers = [];
-            HashSet<LivePlayer> ctPlayers = [];
+
+            List<LivePlayer> players = [];
 
             foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
-                if (playerController.ActionTrackingServices != null) {
+
+                    if ((playerController.ActionTrackingServices != null) &&
+                        (!playerController.IsBot && playerController.IsValid &&
+                        (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist))) {
+
                     LivePlayer livePlayer = new() {
-                        Username = playerController.PlayerName,
+                        PlayerID = playerController.SteamID,
                         Kills = playerController.ActionTrackingServices.MatchStats.Kills,
                         Assists = playerController.ActionTrackingServices.MatchStats.Assists,
                         Deaths = playerController.ActionTrackingServices.MatchStats.Deaths,
-                        Damage = playerController.ActionTrackingServices.MatchStats.Damage,
-                        Health = playerController.Pawn.Value?.Health,
-                        MoneySaved = playerController.InGameMoneyServices?.Account
+                        ADR = (GetGameRules().TotalRoundsPlayed != 0) ? (playerController.ActionTrackingServices.MatchStats.Damage / GetGameRules().TotalRoundsPlayed) : 0,
+                        Health = playerController.PlayerPawn.Value?.Health ?? 0,
+                        Money = playerController.InGameMoneyServices?.Account ?? 0,
+                        Side = playerController.TeamNum,
                     };
-
-                    if (playerController.TeamNum == 2) {
-                        tPlayers.Add(livePlayer);
-                    }
-                    else if (playerController.TeamNum == 3) {
-                        ctPlayers.Add(livePlayer);
-                    }
+                    Console.WriteLine(livePlayer.PlayerID.ToString());
+                    players.Add(livePlayer);
 
                 }
             }
 
-            int? tScore = GetCSTeamScore(2);
-            int? ctScore = GetCSTeamScore(3);
-
-            int bombStatus = GetGameRules().BombPlanted switch {
-                true => 1,
-                false => GetGameRules().BombDefused ? 2 : 0
+            LiveStatus status = new() {
+                BombStatus = GetGameRules().BombPlanted switch { true => 1, false => GetGameRules().BombDefused ? 2 : 0 },
+                TScore = GetCSTeamScore(2),
+                CTScore = GetCSTeamScore(3)
             };
 
             LiveData liveData = new() {
-                TPlayers = tPlayers,
-                CTPlayers = ctPlayers,
-                TScore = tScore,
-                CTScore = ctScore,
-                BombStatus = bombStatus,
+                Players = players,
+                Status = status
             };
                 
             return liveData;
@@ -203,7 +200,72 @@ namespace CS2Stats {
                 Logger.LogInformation($"[InsertPlayerMatches] Match {match.MatchID} added to Player {playerID}.");
             }
         }
-        
+
+        private async Task InsertLiveStatus(LiveData liveData, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_LiveStatus (StaticID, BombStatus, TScore, CTScore, InsertDate)
+                VALUES (1, @BombStatus, @TScore, @CTScore, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                    BombStatus = VALUES(BombStatus), 
+                    TScore = VALUES(TScore), 
+                    CTScore = VALUES(CTScore), 
+                    InsertDate = CURRENT_TIMESTAMP
+                ";
+
+                MySqlConnection tempConn = new(this.connString);
+                await tempConn.OpenAsync();
+
+                using MySqlCommand cmd = new(query, tempConn);
+                cmd.Parameters.AddWithValue("@BombStatus", liveData.Status.BombStatus);
+                cmd.Parameters.AddWithValue("@TScore", liveData.Status.TScore);
+                cmd.Parameters.AddWithValue("@CTScore", liveData.Status.CTScore);
+
+                await cmd.ExecuteNonQueryAsync();
+                await tempConn.CloseAsync();
+
+                Logger.LogInformation("[InsertLiveStatus] Live status data inserted successfully.");
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertLiveStatus] Error occurred while inserting live status data.");
+            }
+        }
+
+        private async Task InsertLivePlayers(LiveData liveData, ILogger Logger) {
+            try {
+                string query = @"
+                INSERT INTO CS2S_LivePlayers (PlayerID, Kills, Assists, Deaths, ADR, Health, Money, Side)
+                VALUES (@PlayerID, @Kills, @Assists, @Deaths, @ADR, @Health, @Money, @Side)
+                ";
+
+                MySqlConnection tempConn = new(this.connString);
+                await tempConn.OpenAsync();
+
+                using MySqlCommand cmd = new(query, tempConn);
+                foreach (LivePlayer livePlayer in liveData.Players) {
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@PlayerID", livePlayer.PlayerID);
+                    cmd.Parameters.AddWithValue("@Kills", livePlayer.Kills);
+                    cmd.Parameters.AddWithValue("@Assists", livePlayer.Assists);
+                    cmd.Parameters.AddWithValue("@Deaths", livePlayer.Deaths);
+                    cmd.Parameters.AddWithValue("@ADR", livePlayer.ADR);
+                    cmd.Parameters.AddWithValue("@Health", livePlayer.Health);
+                    cmd.Parameters.AddWithValue("@Money", livePlayer.Money);
+                    cmd.Parameters.AddWithValue("@Side", livePlayer.Side);
+                    await cmd.ExecuteNonQueryAsync();
+                    await tempConn.CloseAsync();
+                }
+
+                Logger.LogInformation("[InsertLivePlayers] Live player data inserted successfully.");
+            }
+
+            catch (Exception ex) {
+                Logger.LogError(ex, "[InsertLivePlayers] Error occurred while inserting live status data.");
+            }
+
+        }
+
     }
 
 }

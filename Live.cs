@@ -1,22 +1,25 @@
 ﻿namespace CS2Stats {
 
     public struct LivePlayer {
-        public string Username;
+        public ulong PlayerID;
         public int Kills;
         public int Assists;
         public int Deaths;
-        public int Damage;
-        public int? Health;
-        public int? MoneySaved;
+        public int ADR;
+        public int Health;
+        public int Money;
+        public int Side;
+    }
 
+    public struct LiveStatus {
+        public int BombStatus;
+        public int TScore;
+        public int CTScore;
     }
 
     public struct LiveData {
-        public HashSet<LivePlayer>? TPlayers;
-        public HashSet<LivePlayer>? CTPlayers;
-        public int? TScore;
-        public int? CTScore;
-        public int? BombStatus;
+        public List<LivePlayer> Players;
+        public LiveStatus Status;
     }
 
 }

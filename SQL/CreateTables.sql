@@ -160,14 +160,24 @@ CREATE TABLE IF NOT EXISTS CS2S_Duel (
 	FOREIGN KEY (LoserID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
-CREATE TABLE IF NOT EXISTS CS2S_Live (
+CREATE TABLE IF NOT EXISTS CS2S_LivePlayers (
+	PlayerID varchar(17) PRIMARY KEY NOT NULL,
+    Kills int DEFAULT 0 NOT NULL,
+    Assists int DEFAULT 0 NOT NULL,
+    Deaths int DEFAULT 0 NOT NULL,
+    ADR float DEFAULT 0 NOT NULL,
+	Health int DEFAULT 0 NOT NULL, 
+    Money int DEFAULT 0 NOT NULL,
+    Side int NOT NULL,
+    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
+);
+
+CREATE TABLE IF NOT EXISTS CS2S_LiveStatus (
 	StaticID int PRIMARY KEY NOT NULL,
-    TPlayers text NULL, 
-    CTPlayers text NULL,
-    TScore int NULL,
-    CTScore int NULL,
-    BombStatus int NULL,
-    InsertDate datetime DEFAULT CURRENT_TIMESTAMP NOT NULL
+    BombStatus int NOT NULL,
+    TScore int NOT NULL,
+    CTScore int NOT NULL,
+	InsertDate datetime DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Team_Players (

@@ -134,7 +134,6 @@ namespace CS2Stats {
 
             this.Match.EndTick = Server.TickCount;
 
-            LiveData liveData = new();
             List<ulong> startingPlayerIDs = this.Match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
                 .ToList();
@@ -200,7 +199,7 @@ namespace CS2Stats {
                         await this.Database.UpdateELO(teamNumInfo3, Logger);
                     }
 
-                    await this.Database.InsertLive(liveData, Logger);
+                    await this.Database.ClearLive(Logger);
                     await this.Database.CommitTransaction();
                 }
 
@@ -315,7 +314,7 @@ namespace CS2Stats {
                 HashSet<CCSPlayerController> ctsAlive = [];
 
                 foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
-                    if (playerController.IsValid && !playerController.IsBot) {
+                    if (!playerController.IsBot && playerController.IsValid && (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist)) {
                         if (playerController.TeamNum == (int)CsTeam.Terrorist && playerController.PlayerPawn.Value?.LifeState == (byte)LifeState_t.LIFE_ALIVE) {
                             tsAlive.Add(playerController);
                         }
@@ -445,8 +444,8 @@ namespace CS2Stats {
                 }
 
                 await this.Database.InsertPlayerInfo(playerInfo.Value, Logger);
-                await this.Database.InsertPlayer(playerID.SteamId64, 2, Logger);
-                await this.Database.InsertPlayer(playerID.SteamId64, 3, Logger);
+                // await this.Database.InsertPlayer(playerID.SteamId64, 2, Logger);
+                // await this.Database.InsertPlayer(playerID.SteamId64, 3, Logger);
 
             });
         }
