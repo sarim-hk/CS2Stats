@@ -27,7 +27,7 @@ namespace CS2Stats {
             string teamNum3Name = "Unknown";
 
             foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
-                if (playerController.IsValid && !playerController.IsBot) {
+                if (!playerController.IsBot && playerController.IsValid && (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist)) {
                     if (playerController.TeamNum == (int)CsTeam.Terrorist) {
                         teamNum2.Add(playerController.SteamID);
                         teamNum2Name = playerController.PlayerName;
