@@ -174,8 +174,8 @@ CREATE TABLE IF NOT EXISTS CS2S_LivePlayers (
 
 CREATE TABLE IF NOT EXISTS CS2S_LiveStatus (
 	StaticID int PRIMARY KEY NOT NULL,
+	MapID varchar(128) NOT NULL,
     BombStatus int NOT NULL,
-    MapID varchar(128) NOT NULL,
     TScore int NOT NULL,
     CTScore int NOT NULL,
 	InsertDate datetime DEFAULT CURRENT_TIMESTAMP NOT NULL

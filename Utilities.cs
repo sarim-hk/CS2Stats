@@ -53,7 +53,7 @@ namespace CS2Stats {
 
             LiveStatus status = new() {
                 BombStatus = GetGameRules().BombPlanted switch { true => 1, false => GetGameRules().BombDefused ? 2 : 0 },
-                Map = Server.MapName,
+                MapID = Server.MapName,
                 TScore = GetCSTeamScore(2),
                 CTScore = GetCSTeamScore(3)
             };
@@ -205,10 +205,11 @@ namespace CS2Stats {
         private async Task InsertLiveStatus(LiveData liveData, ILogger Logger) {
             try {
                 string query = @"
-                INSERT INTO CS2S_LiveStatus (StaticID, BombStatus, TScore, CTScore, InsertDate)
-                VALUES (1, @BombStatus, @TScore, @CTScore, CURRENT_TIMESTAMP)
+                INSERT INTO CS2S_LiveStatus (StaticID, BombStatus, MapID, TScore, CTScore, InsertDate)
+                VALUES (1, @BombStatus, @MapID, @TScore, @CTScore, CURRENT_TIMESTAMP)
                 ON DUPLICATE KEY UPDATE 
-                    BombStatus = VALUES(BombStatus), 
+                    BombStatus = VALUES(BombStatus),
+                    MapID = VALUES(MapID),
                     TScore = VALUES(TScore), 
                     CTScore = VALUES(CTScore), 
                     InsertDate = CURRENT_TIMESTAMP
@@ -219,6 +220,7 @@ namespace CS2Stats {
 
                 using MySqlCommand cmd = new(query, tempConn);
                 cmd.Parameters.AddWithValue("@BombStatus", liveData.Status.BombStatus);
+                cmd.Parameters.AddWithValue("@MapID", liveData.Status.MapID);
                 cmd.Parameters.AddWithValue("@TScore", liveData.Status.TScore);
                 cmd.Parameters.AddWithValue("@CTScore", liveData.Status.CTScore);
 
