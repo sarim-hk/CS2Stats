@@ -604,13 +604,18 @@ namespace CS2Stats {
 
         public async Task ClearLive(ILogger Logger) {
             try {
+
+                MySqlConnection tempConn = new(this.connString);
+                await tempConn.OpenAsync();
+
                 string query = "TRUNCATE TABLE CS2S_LivePlayers";
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
+                using MySqlCommand cmd = new(query, tempConn);
                 await cmd.ExecuteNonQueryAsync();
 
                 string query2 = "TRUNCATE TABLE CS2S_LiveStatus";
-                using MySqlCommand cmd2 = new(query2, this.conn, this.transaction);
+                using MySqlCommand cmd2 = new(query2, tempConn);
                 await cmd.ExecuteNonQueryAsync();
+                await tempConn.CloseAsync();
 
                 Logger.LogInformation($"[ClearLive] Live data tables cleared.");
             }
