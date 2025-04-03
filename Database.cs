@@ -320,6 +320,7 @@ namespace CS2Stats {
         }
 
         public async Task InsertLive(LiveData liveData, ILogger Logger) {
+            await this.ClearLive(Logger);
             await this.InsertLiveStatus(liveData, Logger);
             await this.InsertLivePlayers(liveData, Logger);
         }
@@ -607,7 +608,7 @@ namespace CS2Stats {
                 using MySqlCommand cmd = new(query, this.conn, this.transaction);
                 await cmd.ExecuteNonQueryAsync();
 
-                string query2 = "TRUNCATE TABLE CS2S_Status";
+                string query2 = "TRUNCATE TABLE CS2S_LiveStatus";
                 using MySqlCommand cmd2 = new(query2, this.conn, this.transaction);
                 await cmd.ExecuteNonQueryAsync();
 
