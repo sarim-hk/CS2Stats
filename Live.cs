@@ -13,7 +13,7 @@
 
     public struct LiveStatus {
         public int BombStatus;
-        public string MapID;
+        public string MapName;
         public int TScore;
         public int CTScore;
     }

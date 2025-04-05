@@ -53,7 +53,7 @@ namespace CS2Stats {
 
             LiveStatus status = new() {
                 BombStatus = GetGameRules().BombPlanted switch { true => 1, false => GetGameRules().BombDefused ? 2 : 0 },
-                MapID = Server.MapName,
+                MapName = Server.MapName,
                 TScore = GetCSTeamScore(2),
                 CTScore = GetCSTeamScore(3)
             };
@@ -220,7 +220,7 @@ namespace CS2Stats {
 
                 using MySqlCommand cmd = new(query, tempConn);
                 cmd.Parameters.AddWithValue("@BombStatus", liveData.Status.BombStatus);
-                cmd.Parameters.AddWithValue("@MapID", liveData.Status.MapID);
+                cmd.Parameters.AddWithValue("@MapID", liveData.Status.MapName);
                 cmd.Parameters.AddWithValue("@TScore", liveData.Status.TScore);
                 cmd.Parameters.AddWithValue("@CTScore", liveData.Status.CTScore);
 
