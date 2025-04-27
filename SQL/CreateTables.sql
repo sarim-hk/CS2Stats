@@ -161,15 +161,14 @@ CREATE TABLE IF NOT EXISTS CS2S_Duel (
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_LivePlayers (
-	PlayerID varchar(17) PRIMARY KEY NOT NULL,
+	PlayerID varchar(17) NOT NULL,
     Kills int DEFAULT 0 NOT NULL,
     Assists int DEFAULT 0 NOT NULL,
     Deaths int DEFAULT 0 NOT NULL,
     ADR float DEFAULT 0 NOT NULL,
 	Health int DEFAULT 0 NOT NULL, 
     Money int DEFAULT 0 NOT NULL,
-    Side int NOT NULL,
-    FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
+    Side int NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_LiveStatus (
