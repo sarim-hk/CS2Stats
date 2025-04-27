@@ -257,9 +257,9 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@Money", livePlayer.Money);
                     cmd.Parameters.AddWithValue("@Side", livePlayer.Side);
                     await cmd.ExecuteNonQueryAsync();
-                    await tempConn.CloseAsync();
                 }
 
+                await tempConn.CloseAsync();
                 Logger.LogInformation("[InsertLivePlayers] Live player data inserted successfully.");
             }
 
