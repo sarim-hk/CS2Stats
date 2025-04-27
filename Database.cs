@@ -179,29 +179,52 @@ namespace CS2Stats {
 
         public async Task InsertPlayerInfo(PlayerInfo player, ILogger Logger) {
             try {
-                string query = @"
-                INSERT INTO CS2S_PlayerInfo (PlayerID, Username, AvatarS, AvatarM, AvatarL)
-                VALUES (@PlayerID, @Username, @AvatarS, @AvatarM, @AvatarL)
-                ON DUPLICATE KEY UPDATE 
+                bool isEmpty = string.IsNullOrEmpty(player.AvatarS)
+                              || string.IsNullOrEmpty(player.AvatarM)
+                              || string.IsNullOrEmpty(player.AvatarL);
+
+                string query;
+
+                if (isEmpty) {
+                    query = @"
+                INSERT INTO CS2S_PlayerInfo
+                    (PlayerID, Username, AvatarS, AvatarM, AvatarL)
+                VALUES
+                    (@PlayerID, @Username, DEFAULT, DEFAULT, DEFAULT)
+                ON DUPLICATE KEY UPDATE
                     Username = VALUES(Username),
-                    AvatarS = VALUES(AvatarS),
-                    AvatarM = VALUES(AvatarM),
-                    AvatarL = VALUES(AvatarL)
-                ";
+                    AvatarS  = VALUES(AvatarS),
+                    AvatarM  = VALUES(AvatarM),
+                    AvatarL  = VALUES(AvatarL);";
+                }
 
-                MySqlConnection tempConn = new(this.connString);
-                await tempConn.OpenAsync();
+                else {
+                    query = @"
+                INSERT INTO CS2S_PlayerInfo
+                    (PlayerID, Username, AvatarS, AvatarM, AvatarL)
+                VALUES
+                    (@PlayerID, @Username, @AvatarS, @AvatarM, @AvatarL)
+                ON DUPLICATE KEY UPDATE
+                    Username = VALUES(Username),
+                    AvatarS  = VALUES(AvatarS),
+                    AvatarM  = VALUES(AvatarM),
+                    AvatarL  = VALUES(AvatarL);";
+                }
 
-                using MySqlCommand cmd = new(query, tempConn);
+                using var conn = new MySqlConnection(this.connString);
+                await conn.OpenAsync();
+
+                using var cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@PlayerID", player.PlayerID);
-                cmd.Parameters.AddWithValue("@Username", player.Username);
-                cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
-                cmd.Parameters.AddWithValue("@AvatarM", player.AvatarM);
-                cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
+                cmd.Parameters.AddWithValue("@Username", player.Username ?? "Anonymous");
+
+                if (!isEmpty) {
+                    cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
+                    cmd.Parameters.AddWithValue("@AvatarM", player.AvatarM);
+                    cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
+                }
 
                 await cmd.ExecuteNonQueryAsync();
-                await tempConn.CloseAsync();
-
                 Logger.LogInformation($"[InsertPlayerInfo] PlayerInfo {player.Username} inserted successfully.");
             }
 

@@ -436,16 +436,11 @@ namespace CS2Stats {
                 PlayerInfo? playerInfo = await this.SteamAPIClient.GetSteamSummaryAsync(playerID.SteamId64);
 
                 if (playerInfo == null) {
-                    playerInfo = new() {
-                        Username = "Anonymous"
-                    };
-
+                    playerInfo = new();
                     Logger.LogInformation("[OnClientAuthorizedHandler] Steam API PlayerInfo is null. Inserting a blank copy.");
                 }
 
                 await this.Database.InsertPlayerInfo(playerInfo.Value, Logger);
-                // await this.Database.InsertPlayer(playerID.SteamId64, 2, Logger);
-                // await this.Database.InsertPlayer(playerID.SteamId64, 3, Logger);
 
             });
         }
