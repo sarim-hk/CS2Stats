@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Map (
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_PlayerInfo (
-    PlayerID varchar(17) PRIMARY KEY NOT NULL,
+    PlayerID bigint PRIMARY KEY NOT NULL,
 	ELO int DEFAULT 1000 NOT NULL,
     Username varchar(255) NOT NULL,
     AvatarS varchar(255) DEFAULT "https://avatars.steamstatic.com/b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg" NOT NULL,
@@ -58,11 +58,11 @@ CREATE TABLE IF NOT EXISTS CS2S_Death (
     DeathID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
     MatchID int NOT NULL,
-    AttackerID varchar(17) NULL,
+    AttackerID bigint NULL,
     AttackerSide int NULL,
-    AssisterID varchar(17) NULL,
+    AssisterID bigint NULL,
     AssisterSide int NULL,
-    VictimID varchar(17) NOT NULL,
+    VictimID bigint NOT NULL,
 	VictimSide int NOT NULL,
     Weapon varchar(32) NOT NULL,
     Hitgroup int NOT NULL,
@@ -79,9 +79,9 @@ CREATE TABLE IF NOT EXISTS CS2S_Hurt (
     HurtID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
     MatchID int NOT NULL,
-    AttackerID varchar(17) NULL,
+    AttackerID bigint NULL,
     AttackerSide int NULL,
-    VictimID varchar(17) NOT NULL,
+    VictimID bigint NOT NULL,
 	VictimSide int NULL,
     Damage int NOT NULL,
     Weapon varchar(32) NOT NULL,
@@ -97,9 +97,9 @@ CREATE TABLE IF NOT EXISTS CS2S_Blind (
     BlindID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
     MatchID int NOT NULL,
-    ThrowerID varchar(17) NOT NULL,
+    ThrowerID bigint NOT NULL,
 	ThrowerSide int NOT NULL,
-	BlindedID varchar(17) NOT NULL,
+	BlindedID bigint NOT NULL,
 	BlindedSide int NOT NULL,
     Duration float NOT NULL,
     RoundTick int NOT NULL,
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Grenade (
     GrenadeID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
     MatchID int NOT NULL,
-    ThrowerID varchar(17) NOT NULL,
+    ThrowerID bigint NOT NULL,
 	ThrowerSide int NOT NULL,
     Weapon varchar(32) NOT NULL,
     RoundTick int NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS CS2S_KAST (
     KASTID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
     MatchID int NOT NULL,
-    PlayerID varchar(17) NOT NULL,
+    PlayerID bigint NOT NULL,
 	PlayerSide int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
 	FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Clutch (
     ClutchID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
     MatchID int NOT NULL,
-    PlayerID varchar(17) NOT NULL,
+    PlayerID bigint NOT NULL,
 	PlayerSide int NOT NULL,
     EnemyCount int NOT NULL,
     Result ENUM("Win", "Loss") NOT NULL,
@@ -150,9 +150,9 @@ CREATE TABLE IF NOT EXISTS CS2S_Duel (
     DuelID int PRIMARY KEY AUTO_INCREMENT NOT NULL,
     RoundID int NOT NULL,
     MatchID int NOT NULL,
-    WinnerID varchar(17) NOT NULL,
+    WinnerID bigint NOT NULL,
 	WinnerSide int NOT NULL,
-    LoserID varchar(17) NOT NULL,
+    LoserID bigint NOT NULL,
     LoserSide int NOT NULL,
     FOREIGN KEY (RoundID) REFERENCES CS2S_Round(RoundID),
     FOREIGN KEY (MatchID) REFERENCES CS2S_Match(MatchID),
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Duel (
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_LivePlayers (
-	PlayerID varchar(17) NOT NULL,
+	PlayerID bigint NOT NULL,
     Kills int DEFAULT 0 NOT NULL,
     Assists int DEFAULT 0 NOT NULL,
     Deaths int DEFAULT 0 NOT NULL,
@@ -182,14 +182,14 @@ CREATE TABLE IF NOT EXISTS CS2S_LiveStatus (
 
 CREATE TABLE IF NOT EXISTS CS2S_Team_Players (
     TeamID varchar(32) NOT NULL,
-    PlayerID varchar(17) NOT NULL,
+    PlayerID bigint NOT NULL,
     PRIMARY KEY (TeamID, PlayerID),
     FOREIGN KEY (TeamID) REFERENCES CS2S_Team(TeamID),
     FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID)
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
-    PlayerID varchar(17) NOT NULL,
+    PlayerID bigint NOT NULL,
 	MatchID int NOT NULL,
     PRIMARY KEY (PlayerID, MatchID),
     FOREIGN KEY (PlayerID) REFERENCES CS2S_PlayerInfo(PlayerID),
@@ -197,7 +197,7 @@ CREATE TABLE IF NOT EXISTS CS2S_Player_Matches (
 );
 
 CREATE TABLE IF NOT EXISTS CS2S_PlayerOfTheWeek (
-    PlayerID varchar(17) NOT NULL,
+    PlayerID bigint NOT NULL,
 	WeekPosition int DEFAULT 0 NOT NULL,
     BaseRating float DEFAULT 0 NOT NULL,
     WeekRating float DEFAULT 0 NOT NULL,
