@@ -187,7 +187,7 @@ namespace CS2Stats {
                         (@PlayerID, @Username, @AvatarHash)
                     ON DUPLICATE KEY UPDATE
                         Username = VALUES(Username),
-                        AvatarHash  = VALUES(AvatarS);
+                        AvatarHash  = VALUES(AvatarHash);
                 ";
 
                 using var conn = new MySqlConnection(this.connString);
