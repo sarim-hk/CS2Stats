@@ -200,7 +200,6 @@ namespace CS2Stats {
                         await this.Database.UpdateELO(teamNumInfo3, Logger);
                     }
 
-                    await this.Database.ClearLive(Logger);
                     await this.Database.CommitTransaction();
                 }
 
@@ -214,6 +213,7 @@ namespace CS2Stats {
                         Server.NextFrame(() => this.StopDemo(Logger));
                     }
 
+                    await this.Database.ClearLive(Logger);
                     this.Match = null;
                 }
 
