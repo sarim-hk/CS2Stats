@@ -11,7 +11,7 @@ namespace CS2Stats {
 
         public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundAnnounceLastRoundHalfHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventRoundAnnounceLastRoundHalfHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -23,27 +23,12 @@ namespace CS2Stats {
 
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundStartHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventRoundStartHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
             this.SwapTeamsIfNeeded();
-            return HookResult.Continue;
-        }
-
-        public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundFreezeEndHandler] Match or database is null. Returning.");
-                return HookResult.Continue;
-            }
-
             LiveData liveData = GetLiveMatchData();
-
-            this.Match.RoundID += 1;
-            this.Match.Round = new Round(
-                roundID: this.Match.RoundID,
-                startTick: Server.TickCount
-            );
 
             Task.Run(async () => {
                 await this.Database.InsertLive(liveData, Logger);
@@ -52,9 +37,24 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
+        public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
+            if (this.Match == null || this.Database == null) {
+                Logger.LogInformation($"[EventRoundFreezeEndHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+                return HookResult.Continue;
+            }
+
+            this.Match.RoundID += 1;
+            this.Match.Round = new Round(
+                roundID: this.Match.RoundID,
+                startTick: Server.TickCount
+            );
+
+            return HookResult.Continue;
+        }
+
         public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventRoundEndHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventRoundEndHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -122,13 +122,14 @@ namespace CS2Stats {
             }
 
             this.Match.Rounds.Enqueue(this.Match.Round);
+            this.Match.Round = null;
 
             return HookResult.Continue;
         }
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventCsWinPanelMatchHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -224,7 +225,7 @@ namespace CS2Stats {
 
         public HookResult EventPlayerHurtHandler(EventPlayerHurt @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerHurtHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventPlayerHurtHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -252,7 +253,7 @@ namespace CS2Stats {
 
         public HookResult EventPlayerDeathHandler(EventPlayerDeath @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerDeathHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventPlayerDeathHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -356,7 +357,7 @@ namespace CS2Stats {
 
         public HookResult EventPlayerBlindHandler(EventPlayerBlind @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerBlindHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventPlayerBlindHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -382,7 +383,7 @@ namespace CS2Stats {
 
         public HookResult EventGrenadeThrownHandler(EventGrenadeThrown @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventPlayerBlindHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventGrenadeThrownHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -400,7 +401,7 @@ namespace CS2Stats {
 
         public HookResult EventBombPlantedHandler(EventBombPlanted @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventBombPlantedHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventBombPlantedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -414,7 +415,7 @@ namespace CS2Stats {
 
         public HookResult EventBombDefusedHandler(EventBombDefused @event, GameEventInfo info) {
             if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation("[EventBombDefusedHandler] Match, round, or database is null. Returning.");
+                Logger.LogInformation($"[EventBombDefusedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -428,7 +429,7 @@ namespace CS2Stats {
 
         public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
             if (this.Database == null || this.SteamAPIClient == null) {
-                Logger.LogInformation("[OnClientAuthorizedHandler] Database transaction or match is null. Returning..");
+                Logger.LogInformation($"[OnClientAuthorizedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return;
             }
 
