@@ -16,30 +16,34 @@ namespace CS2Stats {
 
                 HttpResponseMessage response = await client.GetAsync(url);
                 if (response.IsSuccessStatusCode) {
+
                     string jsonData = await response.Content.ReadAsStringAsync();
                     JObject data = JObject.Parse(jsonData);
-
                     JToken? playersData = data["response"]?["players"];
+
                     if (playersData != null) {
+
                         foreach (JToken playerData in playersData) {
                             string? personaname = playerData["personaname"]?.ToString();
-                            string? avatar = playerData["avatar"]?.ToString();
-                            string? avatarM = playerData["avatarmedium"]?.ToString();
-                            string? avatarL = playerData["avatarfull"]?.ToString();
+                            string? avatarhash = playerData["avatarhash"]?.ToString();
+                            
+                            if (personaname == null || avatarhash == null) {
+                                continue;
+                            }
 
                             PlayerInfo player = new() {
                                 PlayerID = steamID,
                                 Username = personaname,
-                                AvatarS = avatar,
-                                AvatarM = avatarM,
-                                AvatarL = avatarL
+                                AvatarHash = avatarhash
                             };
 
                             return player;
                         }
+                        
                     }
 
                     Console.WriteLine($"Failed to fetch Steam summary: {response.StatusCode}");
+
                 }
             }
             catch (HttpRequestException e) {
@@ -52,11 +56,8 @@ namespace CS2Stats {
 
     public struct PlayerInfo {
         public ulong PlayerID;
-        public string? Username;
-        public string? AvatarS;
-        public string? AvatarM;
-        public string? AvatarL;
-
+        public string Username;
+        public string AvatarHash;
     }
 
 }

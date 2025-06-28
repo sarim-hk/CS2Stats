@@ -428,22 +428,32 @@ namespace CS2Stats {
         }
 
         public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
+
             if (this.Database == null || this.SteamAPIClient == null) {
                 Logger.LogInformation($"[OnClientAuthorizedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
                 return;
             }
 
             Task.Run(async () => {
+
                 PlayerInfo? playerInfo = await this.SteamAPIClient.GetSteamSummaryAsync(playerID.SteamId64);
 
                 if (playerInfo == null) {
-                    playerInfo = new();
+
+                    playerInfo = new() {
+                        PlayerID = playerID.SteamId64,
+                        Username = "Anonymous",
+                        AvatarHash = "b5bd56c1aa4644a474a2e4972be27ef9e82e517e"
+                    };
+
                     Logger.LogInformation("[OnClientAuthorizedHandler] Steam API PlayerInfo is null. Inserting a blank copy.");
+
                 }
 
                 await this.Database.InsertPlayerInfo(playerInfo.Value, Logger);
 
             });
+
         }
 
     }
