@@ -88,9 +88,9 @@ namespace CS2Stats {
             }
 
             Task.Run(async () => {
-                LiveData liveData = new();
-                await this.Database.InsertLive(liveData, Logger);
+                await this.Database.ClearLive(Logger);
             });
+
 
             this.Match = null;
 
