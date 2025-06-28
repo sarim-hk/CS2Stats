@@ -642,7 +642,7 @@ namespace CS2Stats {
 
                 string query2 = "TRUNCATE TABLE CS2S_LiveStatus";
                 using MySqlCommand cmd2 = new(query2, tempConn);
-                await cmd.ExecuteNonQueryAsync();
+                await cmd2.ExecuteNonQueryAsync();
                 await tempConn.CloseAsync();
 
                 Logger.LogInformation($"[ClearLive] Live data tables cleared.");
