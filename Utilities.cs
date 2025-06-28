@@ -30,10 +30,9 @@ namespace CS2Stats {
             List<LivePlayer> players = [];
 
             foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
-
-                    if ((playerController.ActionTrackingServices != null) &&
-                        (!playerController.IsBot && playerController.IsValid &&
-                        (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist))) {
+                if ((playerController.ActionTrackingServices != null) &&
+                    (!playerController.IsBot && playerController.IsValid &&
+                    (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist))) {
 
                     LivePlayer livePlayer = new() {
                         PlayerID = playerController.SteamID,
@@ -45,7 +44,6 @@ namespace CS2Stats {
                         Money = playerController.InGameMoneyServices?.Account ?? 0,
                         Side = playerController.TeamNum,
                     };
-                    Console.WriteLine(livePlayer.PlayerID.ToString());
                     players.Add(livePlayer);
 
                 }
@@ -64,7 +62,6 @@ namespace CS2Stats {
             };
                 
             return liveData;
-
         }
 
         private static CCSGameRules GetGameRules() {
@@ -202,7 +199,7 @@ namespace CS2Stats {
             }
         }
 
-        private async Task InsertLiveStatus(LiveData liveData, ILogger Logger) {
+        private async Task InsertLiveStatus(LiveData liveData, MySqlConnection connection, ILogger Logger) {
             try {
                 string query = @"
                 INSERT INTO CS2S_LiveStatus (StaticID, BombStatus, MapID, TScore, CTScore, InsertDate)
@@ -215,17 +212,13 @@ namespace CS2Stats {
                     InsertDate = CURRENT_TIMESTAMP
                 ";
 
-                MySqlConnection tempConn = new(this.connString);
-                await tempConn.OpenAsync();
-
-                using MySqlCommand cmd = new(query, tempConn);
+                using MySqlCommand cmd = new(query, connection);
                 cmd.Parameters.AddWithValue("@BombStatus", liveData.Status.BombStatus);
                 cmd.Parameters.AddWithValue("@MapID", liveData.Status.MapName);
                 cmd.Parameters.AddWithValue("@TScore", liveData.Status.TScore);
                 cmd.Parameters.AddWithValue("@CTScore", liveData.Status.CTScore);
 
                 await cmd.ExecuteNonQueryAsync();
-                await tempConn.CloseAsync();
 
                 Logger.LogInformation("[InsertLiveStatus] Live status data inserted successfully.");
             }
@@ -235,17 +228,14 @@ namespace CS2Stats {
             }
         }
 
-        private async Task InsertLivePlayers(LiveData liveData, ILogger Logger) {
+        private async Task InsertLivePlayers(LiveData liveData, MySqlConnection connection, ILogger Logger) {
             try {
                 string query = @"
                 INSERT INTO CS2S_LivePlayers (PlayerID, Kills, Assists, Deaths, ADR, Health, Money, Side)
                 VALUES (@PlayerID, @Kills, @Assists, @Deaths, @ADR, @Health, @Money, @Side)
                 ";
 
-                MySqlConnection tempConn = new(this.connString);
-                await tempConn.OpenAsync();
-
-                using MySqlCommand cmd = new(query, tempConn);
+                using MySqlCommand cmd = new(query, connection);
                 foreach (LivePlayer livePlayer in liveData.Players) {
                     cmd.Parameters.Clear();
                     cmd.Parameters.AddWithValue("@PlayerID", livePlayer.PlayerID);
@@ -259,7 +249,6 @@ namespace CS2Stats {
                     await cmd.ExecuteNonQueryAsync();
                 }
 
-                await tempConn.CloseAsync();
                 Logger.LogInformation("[InsertLivePlayers] Live player data inserted successfully.");
             }
 
