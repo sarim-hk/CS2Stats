@@ -343,9 +343,14 @@ namespace CS2Stats {
         }
 
         public async Task InsertLive(LiveData liveData, ILogger Logger) {
+            MySqlConnection tempConn = new(this.connString);
+            await tempConn.OpenAsync();
+
             await this.ClearLive(Logger);
-            await this.InsertLiveStatus(liveData, Logger);
-            await this.InsertLivePlayers(liveData, Logger);
+            await this.InsertLiveStatus(liveData, tempConn, Logger);
+            await this.InsertLivePlayers(liveData, tempConn, Logger);
+
+            await tempConn.CloseAsync();
         }
 
         public async Task InsertClutchEvent(Match match, Round round, ILogger Logger) {
