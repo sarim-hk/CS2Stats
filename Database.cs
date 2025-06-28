@@ -66,24 +66,22 @@ namespace CS2Stats {
                 FROM CS2S_Match
                 ";
 
-                MySqlConnection tempConn = new(this.connString);
+                using MySqlConnection tempConn = new(this.connString);
                 await tempConn.OpenAsync();
 
-                using MySqlCommand cmd = new(query, tempConn);
-                object? result = await cmd.ExecuteScalarAsync();
-                await tempConn.CloseAsync();
+                using (MySqlCommand cmd = new(query, tempConn)) {
+                    object? result = await cmd.ExecuteScalarAsync();
 
-                if (result != null && int.TryParse(result.ToString(), out int matchID)) {
-                    Logger.LogInformation($"[GetNextMatchID] Last MatchID is {matchID}.");
-                    return matchID;
-                }
-
-                else {
-                    Logger.LogInformation($"[GetNextMatchID] No previous MatchID found... Defaulting to 0.");
-                    return 0;
+                    if (result != null && int.TryParse(result.ToString(), out int matchID)) {
+                        Logger.LogInformation($"[GetNextMatchID] Last MatchID is {matchID}.");
+                        return matchID;
+                    }
+                    else {
+                        Logger.LogInformation($"[GetNextMatchID] No previous MatchID found... Defaulting to 0.");
+                        return 0;
+                    }
                 }
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[GetNextMatchID] Error occurred while retrieving last MatchID.");
                 return 0;
@@ -97,24 +95,22 @@ namespace CS2Stats {
                 FROM CS2S_Round
                 ";
 
-                MySqlConnection tempConn = new(this.connString);
+                using MySqlConnection tempConn = new(this.connString);
                 await tempConn.OpenAsync();
 
-                using MySqlCommand cmd = new(query, tempConn);
-                object? result = await cmd.ExecuteScalarAsync();
-                await tempConn.CloseAsync();
+                using (MySqlCommand cmd = new(query, tempConn)) {
+                    object? result = await cmd.ExecuteScalarAsync();
 
-                if (result != null && int.TryParse(result.ToString(), out int roundID)) {
-                    Logger.LogInformation($"[GetLastRoundID] Last RoundID is {roundID}.");
-                    return roundID;
-                }
-
-                else {
-                    Logger.LogInformation($"[GetLastRoundID] No previous RoundID found... Defaulting to 0.");
-                    return 0;
+                    if (result != null && int.TryParse(result.ToString(), out int roundID)) {
+                        Logger.LogInformation($"[GetLastRoundID] Last RoundID is {roundID}.");
+                        return roundID;
+                    }
+                    else {
+                        Logger.LogInformation($"[GetLastRoundID] No previous RoundID found... Defaulting to 0.");
+                        return 0;
+                    }
                 }
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[GetLastRoundID] Error occurred while retrieving last RoundID.");
                 return 0;
@@ -130,18 +126,18 @@ namespace CS2Stats {
                 WHERE tp.TeamID = @TeamID;
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@TeamID", teamID);
-                object? result = await cmd.ExecuteScalarAsync();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@TeamID", teamID);
+                    object? result = await cmd.ExecuteScalarAsync();
 
-                if (result != null && double.TryParse(result.ToString(), out double averageELO)) {
-                    Logger.LogInformation($"[GetTeamAverageELO] Average ELO for team {teamID} is {averageELO}.");
-                    return (int)averageELO;
-                }
-
-                else {
-                    Logger.LogInformation($"[GetTeamAverageELO] No players found for team {teamID} or failed to retrieve average ELO.");
-                    return null;
+                    if (result != null && double.TryParse(result.ToString(), out double averageELO)) {
+                        Logger.LogInformation($"[GetTeamAverageELO] Average ELO for team {teamID} is {averageELO}.");
+                        return (int)averageELO;
+                    }
+                    else {
+                        Logger.LogInformation($"[GetTeamAverageELO] No players found for team {teamID} or failed to retrieve average ELO.");
+                        return null;
+                    }
                 }
             }
             catch (Exception ex) {
@@ -159,19 +155,17 @@ namespace CS2Stats {
                     PlayerID = PlayerID
                 ";
 
-                MySqlConnection tempConn = new(this.connString);
+                using MySqlConnection tempConn = new(this.connString);
                 await tempConn.OpenAsync();
 
-                using MySqlCommand cmd = new(query, tempConn);
-                cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                cmd.Parameters.AddWithValue("@Side", side);
-
-                await cmd.ExecuteNonQueryAsync();
-                await tempConn.CloseAsync();
+                using (MySqlCommand cmd = new(query, tempConn)) {
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
+                    cmd.Parameters.AddWithValue("@Side", side);
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
                 Logger.LogInformation($"[InsertPlayer] Player {playerID} on side {side} inserted successfully.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, $"[InsertPlayer] Error occurred while inserting player on side {side}.");
             }
@@ -197,7 +191,6 @@ namespace CS2Stats {
                     AvatarM  = VALUES(AvatarM),
                     AvatarL  = VALUES(AvatarL);";
                 }
-
                 else {
                     query = @"
                 INSERT INTO CS2S_PlayerInfo
@@ -214,20 +207,21 @@ namespace CS2Stats {
                 using var conn = new MySqlConnection(this.connString);
                 await conn.OpenAsync();
 
-                using var cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@PlayerID", player.PlayerID);
-                cmd.Parameters.AddWithValue("@Username", player.Username ?? "Anonymous");
+                using (var cmd = new MySqlCommand(query, conn)) {
+                    cmd.Parameters.AddWithValue("@PlayerID", player.PlayerID);
+                    cmd.Parameters.AddWithValue("@Username", player.Username ?? "Anonymous");
 
-                if (!isEmpty) {
-                    cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
-                    cmd.Parameters.AddWithValue("@AvatarM", player.AvatarM);
-                    cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
+                    if (!isEmpty) {
+                        cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
+                        cmd.Parameters.AddWithValue("@AvatarM", player.AvatarM);
+                        cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
+                    }
+
+                    await cmd.ExecuteNonQueryAsync();
                 }
 
-                await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation($"[InsertPlayerInfo] PlayerInfo {player.Username} inserted successfully.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertPlayerInfo] Error occurred while inserting players.");
             }
@@ -240,7 +234,6 @@ namespace CS2Stats {
                     await InsertTeamPlayers(teamInfo, Logger);
                     await InsertPlayerMatches(match, teamInfo, Logger);
                 }
-
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertTeamsAndTeamPlayers] Error occurred while inserting teams and team players.");
@@ -255,18 +248,18 @@ namespace CS2Stats {
                 VALUES (@TeamID, @MatchID, @Score, @Result, @Side, @DeltaELO)
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@Score", teamInfo.Score);
-                cmd.Parameters.AddWithValue("@Result", teamInfo.Result);
-                cmd.Parameters.AddWithValue("@Side", teamInfo.Side);
-                cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@Score", teamInfo.Score);
+                    cmd.Parameters.AddWithValue("@Result", teamInfo.Result);
+                    cmd.Parameters.AddWithValue("@Side", teamInfo.Side);
+                    cmd.Parameters.AddWithValue("@DeltaELO", teamInfo.DeltaELO);
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
-                await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation($"[InsertTeamResult] Match {match.MatchID} added to Team {teamInfo.TeamID}.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, $"[InsertTeamResult] Error occurred while inserting team results for team {teamInfo.TeamID}.");
             }
@@ -281,13 +274,13 @@ namespace CS2Stats {
                     MapID = MapID
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@MapID", match.MapName);
-                await cmd.ExecuteNonQueryAsync();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@MapID", match.MapName);
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
                 Logger.LogInformation($"[InsertMap] Map {match.MapName} inserted successfully.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertMap] Error occurred while inserting the map.");
             }
@@ -300,15 +293,15 @@ namespace CS2Stats {
                 VALUES (@MatchID, @MapID, @StartTick, @EndTick);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@MapID", match.MapName);
-                cmd.Parameters.AddWithValue("@StartTick", match.StartTick);
-                cmd.Parameters.AddWithValue("@EndTick", match.EndTick);
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@MapID", match.MapName);
+                    cmd.Parameters.AddWithValue("@StartTick", match.StartTick);
+                    cmd.Parameters.AddWithValue("@EndTick", match.EndTick);
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
-                await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation("[InsertMatch] Match inserted successfully.");
-
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertMatch] Error occurred while inserting the match.");
@@ -322,20 +315,20 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @WinnerTeamID, @LoserTeamID, @WinnerSide, @LoserSide, @RoundEndReason, @StartTick, @EndTick);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@WinnerTeamID", round.WinningTeamID);
-                cmd.Parameters.AddWithValue("@LoserTeamID", round.LosingTeamID);
-                cmd.Parameters.AddWithValue("@WinnerSide", round.WinningTeamNum);
-                cmd.Parameters.AddWithValue("@LoserSide", round.LosingTeamNum);
-                cmd.Parameters.AddWithValue("@RoundEndReason", round.WinningReason);
-                cmd.Parameters.AddWithValue("@StartTick", round.StartTick);
-                cmd.Parameters.AddWithValue("@EndTick", round.EndTick);
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@WinnerTeamID", round.WinningTeamID);
+                    cmd.Parameters.AddWithValue("@LoserTeamID", round.LosingTeamID);
+                    cmd.Parameters.AddWithValue("@WinnerSide", round.WinningTeamNum);
+                    cmd.Parameters.AddWithValue("@LoserSide", round.LosingTeamNum);
+                    cmd.Parameters.AddWithValue("@RoundEndReason", round.WinningReason);
+                    cmd.Parameters.AddWithValue("@StartTick", round.StartTick);
+                    cmd.Parameters.AddWithValue("@EndTick", round.EndTick);
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
-                await cmd.ExecuteNonQueryAsync();
                 Logger.LogInformation("[InsertRound] Round inserted successfully.");
-
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertRound] Error occurred while inserting the round.");
@@ -343,14 +336,12 @@ namespace CS2Stats {
         }
 
         public async Task InsertLive(LiveData liveData, ILogger Logger) {
-            MySqlConnection tempConn = new(this.connString);
+            using MySqlConnection tempConn = new(this.connString);
             await tempConn.OpenAsync();
 
             await this.ClearLive(Logger);
             await this.InsertLiveStatus(liveData, tempConn, Logger);
             await this.InsertLivePlayers(liveData, tempConn, Logger);
-
-            await tempConn.CloseAsync();
         }
 
         public async Task InsertClutchEvent(Match match, Round round, ILogger Logger) {
@@ -365,21 +356,21 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @PlayerID, @PlayerSide, @EnemyCount, @Result);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@PlayerID", round.ClutchEvent.ClutcherID);
-                cmd.Parameters.AddWithValue("@PlayerSide", round.ClutchEvent.ClutcherSide);
-                cmd.Parameters.AddWithValue("@EnemyCount", round.ClutchEvent.EnemyCount);
-                cmd.Parameters.AddWithValue("@Result", round.ClutchEvent.Result);
-                await cmd.ExecuteNonQueryAsync();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@PlayerID", round.ClutchEvent.ClutcherID);
+                    cmd.Parameters.AddWithValue("@PlayerSide", round.ClutchEvent.ClutcherSide);
+                    cmd.Parameters.AddWithValue("@EnemyCount", round.ClutchEvent.EnemyCount);
+                    cmd.Parameters.AddWithValue("@Result", round.ClutchEvent.Result);
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
                 Logger.LogInformation($"[InsertClutchEvent] Clutch event inserted successfully.");
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertClutchEvent] Error occurred while inserting clutch event.");
             }
-
         }
 
         public async Task InsertDuelEvent(Match match, Round round, ILogger Logger) {
@@ -394,21 +385,21 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @WinnerID, @WinnerSide, @LoserID, @LoserSide);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.WinnerID);
-                cmd.Parameters.AddWithValue("@WinnerSide", round.DuelEvent.Value.WinnerSide);
-                cmd.Parameters.AddWithValue("@LoserID", round.DuelEvent.Value.LoserID);
-                cmd.Parameters.AddWithValue("@LoserSide", round.DuelEvent.Value.LoserSide);
-                await cmd.ExecuteNonQueryAsync();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@WinnerID", round.DuelEvent.Value.WinnerID);
+                    cmd.Parameters.AddWithValue("@WinnerSide", round.DuelEvent.Value.WinnerSide);
+                    cmd.Parameters.AddWithValue("@LoserID", round.DuelEvent.Value.LoserID);
+                    cmd.Parameters.AddWithValue("@LoserSide", round.DuelEvent.Value.LoserSide);
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
                 Logger.LogInformation($"[InsertDuelEvent] Duel event inserted successfully.");
             }
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertDuelEvent] Error occurred while inserting duel event.");
             }
-
         }
 
         public async Task InsertBatchedHurtEvents(Match match, Round round, ILogger Logger) {
@@ -423,22 +414,23 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @AttackerID, @AttackerSide, @VictimID, @VictimSide, @Damage, @Weapon, @Hitgroup, @RoundTick);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (HurtEvent hurtEvent in round.HurtEvents) {
-                    cmd.Parameters.Clear();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    foreach (HurtEvent hurtEvent in round.HurtEvents) {
+                        cmd.Parameters.Clear();
 
-                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@AttackerID", hurtEvent.AttackerID);
-                    cmd.Parameters.AddWithValue("@AttackerSide", hurtEvent.AttackerSide);
-                    cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
-                    cmd.Parameters.AddWithValue("@VictimSide", hurtEvent.VictimSide);
-                    cmd.Parameters.AddWithValue("@Damage", hurtEvent.Damage);
-                    cmd.Parameters.AddWithValue("@Weapon", hurtEvent.Weapon);
-                    cmd.Parameters.AddWithValue("@Hitgroup", hurtEvent.Hitgroup);
-                    cmd.Parameters.AddWithValue("@RoundTick", hurtEvent.RoundTick);
+                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                        cmd.Parameters.AddWithValue("@AttackerID", hurtEvent.AttackerID);
+                        cmd.Parameters.AddWithValue("@AttackerSide", hurtEvent.AttackerSide);
+                        cmd.Parameters.AddWithValue("@VictimID", hurtEvent.VictimID);
+                        cmd.Parameters.AddWithValue("@VictimSide", hurtEvent.VictimSide);
+                        cmd.Parameters.AddWithValue("@Damage", hurtEvent.Damage);
+                        cmd.Parameters.AddWithValue("@Weapon", hurtEvent.Weapon);
+                        cmd.Parameters.AddWithValue("@Hitgroup", hurtEvent.Hitgroup);
+                        cmd.Parameters.AddWithValue("@RoundTick", hurtEvent.RoundTick);
 
-                    await cmd.ExecuteNonQueryAsync();
+                        await cmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 Logger.LogInformation($"[InsertBatchedHurtEvents] Batch of hurt events inserted successfully.");
@@ -446,7 +438,6 @@ namespace CS2Stats {
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertBatchedHurtEvents] Error occurred while inserting batch of hurt events.");
             }
-
         }
 
         public async Task InsertBatchedDeathEvents(Match match, Round round, ILogger Logger) {
@@ -461,24 +452,24 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @AttackerID, @AttackerSide, @AssisterID, @AssisterSide, @VictimID, @VictimSide, @Weapon, @Hitgroup, @OpeningDeath, @RoundTick);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (DeathEvent deathEvent in round.DeathEvents) {
-                    cmd.Parameters.Clear();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    foreach (DeathEvent deathEvent in round.DeathEvents) {
+                        cmd.Parameters.Clear();
 
-                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@AttackerID", deathEvent.AttackerID);
-                    cmd.Parameters.AddWithValue("@AttackerSide", deathEvent.AttackerSide);
-                    cmd.Parameters.AddWithValue("@AssisterID", deathEvent.AssisterID);
-                    cmd.Parameters.AddWithValue("@AssisterSide", deathEvent.AssisterSide);
-                    cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
-                    cmd.Parameters.AddWithValue("@VictimSide", deathEvent.VictimSide);
-                    cmd.Parameters.AddWithValue("@Weapon", deathEvent.Weapon);
-                    cmd.Parameters.AddWithValue("@Hitgroup", deathEvent.Hitgroup);
-                    cmd.Parameters.AddWithValue("@OpeningDeath", deathEvent.OpeningDeath);
-                    cmd.Parameters.AddWithValue("@RoundTick", deathEvent.RoundTick);
-                    await cmd.ExecuteNonQueryAsync();
-
+                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                        cmd.Parameters.AddWithValue("@AttackerID", deathEvent.AttackerID);
+                        cmd.Parameters.AddWithValue("@AttackerSide", deathEvent.AttackerSide);
+                        cmd.Parameters.AddWithValue("@AssisterID", deathEvent.AssisterID);
+                        cmd.Parameters.AddWithValue("@AssisterSide", deathEvent.AssisterSide);
+                        cmd.Parameters.AddWithValue("@VictimID", deathEvent.VictimID);
+                        cmd.Parameters.AddWithValue("@VictimSide", deathEvent.VictimSide);
+                        cmd.Parameters.AddWithValue("@Weapon", deathEvent.Weapon);
+                        cmd.Parameters.AddWithValue("@Hitgroup", deathEvent.Hitgroup);
+                        cmd.Parameters.AddWithValue("@OpeningDeath", deathEvent.OpeningDeath);
+                        cmd.Parameters.AddWithValue("@RoundTick", deathEvent.RoundTick);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 Logger.LogInformation($"[InsertBatchedDeathEvents] Batch of death events inserted successfully.");
@@ -500,25 +491,25 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @ThrowerID, @ThrowerSide, @BlindedID, @BlindedSide, @Duration, @RoundTick);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (BlindEvent blindEvent in round.BlindEvents){
-                    cmd.Parameters.Clear();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    foreach (BlindEvent blindEvent in round.BlindEvents) {
+                        cmd.Parameters.Clear();
 
-                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@ThrowerID", blindEvent.ThrowerID);
-                    cmd.Parameters.AddWithValue("@ThrowerSide", blindEvent.ThrowerSide);
-                    cmd.Parameters.AddWithValue("@BlindedID", blindEvent.BlindedID);
-                    cmd.Parameters.AddWithValue("@BlindedSide", blindEvent.BlindedSide);
-                    cmd.Parameters.AddWithValue("@Duration", blindEvent.Duration);
-                    cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
+                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                        cmd.Parameters.AddWithValue("@ThrowerID", blindEvent.ThrowerID);
+                        cmd.Parameters.AddWithValue("@ThrowerSide", blindEvent.ThrowerSide);
+                        cmd.Parameters.AddWithValue("@BlindedID", blindEvent.BlindedID);
+                        cmd.Parameters.AddWithValue("@BlindedSide", blindEvent.BlindedSide);
+                        cmd.Parameters.AddWithValue("@Duration", blindEvent.Duration);
+                        cmd.Parameters.AddWithValue("@RoundTick", blindEvent.RoundTick);
 
-                    await cmd.ExecuteNonQueryAsync();
+                        await cmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 Logger.LogInformation($"[InsertBatchedBlindEvents] Batch of blind events inserted successfully.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertBatchedBlindEvents] Error occurred while inserting batch of blind events.");
             }
@@ -536,23 +527,23 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @ThrowerID, @ThrowerSide, @Weapon, @RoundTick);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (GrenadeEvent grenadeEvent in round.GrenadeEvents) {
-                    cmd.Parameters.Clear();
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    foreach (GrenadeEvent grenadeEvent in round.GrenadeEvents) {
+                        cmd.Parameters.Clear();
 
-                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@ThrowerID", grenadeEvent.ThrowerID);
-                    cmd.Parameters.AddWithValue("@ThrowerSide", grenadeEvent.ThrowerSide);
-                    cmd.Parameters.AddWithValue("@Weapon", grenadeEvent.Weapon);
-                    cmd.Parameters.AddWithValue("@RoundTick", grenadeEvent.RoundTick);
+                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                        cmd.Parameters.AddWithValue("@ThrowerID", grenadeEvent.ThrowerID);
+                        cmd.Parameters.AddWithValue("@ThrowerSide", grenadeEvent.ThrowerSide);
+                        cmd.Parameters.AddWithValue("@Weapon", grenadeEvent.Weapon);
+                        cmd.Parameters.AddWithValue("@RoundTick", grenadeEvent.RoundTick);
 
-                    await cmd.ExecuteNonQueryAsync();
+                        await cmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 Logger.LogInformation($"[InsertBatchedGrenadeEvents] Batch of grenade events inserted successfully.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertBatchedGrenadeEvents] Error occurred while inserting batch of grenade events.");
             }
@@ -570,24 +561,23 @@ namespace CS2Stats {
                 VALUES (@RoundID, @MatchID, @PlayerID, @PlayerSide);
                 ";
 
-                using MySqlCommand cmd = new(query, this.conn, this.transaction);
-                foreach (KASTEvent kastEvent in round.KASTEvents) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@PlayerID", kastEvent.PlayerID);
-                    cmd.Parameters.AddWithValue("@PlayerSide", kastEvent.PlayerSide);
+                using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                    foreach (KASTEvent kastEvent in round.KASTEvents) {
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@RoundID", round.RoundID);
+                        cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                        cmd.Parameters.AddWithValue("@PlayerID", kastEvent.PlayerID);
+                        cmd.Parameters.AddWithValue("@PlayerSide", kastEvent.PlayerSide);
 
-                    await cmd.ExecuteNonQueryAsync();
+                        await cmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 Logger.LogInformation($"[InsertBatchedPlayersKAST] Batch of KAST events inserted successfully.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[InsertBatchedPlayersKAST] Error occurred while inserting batch of KAST events.");
             }
-
         }
 
         public async Task UpdateELO(TeamInfo teamInfo, ILogger Logger) {
@@ -632,22 +622,21 @@ namespace CS2Stats {
 
         public async Task ClearLive(ILogger Logger) {
             try {
-
-                MySqlConnection tempConn = new(this.connString);
+                using MySqlConnection tempConn = new(this.connString);
                 await tempConn.OpenAsync();
 
                 string query = "TRUNCATE TABLE CS2S_LivePlayers";
-                using MySqlCommand cmd = new(query, tempConn);
-                await cmd.ExecuteNonQueryAsync();
+                using (MySqlCommand cmd = new(query, tempConn)) {
+                    await cmd.ExecuteNonQueryAsync();
+                }
 
                 string query2 = "TRUNCATE TABLE CS2S_LiveStatus";
-                using MySqlCommand cmd2 = new(query2, tempConn);
-                await cmd2.ExecuteNonQueryAsync();
-                await tempConn.CloseAsync();
+                using (MySqlCommand cmd2 = new(query2, tempConn)) {
+                    await cmd2.ExecuteNonQueryAsync();
+                }
 
                 Logger.LogInformation($"[ClearLive] Live data tables cleared.");
             }
-
             catch (Exception ex) {
                 Logger.LogError(ex, "[ClearLive] Error occurred while clearing live data tables.");
             }

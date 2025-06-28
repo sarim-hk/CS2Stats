@@ -145,7 +145,7 @@ namespace CS2Stats {
     }
 
     public partial class Database {
-        
+
         private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
             string query = @"
             INSERT INTO CS2S_Team (TeamID, Size, Name)
@@ -154,13 +154,14 @@ namespace CS2Stats {
                 TeamID = TeamID
             ";
 
-            using MySqlCommand cmd = new(query, this.conn, this.transaction);
-            cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-            cmd.Parameters.AddWithValue("@Size", teamInfo.PlayerIDs.Count);
-            cmd.Parameters.AddWithValue("@Name", teamInfo.FirstPlayerName);
+            using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                cmd.Parameters.AddWithValue("@Size", teamInfo.PlayerIDs.Count);
+                cmd.Parameters.AddWithValue("@Name", teamInfo.FirstPlayerName);
 
-            await cmd.ExecuteNonQueryAsync();
-            Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
+                await cmd.ExecuteNonQueryAsync();
+                Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
+            }
         }
 
         private async Task InsertTeamPlayers(TeamInfo teamInfo, ILogger Logger) {
@@ -171,14 +172,15 @@ namespace CS2Stats {
                 TeamID = TeamID
             ";
 
-            using MySqlCommand cmd = new(query, this.conn, this.transaction);
-            foreach (ulong playerID in teamInfo.PlayerIDs) {
-                cmd.Parameters.Clear();
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@PlayerID", playerID);
+            using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                foreach (ulong playerID in teamInfo.PlayerIDs) {
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[InsertTeamPlayers] Player {playerID} added to Team {teamInfo.TeamID}.");
+                    await cmd.ExecuteNonQueryAsync();
+                    Logger.LogInformation($"[InsertTeamPlayers] Player {playerID} added to Team {teamInfo.TeamID}.");
+                }
             }
         }
 
@@ -188,14 +190,15 @@ namespace CS2Stats {
             VALUES (@PlayerID, @MatchID)
             ";
 
-            using MySqlCommand cmd = new(query, this.conn, this.transaction);
-            foreach (ulong playerID in teamInfo.PlayerIDs) {
-                cmd.Parameters.Clear();
-                cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                cmd.Parameters.AddWithValue("@PlayerID", playerID);
+            using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
+                foreach (ulong playerID in teamInfo.PlayerIDs) {
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
+                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
 
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[InsertPlayerMatches] Match {match.MatchID} added to Player {playerID}.");
+                    await cmd.ExecuteNonQueryAsync();
+                    Logger.LogInformation($"[InsertPlayerMatches] Match {match.MatchID} added to Player {playerID}.");
+                }
             }
         }
 
@@ -212,15 +215,16 @@ namespace CS2Stats {
                     InsertDate = CURRENT_TIMESTAMP
                 ";
 
-                using MySqlCommand cmd = new(query, connection);
-                cmd.Parameters.AddWithValue("@BombStatus", liveData.Status.BombStatus);
-                cmd.Parameters.AddWithValue("@MapID", liveData.Status.MapName);
-                cmd.Parameters.AddWithValue("@TScore", liveData.Status.TScore);
-                cmd.Parameters.AddWithValue("@CTScore", liveData.Status.CTScore);
+                using (MySqlCommand cmd = new(query, connection)) {
+                    cmd.Parameters.AddWithValue("@BombStatus", liveData.Status.BombStatus);
+                    cmd.Parameters.AddWithValue("@MapID", liveData.Status.MapName);
+                    cmd.Parameters.AddWithValue("@TScore", liveData.Status.TScore);
+                    cmd.Parameters.AddWithValue("@CTScore", liveData.Status.CTScore);
 
-                await cmd.ExecuteNonQueryAsync();
+                    await cmd.ExecuteNonQueryAsync();
 
-                Logger.LogInformation("[InsertLiveStatus] Live status data inserted successfully.");
+                    Logger.LogInformation("[InsertLiveStatus] Live status data inserted successfully.");
+                }
             }
 
             catch (Exception ex) {
@@ -235,21 +239,22 @@ namespace CS2Stats {
                 VALUES (@PlayerID, @Kills, @Assists, @Deaths, @ADR, @Health, @Money, @Side)
                 ";
 
-                using MySqlCommand cmd = new(query, connection);
-                foreach (LivePlayer livePlayer in liveData.Players) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@PlayerID", livePlayer.PlayerID);
-                    cmd.Parameters.AddWithValue("@Kills", livePlayer.Kills);
-                    cmd.Parameters.AddWithValue("@Assists", livePlayer.Assists);
-                    cmd.Parameters.AddWithValue("@Deaths", livePlayer.Deaths);
-                    cmd.Parameters.AddWithValue("@ADR", livePlayer.ADR);
-                    cmd.Parameters.AddWithValue("@Health", livePlayer.Health);
-                    cmd.Parameters.AddWithValue("@Money", livePlayer.Money);
-                    cmd.Parameters.AddWithValue("@Side", livePlayer.Side);
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                using (MySqlCommand cmd = new(query, connection)) {
+                    foreach (LivePlayer livePlayer in liveData.Players) {
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@PlayerID", livePlayer.PlayerID);
+                        cmd.Parameters.AddWithValue("@Kills", livePlayer.Kills);
+                        cmd.Parameters.AddWithValue("@Assists", livePlayer.Assists);
+                        cmd.Parameters.AddWithValue("@Deaths", livePlayer.Deaths);
+                        cmd.Parameters.AddWithValue("@ADR", livePlayer.ADR);
+                        cmd.Parameters.AddWithValue("@Health", livePlayer.Health);
+                        cmd.Parameters.AddWithValue("@Money", livePlayer.Money);
+                        cmd.Parameters.AddWithValue("@Side", livePlayer.Side);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
 
-                Logger.LogInformation("[InsertLivePlayers] Live player data inserted successfully.");
+                    Logger.LogInformation("[InsertLivePlayers] Live player data inserted successfully.");
+                }
             }
 
             catch (Exception ex) {
