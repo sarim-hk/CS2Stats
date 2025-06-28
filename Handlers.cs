@@ -10,8 +10,8 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventRoundAnnounceLastRoundHalfHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Database == null) {
+                Logger.LogInformation($"[EventRoundAnnounceLastRoundHalfHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -22,8 +22,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventRoundStartHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Database == null) {
+                Logger.LogInformation($"[EventRoundStartHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -39,7 +39,7 @@ namespace CS2Stats {
 
         public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
             if (this.Match == null || this.Database == null) {
-                Logger.LogInformation($"[EventRoundFreezeEndHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+                Logger.LogInformation($"[EventRoundFreezeEndHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
@@ -128,8 +128,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Database == null) {
+                Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
 
