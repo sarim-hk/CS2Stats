@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace CS2Stats {
 
@@ -23,16 +24,17 @@ namespace CS2Stats {
                     if (playersData != null) {
                         foreach (JToken playerData in playersData) {
                             string? personaname = playerData["personaname"]?.ToString();
-                            string? avatar = playerData["avatar"]?.ToString();
-                            string? avatarM = playerData["avatarmedium"]?.ToString();
-                            string? avatarL = playerData["avatarfull"]?.ToString();
+                            string? avatarUrl = playerData["avatar"]?.ToString();
+
+                            string? avatarHash = null;
+                            if (!string.IsNullOrEmpty(avatarUrl)) {
+                                avatarHash = Path.GetFileNameWithoutExtension(avatarUrl);
+                            }
 
                             PlayerInfo player = new() {
                                 PlayerID = steamID,
                                 Username = personaname,
-                                AvatarS = avatar,
-                                AvatarM = avatarM,
-                                AvatarL = avatarL
+                                AvatarHash = avatarHash,
                             };
 
                             return player;
@@ -53,10 +55,7 @@ namespace CS2Stats {
     public struct PlayerInfo {
         public ulong PlayerID;
         public string? Username;
-        public string? AvatarS;
-        public string? AvatarM;
-        public string? AvatarL;
-
+        public string? AvatarHash;
     }
 
 }

@@ -173,35 +173,28 @@ namespace CS2Stats {
 
         public async Task InsertPlayerInfo(PlayerInfo player, ILogger Logger) {
             try {
-                bool isEmpty = string.IsNullOrEmpty(player.AvatarS)
-                              || string.IsNullOrEmpty(player.AvatarM)
-                              || string.IsNullOrEmpty(player.AvatarL);
-
+                bool isEmpty = string.IsNullOrEmpty(player.AvatarHash);
                 string query;
 
                 if (isEmpty) {
                     query = @"
                 INSERT INTO CS2S_PlayerInfo
-                    (PlayerID, Username, AvatarS, AvatarM, AvatarL)
+                    (PlayerID, Username, AvatarHash)
                 VALUES
-                    (@PlayerID, @Username, DEFAULT, DEFAULT, DEFAULT)
+                    (@PlayerID, @Username, DEFAULT)
                 ON DUPLICATE KEY UPDATE
                     Username = VALUES(Username),
-                    AvatarS  = VALUES(AvatarS),
-                    AvatarM  = VALUES(AvatarM),
-                    AvatarL  = VALUES(AvatarL);";
+                    AvatarHash  = VALUES(AvatarHash);";
                 }
                 else {
                     query = @"
                 INSERT INTO CS2S_PlayerInfo
-                    (PlayerID, Username, AvatarS, AvatarM, AvatarL)
+                    (PlayerID, Username, AvatarHash)
                 VALUES
-                    (@PlayerID, @Username, @AvatarS, @AvatarM, @AvatarL)
+                    (@PlayerID, @Username, @AvatarHash)
                 ON DUPLICATE KEY UPDATE
                     Username = VALUES(Username),
-                    AvatarS  = VALUES(AvatarS),
-                    AvatarM  = VALUES(AvatarM),
-                    AvatarL  = VALUES(AvatarL);";
+                    AvatarHash  = VALUES(AvatarHash);";
                 }
 
                 using var conn = new MySqlConnection(this.connString);
@@ -212,9 +205,7 @@ namespace CS2Stats {
                     cmd.Parameters.AddWithValue("@Username", player.Username ?? "Anonymous");
 
                     if (!isEmpty) {
-                        cmd.Parameters.AddWithValue("@AvatarS", player.AvatarS);
-                        cmd.Parameters.AddWithValue("@AvatarM", player.AvatarM);
-                        cmd.Parameters.AddWithValue("@AvatarL", player.AvatarL);
+                        cmd.Parameters.AddWithValue("@AvatarHash", player.AvatarHash);
                     }
 
                     await cmd.ExecuteNonQueryAsync();
