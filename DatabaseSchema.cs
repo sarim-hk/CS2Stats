@@ -14,7 +14,7 @@ namespace CS2Stats {
             PlayerID bigint UNSIGNED PRIMARY KEY NOT NULL,
             ELO int UNSIGNED DEFAULT 1000 NOT NULL,
             Username varchar(255) NOT NULL,
-            AvatarHash varchar(255) DEFAULT "b5bd56c1aa4644a474a2e4972be27ef9e82e517e.jpg" NOT NULL
+            AvatarHash varchar(255) DEFAULT "b5bd56c1aa4644a474a2e4972be27ef9e82e517e" NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS CS2S_Match (
