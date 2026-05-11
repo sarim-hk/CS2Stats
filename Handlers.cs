@@ -132,10 +132,11 @@ namespace CS2Stats {
                 Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
                 return HookResult.Continue;
             }
-
+            
             this.Match.EndTick = Server.TickCount;
+            Match match = this.Match;
 
-            List<ulong> startingPlayerIDs = this.Match.StartingPlayers.Values
+            List<ulong> startingPlayerIDs = match.StartingPlayers.Values
                 .SelectMany(team => team.PlayerIDs)
                 .ToList();
 
@@ -156,22 +157,22 @@ namespace CS2Stats {
                     await this.Database.CreateConnection();
                     await this.Database.StartTransaction();
 
-                    await this.Database.InsertMap(this.Match, Logger);
-                    await this.Database.InsertMatch(this.Match, Logger);
+                    await this.Database.InsertMap(match, Logger);
+                    await this.Database.InsertMatch(match, Logger);
 
-                    await this.Database.InsertTeamsAndTeamPlayers(this.Match, Logger);
+                    await this.Database.InsertTeamsAndTeamPlayers(match, Logger);
 
-                    while (this.Match.Rounds.Count > 0) {
-                        Round round = this.Match.Rounds.Dequeue();
+                    while (match.Rounds.Count > 0) {
+                        Round round = match.Rounds.Dequeue();
 
-                        await this.Database.InsertRound(this.Match, round, Logger);
-                        await this.Database.InsertClutchEvent(this.Match, round, Logger);
-                        await this.Database.InsertDuelEvent(this.Match, round, Logger);
-                        await this.Database.InsertBatchedHurtEvents(this.Match, round, Logger);
-                        await this.Database.InsertBatchedDeathEvents(this.Match, round, Logger);
-                        await this.Database.InsertBatchedBlindEvents(this.Match, round, Logger);
-                        await this.Database.InsertBatchedGrenadeEvents(this.Match, round, Logger);
-                        await this.Database.InsertBatchedKAST(this.Match, round, Logger);
+                        await this.Database.InsertRound(match, round, Logger);
+                        await this.Database.InsertClutchEvent(match, round, Logger);
+                        await this.Database.InsertDuelEvent(match, round, Logger);
+                        await this.Database.InsertBatchedHurtEvents(match, round, Logger);
+                        await this.Database.InsertBatchedDeathEvents(match, round, Logger);
+                        await this.Database.InsertBatchedBlindEvents(match, round, Logger);
+                        await this.Database.InsertBatchedGrenadeEvents(match, round, Logger);
+                        await this.Database.InsertBatchedKAST(match, round, Logger);
                     }
 
                     if (teamNumInfo2 != null && teamNumInfo3 != null) {
@@ -196,8 +197,8 @@ namespace CS2Stats {
                             teamNumInfo3.DeltaELO = -teamNumInfo2.DeltaELO;
                         }
 
-                        await this.Database.InsertTeamResult(this.Match, teamNumInfo2, Logger);
-                        await this.Database.InsertTeamResult(this.Match, teamNumInfo3, Logger);
+                        await this.Database.InsertTeamResult(match, teamNumInfo2, Logger);
+                        await this.Database.InsertTeamResult(match, teamNumInfo3, Logger);
                         await this.Database.UpdateELO(teamNumInfo2, Logger);
                         await this.Database.UpdateELO(teamNumInfo3, Logger);
                     }
