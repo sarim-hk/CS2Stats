@@ -139,6 +139,17 @@ namespace CS2Stats {
                 .SelectMany(team => team.PlayerIDs)
                 .ToList();
 
+            TeamInfo? teamNumInfo2 = GetTeamInfoByTeamNum((int)CsTeam.Terrorist);
+            TeamInfo? teamNumInfo3 = GetTeamInfoByTeamNum((int)CsTeam.CounterTerrorist);
+
+            if (teamNumInfo2 != null && teamNumInfo3 != null) {
+                teamNumInfo2.Score = GetCSTeamScore((int)CsTeam.Terrorist);
+                teamNumInfo3.Score = GetCSTeamScore((int)CsTeam.CounterTerrorist);
+
+                teamNumInfo2.Result = teamNumInfo2.Score > teamNumInfo3.Score ? "Win" : (teamNumInfo2.Score < teamNumInfo3.Score ? "Loss" : "Tie");
+                teamNumInfo3.Result = teamNumInfo3.Score > teamNumInfo2.Score ? "Win" : (teamNumInfo3.Score < teamNumInfo2.Score ? "Loss" : "Tie");
+            }
+
             Task.Run(async () => {
 
                 try {
@@ -163,16 +174,7 @@ namespace CS2Stats {
                         await this.Database.InsertBatchedKAST(this.Match, round, Logger);
                     }
 
-                    TeamInfo? teamNumInfo2 = GetTeamInfoByTeamNum((int)CsTeam.Terrorist);
-                    TeamInfo? teamNumInfo3 = GetTeamInfoByTeamNum((int)CsTeam.CounterTerrorist);
-
                     if (teamNumInfo2 != null && teamNumInfo3 != null) {
-                        teamNumInfo2.Score = GetCSTeamScore((int)CsTeam.Terrorist);
-                        teamNumInfo3.Score = GetCSTeamScore((int)CsTeam.CounterTerrorist);
-
-                        teamNumInfo2.Result = teamNumInfo2.Score > teamNumInfo3.Score ? "Win" : (teamNumInfo2.Score < teamNumInfo3.Score ? "Loss" : "Tie");
-                        teamNumInfo3.Result = teamNumInfo3.Score > teamNumInfo2.Score ? "Win" : (teamNumInfo3.Score < teamNumInfo2.Score ? "Loss" : "Tie");
-
                         teamNumInfo2.AverageELO = await this.Database.GetTeamAverageELO(teamNumInfo2.TeamID, Logger);
                         teamNumInfo3.AverageELO = await this.Database.GetTeamAverageELO(teamNumInfo3.TeamID, Logger);
 
