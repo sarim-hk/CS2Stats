@@ -23,6 +23,7 @@ namespace CS2Stats {
             if (this.Database == null) {
                 Logger.LogInformation("[Load] Database is null. Unloading...");
                 base.Unload(false);
+                return;
             }
 
             RegisterEventHandler<EventCsWinPanelMatch>(EventCsWinPanelMatchHandler);
@@ -37,6 +38,11 @@ namespace CS2Stats {
             RegisterEventHandler<EventBombPlanted>(EventBombPlantedHandler);
             RegisterEventHandler<EventBombDefused>(EventBombDefusedHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
+
+            Task.Run(async () => {
+                await this.Database.CreateTables(Logger);
+            });
+
             Logger.LogInformation("[Load] Plugin loaded.");
         }
 
