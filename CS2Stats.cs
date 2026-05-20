@@ -39,10 +39,6 @@ namespace CS2Stats {
             RegisterEventHandler<EventBombDefused>(EventBombDefusedHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
 
-            Task.Run(async () => {
-                await this.Database.CreateTables(Logger);
-            });
-
             Logger.LogInformation("[Load] Plugin loaded.");
         }
 

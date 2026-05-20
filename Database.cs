@@ -146,31 +146,6 @@ namespace CS2Stats {
             }
         }
 
-        public async Task InsertPlayer(ulong playerID, int side, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_PlayerStats (PlayerID, Side)
-                VALUES (@PlayerID, @Side)
-                ON DUPLICATE KEY UPDATE
-                    PlayerID = PlayerID
-                ";
-
-                using MySqlConnection tempConn = new(this.connString);
-                await tempConn.OpenAsync();
-
-                using (MySqlCommand cmd = new(query, tempConn)) {
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-                    cmd.Parameters.AddWithValue("@Side", side);
-                    await cmd.ExecuteNonQueryAsync();
-                }
-
-                Logger.LogInformation($"[InsertPlayer] Player {playerID} on side {side} inserted successfully.");
-            }
-            catch (Exception ex) {
-                Logger.LogError(ex, $"[InsertPlayer] Error occurred while inserting player on side {side}.");
-            }
-        }
-
         public async Task InsertPlayerInfo(PlayerInfo player, ILogger Logger) {
             try {
                 bool isEmpty = string.IsNullOrEmpty(player.AvatarHash);
