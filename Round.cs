@@ -2,7 +2,6 @@
 
     public class Round {
 
-        public int RoundID { get; }
         public int StartTick { get; }
         public int? EndTick { get; set; }
         public bool OpeningDeathOccurred { get; set; }
@@ -21,8 +20,7 @@
         public int? LosingTeamNum { get; set; }
         public int? WinningReason { get; set; }
 
-        public Round(int roundID, int startTick) {
-            this.RoundID = roundID;
+        public Round(int startTick) {
             this.StartTick = startTick;
 
             this.OpeningDeathOccurred = false;

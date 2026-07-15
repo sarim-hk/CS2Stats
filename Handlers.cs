@@ -3,6 +3,9 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
+using Mysqlx.Session;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System.Linq;
 
 namespace CS2Stats {
@@ -10,8 +13,8 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation($"[EventRoundAnnounceLastRoundHalfHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null ) {
+                Logger.LogInformation($"[EventRoundAnnounceLastRoundHalfHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -22,30 +25,25 @@ namespace CS2Stats {
         }
 
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation($"[EventRoundStartHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null ) {
+                Logger.LogInformation($"[EventRoundStartHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
 
             this.SwapTeamsIfNeeded();
-            LiveData liveData = GetLiveMatchData();
-
-            Task.Run(async () => {
-                await this.Database.InsertLive(liveData, Logger);
-            });
+            
+            // LiveData liveData = GetLiveMatchData();
 
             return HookResult.Continue;
         }
 
         public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation($"[EventRoundFreezeEndHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null ) {
+                Logger.LogInformation($"[EventRoundFreezeEndHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
 
-            this.Match.RoundID += 1;
             this.Match.Round = new Round(
-                roundID: this.Match.RoundID,
                 startTick: Server.TickCount
             );
 
@@ -53,8 +51,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventRoundEndHandler(EventRoundEnd @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventRoundEndHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Match.Round == null) {
+                Logger.LogInformation($"[EventRoundEndHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Returning.");
                 return HookResult.Continue;
             }
 
@@ -128,8 +126,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match: {this.Match != null}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null ) {
+                Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
             
@@ -151,72 +149,22 @@ namespace CS2Stats {
                 teamNumInfo3.Result = teamNumInfo3.Score > teamNumInfo2.Score ? "Win" : (teamNumInfo3.Score < teamNumInfo2.Score ? "Loss" : "Tie");
             }
 
+
+            string gameDirectory = Server.GameDirectory;
+
             Task.Run(async () => {
 
                 try {
-                    await this.Database.CreateConnection();
-                    await this.Database.StartTransaction();
-
-                    await this.Database.InsertMap(match, Logger);
-                    await this.Database.InsertMatch(match, Logger);
-
-                    await this.Database.InsertTeamsAndTeamPlayers(match, Logger);
-
-                    while (match.Rounds.Count > 0) {
-                        Round round = match.Rounds.Dequeue();
-
-                        await this.Database.InsertRound(match, round, Logger);
-                        await this.Database.InsertClutchEvent(match, round, Logger);
-                        await this.Database.InsertDuelEvent(match, round, Logger);
-                        await this.Database.InsertBatchedHurtEvents(match, round, Logger);
-                        await this.Database.InsertBatchedDeathEvents(match, round, Logger);
-                        await this.Database.InsertBatchedBlindEvents(match, round, Logger);
-                        await this.Database.InsertBatchedGrenadeEvents(match, round, Logger);
-                        await this.Database.InsertBatchedKAST(match, round, Logger);
-                    }
-
-                    if (teamNumInfo2 != null && teamNumInfo3 != null) {
-                        teamNumInfo2.AverageELO = await this.Database.GetTeamAverageELO(teamNumInfo2.TeamID, Logger);
-                        teamNumInfo3.AverageELO = await this.Database.GetTeamAverageELO(teamNumInfo3.TeamID, Logger);
-
-                        if (teamNumInfo2.Result == "Win") {
-                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo3.AverageELO - teamNumInfo2.AverageELO) / 400));
-                            teamNumInfo2.DeltaELO = (int)Math.Round(50 * (1 - expectedWin));
-                            teamNumInfo3.DeltaELO = -teamNumInfo2.DeltaELO;
-                        }
-
-                        else if (teamNumInfo3.Result == "Win") {
-                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo2.AverageELO - teamNumInfo3.AverageELO) / 400));
-                            teamNumInfo3.DeltaELO = (int)Math.Round(50 * (1 - expectedWin));
-                            teamNumInfo2.DeltaELO = -teamNumInfo3.DeltaELO;
-                        }
-
-                        else if (teamNumInfo2.Result == "Tie" && teamNumInfo3.Result == "Tie") {
-                            double expectedWin = 1 / (1 + Math.Pow(10, (double)(teamNumInfo3.AverageELO - teamNumInfo2.AverageELO) / 400));
-                            teamNumInfo2.DeltaELO = (int)Math.Round(50 * (0.5 - expectedWin));
-                            teamNumInfo3.DeltaELO = -teamNumInfo2.DeltaELO;
-                        }
-
-                        await this.Database.InsertTeamResult(match, teamNumInfo2, Logger);
-                        await this.Database.InsertTeamResult(match, teamNumInfo3, Logger);
-                        await this.Database.UpdateELO(teamNumInfo2, Logger);
-                        await this.Database.UpdateELO(teamNumInfo3, Logger);
-                    }
-
-                    await this.Database.CommitTransaction();
+                    string jsonifiedMatch = JsonConvert.SerializeObject(match, Formatting.Indented);
+                    File.WriteAllText(Path.Combine(gameDirectory, "csgo", $"{match.MatchName}.json"), jsonifiedMatch);
                 }
 
                 catch (Exception ex) {
-                    await this.Database.RollbackTransaction();
                     Logger.LogError(ex, "[EventCsWinPanelMatchHandler] Error occurred while finishing up the match.");
                 }
 
                 finally {
-                    if (this.Config.DemoRecordingEnabled == "1") {
-                        Server.NextFrame(() => this.StopDemo(Logger));
-                    }
-
-                    await this.Database.ClearLive(Logger);
+                    Server.NextFrame(() => this.StopDemo(Logger));
                     this.Match = null;
                 }
 
@@ -227,8 +175,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventPlayerHurtHandler(EventPlayerHurt @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventPlayerHurtHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Match.Round == null) {
+                Logger.LogInformation($"[EventPlayerHurtHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Returning.");
                 return HookResult.Continue;
             }
 
@@ -255,8 +203,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventPlayerDeathHandler(EventPlayerDeath @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventPlayerDeathHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Match.Round == null) {
+                Logger.LogInformation($"[EventPlayerDeathHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Returning.");
                 return HookResult.Continue;
             }
 
@@ -352,15 +300,14 @@ namespace CS2Stats {
 
             this.Match.Round.OpeningDeathOccurred = true;
 
-            LiveData liveData = GetLiveMatchData();
-            Task.Run(async () => await this.Database.InsertLive(liveData, Logger));
+            // LiveData liveData = GetLiveMatchData();
 
             return HookResult.Continue;
         }
 
         public HookResult EventPlayerBlindHandler(EventPlayerBlind @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventPlayerBlindHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Match.Round == null) {
+                Logger.LogInformation($"[EventPlayerBlindHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Returning.");
                 return HookResult.Continue;
             }
 
@@ -385,8 +332,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventGrenadeThrownHandler(EventGrenadeThrown @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventGrenadeThrownHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Match.Round == null) {
+                Logger.LogInformation($"[EventGrenadeThrownHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Returning.");
                 return HookResult.Continue;
             }
 
@@ -403,49 +350,35 @@ namespace CS2Stats {
         }
 
         public HookResult EventBombPlantedHandler(EventBombPlanted @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventBombPlantedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Match.Round == null) {
+                Logger.LogInformation($"[EventBombPlantedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Returning.");
                 return HookResult.Continue;
             }
 
-            LiveData liveData = GetLiveMatchData();
-            Task.Run(async () => {
-                await this.Database.InsertLive(liveData, Logger);
-            });
+            // LiveData liveData = GetLiveMatchData();
 
             return HookResult.Continue;
         }
 
         public HookResult EventBombDefusedHandler(EventBombDefused @event, GameEventInfo info) {
-            if (this.Match == null || this.Match.Round == null || this.Database == null) {
-                Logger.LogInformation($"[EventBombDefusedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.Match == null || this.Match.Round == null) {
+                Logger.LogInformation($"[EventBombDefusedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Returning.");
                 return HookResult.Continue;
             }
 
-            LiveData liveData = GetLiveMatchData();
-            Task.Run(async () => {
-                await this.Database.InsertLive(liveData, Logger);
-            });
+            // LiveData liveData = GetLiveMatchData();
 
             return HookResult.Continue;
         }
 
         public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
-            if (this.Database == null || this.SteamAPIClient == null) {
-                Logger.LogInformation($"[OnClientAuthorizedHandler] Match: {this.Match != null}, Round: {!(this.Match == null || (this.Match != null && this.Match.Round == null))}, Database: {this.Database != null}. Returning.");
+            if (this.CS2StatsAPIClient == null) {
+                Logger.LogInformation($"[OnClientAuthorizedHandler] CS2StatsAPIClient is null, Returning.");
                 return;
             }
 
             Task.Run(async () => {
-                PlayerInfo? playerInfo = await this.SteamAPIClient.GetSteamSummaryAsync(playerID.SteamId64);
-
-                if (playerInfo == null) {
-                    playerInfo = new();
-                    Logger.LogInformation("[OnClientAuthorizedHandler] Steam API PlayerInfo is null. Inserting a blank copy.");
-                }
-
-                await this.Database.InsertPlayerInfo(playerInfo.Value, Logger);
-
+                // send player id to api so it can store it
             });
         }
 

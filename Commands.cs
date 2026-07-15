@@ -10,13 +10,8 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         [ConsoleCommand("cs2s_start_match", "Start a match.")]
-        public void StartMatch(CCSPlayerController? player, CommandInfo info) {
+        public async Task StartMatch(CCSPlayerController? player, CommandInfo info) {
             if (player != null) {
-                return;
-            }
-
-            if (this.Database == null) {
-                Logger.LogInformation("[StartMatch] Database is null. Returning.");
                 return;
             }
 
@@ -53,10 +48,8 @@ namespace CS2Stats {
             string mapName = Server.MapName;
             int startTick = Server.TickCount;
 
-            Task.Run(async () => {
+            await Task.Run(async () => {
                 this.Match = new Match(
-                    matchID: await this.Database.GetLastMatchID(Logger) + 1,
-                    roundID: await this.Database.GetLastRoundID(Logger),
                     mapName: mapName,
                     startTick: startTick,
                     startingPlayers: startingPlayers
@@ -64,10 +57,7 @@ namespace CS2Stats {
 
             });
 
-            if (this.Config.DemoRecordingEnabled == "1") {
-                Server.NextFrame(() => this.StartDemo(Logger));
-            }
-
+            Server.NextFrame(() => this.StartDemo(Logger));
             Logger.LogInformation("[StartMatch] Match started.");
 
         }
@@ -78,20 +68,7 @@ namespace CS2Stats {
                 return;
             }
 
-            if (this.Match == null || this.Database == null) {
-                Logger.LogInformation("[CancelMatch] Match or database is null. Returning.");
-                return;
-            }
-
-            if (this.Config.DemoRecordingEnabled == "1") {
-                this.StopDemo(Logger);
-            }
-
-            Task.Run(async () => {
-                await this.Database.ClearLive(Logger);
-            });
-
-
+            this.StopDemo(Logger);
             this.Match = null;
 
             Logger.LogInformation("[CancelMatch] Match cancelled.");
