@@ -128,7 +128,13 @@ namespace CS2Stats {
                 Directory.CreateDirectory(demoDirectoryPath);
             }
 
-            string demoFileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")+ "_" + Server.MapName + ".dem";
+            string demoFileName;
+            if (this.Match != null) {
+                demoFileName = this.Match.MatchName + ".dem";
+            } else {
+                demoFileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + "_" + Server.MapName + ".dem";
+            }
+
             string demoPath = Path.Combine(demoDirectoryPath, demoFileName);
 
             this.StopDemo(Logger);
@@ -140,127 +146,6 @@ namespace CS2Stats {
         public void StopDemo(ILogger Logger) {
             Server.ExecuteCommand("tv_stoprecord");
             Logger.LogInformation("[StopDemo] Stopped recording demo.");
-        }
-
-    }
-
-    public partial class Database {
-
-        private async Task InsertTeam(TeamInfo teamInfo, ILogger Logger) {
-            string query = @"
-            INSERT INTO CS2S_Team (TeamID, Size, Name)
-            VALUES (@TeamID, @Size, @Name)
-            ON DUPLICATE KEY UPDATE
-                TeamID = TeamID
-            ";
-
-            using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
-                cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                cmd.Parameters.AddWithValue("@Size", teamInfo.PlayerIDs.Count);
-                cmd.Parameters.AddWithValue("@Name", teamInfo.FirstPlayerName);
-
-                await cmd.ExecuteNonQueryAsync();
-                Logger.LogInformation($"[InsertOrUpdateTeamAsync] Team with ID {teamInfo.TeamID} inserted successfully.");
-            }
-        }
-
-        private async Task InsertTeamPlayers(TeamInfo teamInfo, ILogger Logger) {
-            string query = @"
-            INSERT INTO CS2S_Team_Players (TeamID, PlayerID)
-            VALUES (@TeamID, @PlayerID)
-            ON DUPLICATE KEY UPDATE
-                TeamID = TeamID
-            ";
-
-            using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
-                foreach (ulong playerID in teamInfo.PlayerIDs) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@TeamID", teamInfo.TeamID);
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-
-                    await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[InsertTeamPlayers] Player {playerID} added to Team {teamInfo.TeamID}.");
-                }
-            }
-        }
-
-        private async Task InsertPlayerMatches(Match match, TeamInfo teamInfo, ILogger Logger) {
-            string query = @"
-            INSERT INTO CS2S_Player_Matches (PlayerID, MatchID)
-            VALUES (@PlayerID, @MatchID)
-            ";
-
-            using (MySqlCommand cmd = new(query, this.conn, this.transaction)) {
-                foreach (ulong playerID in teamInfo.PlayerIDs) {
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@MatchID", match.MatchID);
-                    cmd.Parameters.AddWithValue("@PlayerID", playerID);
-
-                    await cmd.ExecuteNonQueryAsync();
-                    Logger.LogInformation($"[InsertPlayerMatches] Match {match.MatchID} added to Player {playerID}.");
-                }
-            }
-        }
-
-        private async Task InsertLiveStatus(LiveData liveData, MySqlConnection connection, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_LiveStatus (StaticID, BombStatus, MapID, TScore, CTScore, InsertDate)
-                VALUES (1, @BombStatus, @MapID, @TScore, @CTScore, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                    BombStatus = VALUES(BombStatus),
-                    MapID = VALUES(MapID),
-                    TScore = VALUES(TScore), 
-                    CTScore = VALUES(CTScore), 
-                    InsertDate = CURRENT_TIMESTAMP
-                ";
-
-                using (MySqlCommand cmd = new(query, connection)) {
-                    cmd.Parameters.AddWithValue("@BombStatus", liveData.Status.BombStatus);
-                    cmd.Parameters.AddWithValue("@MapID", liveData.Status.MapName);
-                    cmd.Parameters.AddWithValue("@TScore", liveData.Status.TScore);
-                    cmd.Parameters.AddWithValue("@CTScore", liveData.Status.CTScore);
-
-                    await cmd.ExecuteNonQueryAsync();
-
-                    Logger.LogInformation("[InsertLiveStatus] Live status data inserted successfully.");
-                }
-            }
-
-            catch (Exception ex) {
-                Logger.LogError(ex, "[InsertLiveStatus] Error occurred while inserting live status data.");
-            }
-        }
-
-        private async Task InsertLivePlayers(LiveData liveData, MySqlConnection connection, ILogger Logger) {
-            try {
-                string query = @"
-                INSERT INTO CS2S_LivePlayers (PlayerID, Kills, Assists, Deaths, ADR, Health, Money, Side)
-                VALUES (@PlayerID, @Kills, @Assists, @Deaths, @ADR, @Health, @Money, @Side)
-                ";
-
-                using (MySqlCommand cmd = new(query, connection)) {
-                    foreach (LivePlayer livePlayer in liveData.Players) {
-                        cmd.Parameters.Clear();
-                        cmd.Parameters.AddWithValue("@PlayerID", livePlayer.PlayerID);
-                        cmd.Parameters.AddWithValue("@Kills", livePlayer.Kills);
-                        cmd.Parameters.AddWithValue("@Assists", livePlayer.Assists);
-                        cmd.Parameters.AddWithValue("@Deaths", livePlayer.Deaths);
-                        cmd.Parameters.AddWithValue("@ADR", livePlayer.ADR);
-                        cmd.Parameters.AddWithValue("@Health", livePlayer.Health);
-                        cmd.Parameters.AddWithValue("@Money", livePlayer.Money);
-                        cmd.Parameters.AddWithValue("@Side", livePlayer.Side);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-
-                    Logger.LogInformation("[InsertLivePlayers] Live player data inserted successfully.");
-                }
-            }
-
-            catch (Exception ex) {
-                Logger.LogError(ex, "[InsertLivePlayers] Error occurred while inserting live status data.");
-            }
-
         }
 
     }

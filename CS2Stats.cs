@@ -8,20 +8,19 @@ namespace CS2Stats {
         public override string ModuleName => "CS2Stats";
         public override string ModuleVersion => "2.0.0";
 
-        public Config Config { get; set; }
-        public Database? Database;
-        public SteamAPIClient? SteamAPIClient;
+        public required Config Config { get; set; }
+        public required CS2StatsAPIClient CS2StatsAPIClient;
         public Match? Match;
 
-        public void OnConfigParsed(Config config) {
+        public void OnConfigParsed(Config config)
+        {
             this.Config = config;
-            this.Database = new Database(Config.MySQLServer, Config.MySQLDatabase, Config.MySQLUsername, Config.MySQLPassword);
-            this.SteamAPIClient = new SteamAPIClient(Config.SteamAPIKey);
+            this.CS2StatsAPIClient = new CS2StatsAPIClient(Config.APIAuthKey, Config.APIBaseURL);
         }
 
         public override void Load(bool hotReload) {
-            if (this.Database == null) {
-                Logger.LogInformation("[Load] Database is null. Unloading...");
+            if (this.CS2StatsAPIClient == null) {
+                Logger.LogInformation("[Load] CS2StatsAPIClient is null. Unloading...");
                 base.Unload(false);
                 return;
             }
