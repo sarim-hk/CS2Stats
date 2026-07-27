@@ -9,17 +9,17 @@ namespace CS2Stats {
         public override string ModuleVersion => "2.0.0";
 
         public required Config Config { get; set; }
-        public required CS2StatsAPIClient CS2StatsAPIClient;
+        public required CS2StatsAPIClient APIClient;
         public Match? Match;
 
         public void OnConfigParsed(Config config)
         {
             this.Config = config;
-            this.CS2StatsAPIClient = new CS2StatsAPIClient(Config.APIAuthKey, Config.APIBaseURL);
+            this.APIClient = new CS2StatsAPIClient(Config.APIAuthKey, Config.APIBaseURL);
         }
 
         public override void Load(bool hotReload) {
-            if (this.CS2StatsAPIClient == null) {
+            if (this.APIClient == null) {
                 Logger.LogInformation("[Load] CS2StatsAPIClient is null. Unloading...");
                 base.Unload(false);
                 return;
