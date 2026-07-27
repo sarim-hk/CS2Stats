@@ -139,8 +139,13 @@ namespace CS2Stats {
 
                 try {
                     string jsonifiedMatch = JsonConvert.SerializeObject(match, Formatting.Indented);
-                    File.WriteAllText(Path.Combine(gameDirectory, "csgo", $"{match.MatchName}.json"), jsonifiedMatch);
-                    // send to api here
+                    var logsDirectory = Path.Combine(gameDirectory, "csgo", "CS2Stats", "logs");
+                    Directory.CreateDirectory(logsDirectory);
+                    await File.WriteAllTextAsync(
+                        Path.Combine(logsDirectory, $"{match.MatchName}.json"),
+                        jsonifiedMatch
+                    );
+                    await this.APIClient.UploadMatchJSONAsync(jsonifiedMatch);
                 }
 
                 catch (Exception ex) {
@@ -356,7 +361,7 @@ namespace CS2Stats {
         }
 
         public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
-            if (this.CS2StatsAPIClient == null) {
+            if (this.APIClient == null) {
                 Logger.LogInformation($"[OnClientAuthorizedHandler] CS2StatsAPIClient is null, Returning.");
                 return;
             }
