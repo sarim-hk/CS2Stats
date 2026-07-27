@@ -130,33 +130,17 @@ namespace CS2Stats {
                 Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
-            
-            this.Match.EndTick = Server.TickCount;
-            Match match = this.Match;
-
-            List<ulong> startingPlayerIDs = match.StartingPlayers.Values
-                .SelectMany(team => team.PlayerIDs)
-                .ToList();
-
-            TeamInfo? teamNumInfo2 = GetTeamInfoByTeamNum((int)CsTeam.Terrorist);
-            TeamInfo? teamNumInfo3 = GetTeamInfoByTeamNum((int)CsTeam.CounterTerrorist);
-
-            if (teamNumInfo2 != null && teamNumInfo3 != null) {
-                teamNumInfo2.Score = GetCSTeamScore((int)CsTeam.Terrorist);
-                teamNumInfo3.Score = GetCSTeamScore((int)CsTeam.CounterTerrorist);
-
-                teamNumInfo2.Result = teamNumInfo2.Score > teamNumInfo3.Score ? "Win" : (teamNumInfo2.Score < teamNumInfo3.Score ? "Loss" : "Tie");
-                teamNumInfo3.Result = teamNumInfo3.Score > teamNumInfo2.Score ? "Win" : (teamNumInfo3.Score < teamNumInfo2.Score ? "Loss" : "Tie");
-            }
-
 
             string gameDirectory = Server.GameDirectory;
+            this.Match.EndTick = Server.TickCount;
+            Match match = this.Match;
 
             Task.Run(async () => {
 
                 try {
                     string jsonifiedMatch = JsonConvert.SerializeObject(match, Formatting.Indented);
                     File.WriteAllText(Path.Combine(gameDirectory, "csgo", $"{match.MatchName}.json"), jsonifiedMatch);
+                    // send to api here
                 }
 
                 catch (Exception ex) {
