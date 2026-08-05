@@ -1,4 +1,5 @@
-﻿using CounterStrikeSharp.API;
+﻿using System.Diagnostics.Eventing.Reader;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
@@ -130,6 +131,22 @@ namespace CS2Stats {
 
             string gameDirectory = Server.GameDirectory;
             this.Match.EndTick = Server.TickCount;
+
+            var teams = this.Match.Teams.ToList();
+            var comparison = teams[0].Value.Score.CompareTo(teams[1].Value.Score);
+
+            teams[0].Value.Result = comparison switch {
+                > 0 => "Win",
+                < 0 => "Loss",
+                _ => "Tie"
+            };
+
+            teams[1].Value.Result = comparison switch {
+                > 0 => "Loss",
+                < 0 => "Win",
+                _ => "Tie"
+            };
+
             Match match = this.Match;
 
             Task.Run(async () => {
@@ -157,9 +174,11 @@ namespace CS2Stats {
 
                     Logger.LogInformation("[EventCsWinPanelMatchHandler] Upload complete.");
                 }
+
                 catch (Exception ex) {
                     Logger.LogError(ex, "[EventCsWinPanelMatchHandler] Error occurred while finishing up the match.");
                 }
+
                 finally {
                     Logger.LogInformation("[EventCsWinPanelMatchHandler] Cleaning up match.");
 
