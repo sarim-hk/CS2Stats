@@ -3,17 +3,14 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
-using Mysqlx.Session;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System.Linq;
 
 namespace CS2Stats {
 
     public partial class CS2Stats {
 
         public HookResult EventRoundAnnounceLastRoundHalfHandler(EventRoundAnnounceLastRoundHalf @event, GameEventInfo info) {
-            if (this.Match == null ) {
+            if (this.Match == null) {
                 Logger.LogInformation($"[EventRoundAnnounceLastRoundHalfHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
@@ -25,20 +22,20 @@ namespace CS2Stats {
         }
 
         public HookResult EventRoundStartHandler(EventRoundStart @event, GameEventInfo info) {
-            if (this.Match == null ) {
+            if (this.Match == null) {
                 Logger.LogInformation($"[EventRoundStartHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
 
             this.SwapTeamsIfNeeded();
-            
+
             // LiveData liveData = GetLiveMatchData();
 
             return HookResult.Continue;
         }
 
         public HookResult EventRoundFreezeEndHandler(EventRoundFreezeEnd @event, GameEventInfo info) {
-            if (this.Match == null ) {
+            if (this.Match == null) {
                 Logger.LogInformation($"[EventRoundFreezeEndHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
@@ -126,8 +123,8 @@ namespace CS2Stats {
         }
 
         public HookResult EventCsWinPanelMatchHandler(EventCsWinPanelMatch @event, GameEventInfo info) {
-            if (this.Match == null ) {
-                Logger.LogInformation($"[EventCsWinPanelMatchHandler] Match is null. Returning.");
+            if (this.Match == null) {
+                Logger.LogInformation("[EventCsWinPanelMatchHandler] Match is null. Returning.");
                 return HookResult.Continue;
             }
 
@@ -136,27 +133,39 @@ namespace CS2Stats {
             Match match = this.Match;
 
             Task.Run(async () => {
-
                 try {
-                    string jsonifiedMatch = JsonConvert.SerializeObject(match, Formatting.Indented);
-                    var logsDirectory = Path.Combine(gameDirectory, "csgo", "CS2Stats", "logs");
-                    Directory.CreateDirectory(logsDirectory);
-                    await File.WriteAllTextAsync(
-                        Path.Combine(logsDirectory, $"{match.MatchName}.json"),
-                        jsonifiedMatch
-                    );
-                    await this.APIClient.UploadMatchJSONAsync(jsonifiedMatch);
-                }
+                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Serializing match.");
 
+                    string jsonifiedMatch = JsonConvert.SerializeObject(match, Formatting.Indented);
+
+                    var logsDirectory = Path.Combine(gameDirectory, "csgo", "CS2Stats", "logs");
+                    var filePath = Path.Combine(logsDirectory, $"{match.MatchName}.json");
+
+                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Creating directory: {Directory}", logsDirectory);
+                    Directory.CreateDirectory(logsDirectory);
+
+                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Writing file: {FilePath}", filePath);
+                    await File.WriteAllTextAsync(filePath, jsonifiedMatch);
+
+                    Logger.LogInformation(
+                        "[EventCsWinPanelMatchHandler] File written. Exists: {Exists}",
+                        File.Exists(filePath)
+                    );
+
+                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Uploading match JSON.");
+                    await this.APIClient.UploadMatchJSONAsync(jsonifiedMatch);
+
+                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Upload complete.");
+                }
                 catch (Exception ex) {
                     Logger.LogError(ex, "[EventCsWinPanelMatchHandler] Error occurred while finishing up the match.");
                 }
-
                 finally {
+                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Cleaning up match.");
+
                     Server.NextFrame(() => this.StopDemo(Logger));
                     this.Match = null;
                 }
-
             });
 
             Logger.LogInformation("[EventCsWinPanelMatchHandler] Match ended.");
