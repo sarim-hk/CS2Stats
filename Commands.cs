@@ -10,10 +10,9 @@ namespace CS2Stats {
     public partial class CS2Stats {
 
         [ConsoleCommand("cs2s_start_match", "Start a match.")]
-        public async Task StartMatch(CCSPlayerController? player, CommandInfo info) {
-            if (player != null) {
+        public void StartMatch(CCSPlayerController? player, CommandInfo info) {
+            if (player != null)
                 return;
-            }
 
             HashSet<ulong> teamNum2 = [];
             HashSet<ulong> teamNum3 = [];
@@ -21,45 +20,38 @@ namespace CS2Stats {
             string teamNum2Name = "Unknown";
             string teamNum3Name = "Unknown";
 
-            foreach (CCSPlayerController playerController in Utilities.GetPlayers()) {
-                if (!playerController.IsBot && playerController.IsValid && (playerController.Team == CsTeam.Terrorist || playerController.Team == CsTeam.CounterTerrorist)) {
-                    if (playerController.TeamNum == (int)CsTeam.Terrorist) {
-                        teamNum2.Add(playerController.SteamID);
-                        teamNum2Name = playerController.PlayerName;
-                    }
+            foreach (var p in Utilities.GetPlayers()) {
+                if (p.IsBot || !p.IsValid)
+                    continue;
 
-                    else if (playerController.TeamNum == (int)CsTeam.CounterTerrorist) {
-                        teamNum3.Add(playerController.SteamID);
-                        teamNum3Name = playerController.PlayerName;
-                    }
+                switch (p.Team) {
+                    case CsTeam.Terrorist:
+                        teamNum2.Add(p.SteamID);
+                        teamNum2Name = p.PlayerName;
+                        break;
+
+                    case CsTeam.CounterTerrorist:
+                        teamNum3.Add(p.SteamID);
+                        teamNum3Name = p.PlayerName;
+                        break;
                 }
             }
-
-            teamNum2Name = "team_" + Regex.Replace(teamNum2Name, "[^a-zA-Z0-9]", "");
-            teamNum3Name = "team_" + Regex.Replace(teamNum3Name, "[^a-zA-Z0-9]", "");
 
             string teamNum2ID = GenerateTeamID(teamNum2, Logger);
             string teamNum3ID = GenerateTeamID(teamNum3, Logger);
 
-            Dictionary<string, TeamInfo> startingPlayers = [];
-            startingPlayers[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2, teamNum2Name);
-            startingPlayers[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3, teamNum3Name);
+            Dictionary<string, TeamInfo> teams = [];
+            teams[teamNum2ID] = new TeamInfo(teamNum2ID, (int)CsTeam.Terrorist, teamNum2, $"team_{teamNum2Name}");
+            teams[teamNum3ID] = new TeamInfo(teamNum3ID, (int)CsTeam.CounterTerrorist, teamNum3, $"team_{teamNum3Name}");
 
-            string mapName = Server.MapName;
-            int startTick = Server.TickCount;
-
-            await Task.Run(async () => {
-                this.Match = new Match(
-                    mapName: mapName,
-                    startTick: startTick,
-                    startingPlayers: startingPlayers
-                );
-
-            });
+            Match = new Match(
+                mapName: Server.MapName,
+                startTick: Server.TickCount,
+                teams: teams
+            );
 
             Server.NextFrame(() => this.StartDemo(Logger));
             Logger.LogInformation("[StartMatch] Match started.");
-
         }
 
         [ConsoleCommand("cs2s_cancel_match", "Cancel a match without saving.")]
