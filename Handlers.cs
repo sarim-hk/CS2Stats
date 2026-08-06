@@ -133,6 +133,10 @@ namespace CS2Stats {
             this.Match.EndTick = Server.TickCount;
 
             var teams = this.Match.Teams.ToList();
+
+            teams[0].Value.Score = GetCSTeamScore(teams[0].Value.Side);
+            teams[1].Value.Score = GetCSTeamScore(teams[1].Value.Side);
+
             var comparison = teams[0].Value.Score.CompareTo(teams[1].Value.Score);
 
             teams[0].Value.Result = comparison switch {
