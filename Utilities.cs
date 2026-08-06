@@ -13,8 +13,8 @@ namespace CS2Stats {
 
         private TeamInfo? GetTeamInfoByTeamNum(int? teamNum) {
             if (this.Match != null && teamNum != null) {
-                foreach (string teamID in this.Match.StartingPlayers.Keys) {
-                    TeamInfo teamInfo = this.Match.StartingPlayers[teamID];
+                foreach (string teamID in this.Match.Teams.Keys) {
+                    TeamInfo teamInfo = this.Match.Teams[teamID];
 
                     if (teamInfo.Side == teamNum) {
                         return teamInfo;
@@ -96,25 +96,11 @@ namespace CS2Stats {
             return 0;
         }
 
-        private static CCSTeam? GetCSTeamByTeamNum(int teamNum) {
-            // thanks to switz https://discord.com/channels/1160907911501991946/1160925208203493468/1170817201473855619
-
-            IEnumerable<CCSTeam> teamManagers = Utilities.FindAllEntitiesByDesignerName<CCSTeam>("cs_team_manager");
-
-            foreach (CCSTeam teamManager in teamManagers) {
-                if (teamNum == teamManager.TeamNum) {
-                    return teamManager;
-                }
-            }
-
-            return null;
-        }
-
         private void SwapTeamsIfNeeded() {
             if (this.Match != null && this.Match.TeamsNeedSwapping) {
-                foreach (string teamID in this.Match.StartingPlayers.Keys) {
+                foreach (string teamID in this.Match.Teams.Keys) {
                     Logger.LogInformation($"[SwapTeamsIfNeeded] Swapping team for teamID {teamID}.");
-                    this.Match.StartingPlayers[teamID].SwapSides();
+                    this.Match.Teams[teamID].SwapSides();
                 }
                 this.Match.TeamsNeedSwapping = false;
                 Logger.LogInformation("[SwapTeamsIfNeeded] Setting teamsNeedSwapping to false.");
