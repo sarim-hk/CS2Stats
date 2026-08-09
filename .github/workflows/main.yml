@@ -1,36 +1,33 @@
-```yaml
 name: Build & Release
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
-      - "**/*.cs"
-      - "**/*.csproj"
-      - "**/*.sln"
-      - "**/*.slnx"
-      - "lang/**"
-      - ".github/workflows/dotnet.yml"
-
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '**/*.slnx'
+      - 'lang/**'
+      - '.github/workflows/dotnet.yml'
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
-      - "**/*.cs"
-      - "**/*.csproj"
-      - "**/*.sln"
-      - "**/*.slnx"
-      - "lang/**"
-      - ".github/workflows/dotnet.yml"
-
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '**/*.slnx'
+      - 'lang/**'
+      - '.github/workflows/dotnet.yml'
   workflow_dispatch:
     inputs:
       PluginVersion:
-        description: "Plugin Version"
+        description: 'Plugin Version'
         required: true
-        default: "v1.0.0"
+        default: 'v1.0.0'
 
 env:
-  PLUGIN_NAME: CS2Stats
+  PLUGIN_NAME: CSSharpTemplates
   DOTNET_VERSION: 10.0.x
   TARGET_FRAMEWORK: net10.0
   PATH_PLUGIN: addons/counterstrikesharp/plugins/
@@ -41,17 +38,14 @@ jobs:
   version:
     permissions:
       contents: write
-
     runs-on: ubuntu-latest
-
     outputs:
       new_tag: ${{ steps.determine_new_tag.outputs.new_tag }}
       release_exists: ${{ steps.check_release.outputs.release_exists }}
-
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: "0"
+          fetch-depth: '0'
 
       - name: Check if tag exists
         if: github.event_name == 'workflow_dispatch'
@@ -61,7 +55,6 @@ jobs:
         shell: bash
         run: |
           git fetch --tags --force
-
           if git rev-parse -q --verify "refs/tags/$PLUGIN_VERSION" > /dev/null; then
             echo "Tag $PLUGIN_VERSION already exists."
             echo "tag_exists=true" >> "$GITHUB_OUTPUT"
@@ -69,7 +62,7 @@ jobs:
             echo "Tag $PLUGIN_VERSION does not exist."
             echo "tag_exists=false" >> "$GITHUB_OUTPUT"
           fi
-
+  
       - name: Set custom tag and push to repository
         if: github.event_name == 'workflow_dispatch' && steps.check_tag.outputs.tag_exists == 'false'
         id: set_custom_tag
@@ -77,9 +70,8 @@ jobs:
           PLUGIN_VERSION: ${{ github.event.inputs.PluginVersion }}
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
           git tag "$PLUGIN_VERSION"
           git push origin "refs/tags/$PLUGIN_VERSION"
 
@@ -101,7 +93,6 @@ jobs:
         shell: bash
         run: |
           new_tag="${CUSTOM_TAG:-$CREATED_TAG}"
-
           echo "New tag determined: ${new_tag:-(none)}"
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
 
@@ -127,64 +118,50 @@ jobs:
   build:
     if: needs.version.outputs.release_exists == 'false'
     needs: version
-
     permissions:
       contents: read
-
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v7
+    - uses: actions/checkout@v7
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Update version
-        if: needs.version.outputs.new_tag != ''
-        env:
-          NEW_TAG: ${{ needs.version.outputs.new_tag }}
-        run: |
-          find . -type f -name '*.cs' -exec sed -i \
-            "s|public override string ModuleVersion =>.*|public override string ModuleVersion => \"${NEW_TAG}\";|g" {} \;
+    - name: Update version
+      if: needs.version.outputs.new_tag != ''
+      env:
+        NEW_TAG: ${{ needs.version.outputs.new_tag }}
+      run: |
+        find . -type f -name '*.cs' -exec sed -i "s|public override string ModuleVersion =>.*|public override string ModuleVersion => \"${NEW_TAG}\";|g" {} \;
 
-      - name: Build
-        run: dotnet publish -c Release -f "${TARGET_FRAMEWORK}" -o ./publish
+    - name: Build
+      run: dotnet build -c Release
 
-      - name: Create plugin directory
-        run: |
-          mkdir -p "plugin/${PATH_PLUGIN}${PLUGIN_NAME}"
+    - name: Create plugin directory
+      run: |
+        mkdir -p "plugin/${PATH_PLUGIN}${PLUGIN_NAME}"
+        rm -f "./bin/Release/${TARGET_FRAMEWORK}"/*.pdb "./bin/Release/${TARGET_FRAMEWORK}"/*.deps.json
+        cp -r "./bin/Release/${TARGET_FRAMEWORK}"/* "plugin/${PATH_PLUGIN}${PLUGIN_NAME}"
 
-          find ./publish -type f \( \
-            -name "*.pdb" -o \
-            -name "*.deps.json" \
-          \) -delete
+    - name: Zip plugin
+      run: |
+        cd plugin/
+        zip -r "${PLUGIN_NAME}-${GITHUB_SHA}.zip" .
 
-          rm -rf ./publish/runtimes
-
-          cp -r ./publish/. "plugin/${PATH_PLUGIN}${PLUGIN_NAME}/"
-
-      - name: Zip plugin
-        run: |
-          cd plugin
-          zip -r "${PLUGIN_NAME}-${GITHUB_SHA}.zip" .
-
-      - name: Publish
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ env.PLUGIN_NAME }}-${{ github.sha }}
-          path: plugin
+    - name: Publish
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.PLUGIN_NAME }}-${{ github.sha }}
+        path: plugin
 
   release:
     if: needs.version.outputs.new_tag != '' && github.event_name != 'pull_request'
     needs: [version, build]
-
     permissions:
       contents: write
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v8
@@ -200,37 +177,24 @@ jobs:
         shell: bash
         run: |
           version="${NEW_TAG#v}"
+          notes=$(gh api "repos/${GH_REPO}/releases/generate-notes" -f tag_name="$NEW_TAG" --jq .body)
 
-          notes=$(gh api \
-            "repos/${GH_REPO}/releases/generate-notes" \
-            -f tag_name="$NEW_TAG" \
-            --jq .body)
-
-          # generate-notes lists merged pull requests only.
-          # Fall back to commits when there are no merged PRs.
+          # generate-notes lists merged pull requests only - fall back to plain commits when there are none
           if ! grep -q '^\* ' <<< "$notes"; then
             prev_tag=$(gh release view --json tagName --jq .tagName 2>/dev/null || true)
-
             if [ -n "$prev_tag" ]; then
-              commits=$(gh api \
-                "repos/${GH_REPO}/compare/${prev_tag}...${NEW_TAG}" \
-                --jq '.commits[] |
-                  "* \(.commit.message | split("\n")[0]) by @\(.author.login // .commit.author.name) ([\(.sha[0:7])](\(.html_url)))"')
-
+              commits=$(gh api "repos/${GH_REPO}/compare/${prev_tag}...${NEW_TAG}" \
+                --jq '.commits[] | "* \(.commit.message | split("\n")[0]) by @\(.author.login // .commit.author.name) ([\(.sha[0:7])](\(.html_url)))"')
               if [ -n "$commits" ]; then
                 notes=$(printf "## What's Changed\n%s\n\n%s" "$commits" "$notes")
               fi
             fi
           fi
 
-          notes=$(sed -E \
-            's#\*\*Full Changelog\*\*: (https://[^[:space:]]+/compare/([^[:space:]]+))#**Full Changelog**: [\2](\1)#' \
-            <<< "$notes")
+          notes=$(sed -E 's#\*\*Full Changelog\*\*: (https://[^[:space:]]+/compare/([^[:space:]]+))#**Full Changelog**: [\2](\1)#' <<< "$notes")
 
           gh release create "$NEW_TAG" \
             --title "v${version}" \
             --notes "$notes" \
             "./plugin/${PLUGIN_NAME}-${GITHUB_SHA}.zip#${PLUGIN_NAME}-${NEW_TAG}.zip"
-
           echo "Release published: $(gh release view "$NEW_TAG" --json url --jq .url)"
-```
