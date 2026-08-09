@@ -392,15 +392,13 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
-        public void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
+        public async Task OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
             if (this.APIClient == null) {
                 Logger.LogInformation($"[OnClientAuthorizedHandler] CS2StatsAPIClient is null, Returning.");
                 return;
             }
 
-            Task.Run(async () => {
-                // send player id to api so it can store it
-            });
+            await this.APIClient.UploadPlayerJSONAsync(playerID.SteamId64);
         }
 
     }
