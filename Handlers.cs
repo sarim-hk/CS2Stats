@@ -399,6 +399,7 @@ namespace CS2Stats {
             }
 
             await this.APIClient.UploadPlayerJSONAsync(playerID.SteamId64);
+            Logger.LogInformation("[OnClientAuthorizedHandler] Upload complete.");
         }
 
     }
