@@ -1,6 +1,9 @@
 ﻿using System.IO.Compression;
 using System.Net.Http;
+using System.Net.Http.Json;
+using System.Reflection.Metadata;
 using System.Text;
+using CounterStrikeSharp.API.Modules.Entities;
 
 public class CS2StatsAPIClient {
     private readonly HttpClient httpClient;
@@ -29,7 +32,12 @@ public class CS2StatsAPIClient {
         content.Headers.ContentEncoding.Add("gzip");
 
         var response = await httpClient.PostAsync("/upload_match", content);
-
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task UploadPlayerJSONAsync(ulong playerID) {
+        var response = await httpClient.PostAsJsonAsync("/upload_player", new { playerID });
+        response.EnsureSuccessStatusCode();
+    }
+
 }
