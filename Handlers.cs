@@ -168,14 +168,9 @@ namespace CS2Stats {
                     Logger.LogInformation("[EventCsWinPanelMatchHandler] Writing file: {FilePath}", filePath);
                     await File.WriteAllTextAsync(filePath, jsonifiedMatch);
 
-                    Logger.LogInformation(
-                        "[EventCsWinPanelMatchHandler] File written. Exists: {Exists}",
-                        File.Exists(filePath)
-                    );
+                    Logger.LogInformation("[EventCsWinPanelMatchHandler] File written. Exists: {Exists}", File.Exists(filePath));
 
-                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Uploading match JSON.");
                     await this.APIClient.UploadMatchJSONAsync(jsonifiedMatch);
-
                     Logger.LogInformation("[EventCsWinPanelMatchHandler] Upload complete.");
                 }
 
