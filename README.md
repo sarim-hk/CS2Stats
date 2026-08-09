@@ -18,8 +18,7 @@
 ## Feature Highlights:
 * Automatic demo recording
 * Built in ELO system to rank players
-* Live match display
-* In-depth stat tracking, per match, per round:
+* In-depth stat tracking:
   *  ELO
   *  Kills, Assists, Deaths
   *  Utility Damage, Total Damage
@@ -37,12 +36,11 @@
 * Web server for hosting API
 
 ## Installation
+* Ensure you have the [API](https://github.com/sarim-hk/CS2StatsAPI) set up
 * Install the [latest release build](https://github.com/sarim-hk/CS2Stats/releases)
 * Load the plugin once to generate the config at `counterstrikesharp\configs\plugins\CS2Stats`
 * Edit the config file to include:
-  * MySQL Server Details
-  * Steam API key
-  * Demo recording
-* The plugin creates the necessary database tables automatically on startup
+  * API Base URL
+  * API Auth Key
 * Restart the server, or reload the plugin
 * Done!
