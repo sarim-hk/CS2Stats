@@ -392,7 +392,7 @@ namespace CS2Stats {
             return HookResult.Continue;
         }
 
-        public async Task OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
+        public async void OnClientAuthorizedHandler(int playerSlot, SteamID playerID) {
             if (this.APIClient == null) {
                 Logger.LogInformation($"[OnClientAuthorizedHandler] CS2StatsAPIClient is null, Returning.");
                 return;
