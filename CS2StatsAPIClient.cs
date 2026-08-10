@@ -4,17 +4,19 @@ using System.Net.Http.Json;
 using System.Reflection.Metadata;
 using System.Text;
 using CounterStrikeSharp.API.Modules.Entities;
+using Microsoft.Extensions.Logging;
 
 public class CS2StatsAPIClient {
     private readonly HttpClient httpClient;
+    private readonly ILogger Logger;
 
-    public CS2StatsAPIClient(string authKey, string baseURL) {
-        httpClient = new HttpClient {
+    public CS2StatsAPIClient(string authKey, string baseURL, ILogger Logger) {
+        this.Logger = Logger;
+        this.httpClient = new HttpClient {
             BaseAddress = new Uri(baseURL),
             Timeout = TimeSpan.FromMinutes(1)
         };
-
-        httpClient.DefaultRequestHeaders.Authorization =
+        this.httpClient.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authKey);
     }
 
@@ -32,12 +34,21 @@ public class CS2StatsAPIClient {
         content.Headers.ContentEncoding.Add("gzip");
 
         var response = await httpClient.PostAsync("/upload_match", content);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode) {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Logger.LogError($"[UploadMatchJSONAsync] Upload failed. Status={(int)response.StatusCode}, Body={errorBody}");
+            return;
+        }
     }
 
     public async Task UploadPlayerJSONAsync(ulong playerID) {
         var response = await httpClient.PostAsJsonAsync("/upload_player", new { playerID });
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode) {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Logger.LogError($"[UploadPlayerJSONAsync] Upload failed. Status={(int)response.StatusCode}, Body={errorBody}");
+            return;
+        }
     }
 
 }

@@ -170,8 +170,14 @@ namespace CS2Stats {
 
                     Logger.LogInformation("[EventCsWinPanelMatchHandler] File written. Exists: {Exists}", File.Exists(filePath));
 
-                    await this.APIClient.UploadMatchJSONAsync(jsonifiedMatch);
-                    Logger.LogInformation("[EventCsWinPanelMatchHandler] Upload complete.");
+                    try {
+                        await this.APIClient.UploadMatchJSONAsync(jsonifiedMatch);
+                        Logger.LogInformation("[EventCsWinPanelMatchHandler] Upload complete.");
+                    }
+                    catch (Exception ex) {
+                        Logger.LogError(ex, "[OnClientAuthorizedHandler] Upload failed.");
+                    }
+
                 }
 
                 catch (Exception ex) {
@@ -393,8 +399,13 @@ namespace CS2Stats {
                 return;
             }
 
-            await this.APIClient.UploadPlayerJSONAsync(playerID.SteamId64);
-            Logger.LogInformation("[OnClientAuthorizedHandler] Upload complete.");
+            try {
+                await this.APIClient.UploadPlayerJSONAsync(playerID.SteamId64);
+                Logger.LogInformation("[OnClientAuthorizedHandler] Upload complete.");
+            }
+            catch (Exception ex) {
+                Logger.LogError(ex, "[OnClientAuthorizedHandler] Upload failed.");
+            }
         }
 
     }

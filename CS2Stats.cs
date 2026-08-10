@@ -15,7 +15,7 @@ namespace CS2Stats {
         public void OnConfigParsed(Config config)
         {
             this.Config = config;
-            this.APIClient = new CS2StatsAPIClient(Config.APIAuthKey, Config.APIBaseURL);
+            this.APIClient = new CS2StatsAPIClient(Config.APIAuthKey, Config.APIBaseURL, Logger);
         }
 
         public override void Load(bool hotReload) {
@@ -37,7 +37,6 @@ namespace CS2Stats {
             RegisterEventHandler<EventBombPlanted>(EventBombPlantedHandler);
             RegisterEventHandler<EventBombDefused>(EventBombDefusedHandler);
             RegisterListener<Listeners.OnClientAuthorized>(OnClientAuthorizedHandler);
-
             Logger.LogInformation("[Load] Plugin loaded.");
         }
 
