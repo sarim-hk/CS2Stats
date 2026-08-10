@@ -2,8 +2,6 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
-using MySql.Data.MySqlClient;
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 

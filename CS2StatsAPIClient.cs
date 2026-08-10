@@ -1,9 +1,6 @@
 ﻿using System.IO.Compression;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Reflection.Metadata;
 using System.Text;
-using CounterStrikeSharp.API.Modules.Entities;
 using Microsoft.Extensions.Logging;
 
 public class CS2StatsAPIClient {
